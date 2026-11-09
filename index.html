@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7a1f24">
+<title>The Mason Family Boxing Day Quiz</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root { --red:#7a1f24; --gold:#ffd700; --ink:#14131a; --glass:rgba(16,14,24,.62); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#0b0d14; font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:#fff; user-select:none; -webkit-user-select:none; touch-action:none; }
+  #app canvas { display:block; }
+  #loading { position:fixed; inset:0; display:grid; place-items:center; background:radial-gradient(circle at 50% 40%, #3a1218, #0b0d14 70%); z-index:50; text-align:center; padding:16px; }
+  #loading h1 { font-family: Georgia, serif; color:var(--gold); font-size:clamp(28px,6vw,56px); margin:0 0 8px; text-shadow:0 3px 0 #000; }
+  #loading p { opacity:.85; margin:6px 0; }
+  .btn { background:var(--red); color:#fff; border:2px solid var(--gold); border-radius:12px; padding:12px 18px; font-size:17px; font-weight:700; cursor:pointer; margin:6px; }
+  .btn.alt { background:#1d3557; } .btn.small { padding:6px 10px; font-size:14px; }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+  #meters { position:absolute; top:10px; left:10px; background:var(--glass); border-radius:12px; padding:8px 10px; font-size:13px; min-width:190px; }
+  .bar { height:8px; background:#333; border-radius:4px; overflow:hidden; margin:3px 0 6px; } .bar > i { display:block; height:100%; width:0; background:#2c2; transition:width .3s, background .3s; }
+  #scores { position:absolute; top:10px; right:10px; background:var(--glass); border-radius:12px; padding:8px 12px; font-size:14px; text-align:right; }
+  #scores b { display:inline-block; min-width:26px; }
+  #cross { position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:50%; background:#fff; box-shadow:0 0 4px #000; opacity:.8; }
+  #prompt { position:absolute; left:50%; top:calc(50% + 22px); transform:translateX(-50%); background:var(--glass); padding:5px 10px; border-radius:8px; font-size:14px; white-space:nowrap; }
+  #prompt:empty { display:none; }
+  #toasts { position:absolute; left:50%; top:118px; transform:translateX(-50%); width:min(92vw,620px); display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .toast { background:rgba(122,31,36,.92); border:1px solid var(--gold); border-radius:10px; padding:8px 12px; font-size:15px; text-align:center; animation: tin .25s ease-out; }
+  @keyframes tin { from { transform:translateY(-8px); opacity:0; } }
+  #subs { position:absolute; left:50%; bottom:118px; transform:translateX(-50%); width:min(94vw,760px); text-align:center; display:flex; flex-direction:column; gap:4px; align-items:center; }
+  .sub { background:rgba(0,0,0,.6); padding:4px 10px; border-radius:6px; font-size:16px; }
+  .sub b { color:var(--gold); }
+  #answers { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); display:none; gap:8px; pointer-events:auto; flex-wrap:wrap; justify-content:center; width:min(96vw,900px); }
+  #answers button { flex:1 1 200px; background:rgba(29,53,87,.92); border:2px solid #fff3; color:#fff; border-radius:10px; padding:10px; font-size:16px; text-align:left; cursor:pointer; }
+  #answers button.sel { background:#d23b3b; border-color:var(--gold); }
+  #charge { position:absolute; left:50%; top:calc(50% + 46px); width:120px; height:6px; margin-left:-60px; background:#0006; border-radius:3px; display:none; } #charge i { display:block; height:100%; background:linear-gradient(90deg,#2c2,#fd2,#f33); width:0; border-radius:3px; }
+  #help { position:absolute; left:10px; bottom:10px; font-size:12px; opacity:.75; background:var(--glass); padding:6px 8px; border-radius:8px; max-width:340px; }
+  .modal { position:fixed; inset:0; background:rgba(5,5,10,.72); display:none; place-items:center; z-index:30; pointer-events:auto; padding:16px; }
+  .modal.open { display:grid; }
+  .card { background:#17151f; border:2px solid var(--gold); border-radius:16px; padding:18px; width:min(560px,96vw); max-height:88vh; overflow:auto; }
+  .card h2 { margin:0 0 10px; font-family:Georgia,serif; color:var(--gold); }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0; font-size:15px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:14px; }
+  kbd { background:#333; border-radius:4px; padding:1px 6px; border:1px solid #555; font-size:12px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td { padding:4px; border-bottom:1px solid #333; }
+  /* touch controls */
+  #touch { position:fixed; inset:0; z-index:12; pointer-events:none; display:none; }
+  #touch.on { display:block; }
+  .tbtn { position:absolute; width:72px; height:72px; border-radius:50%; background:rgba(20,20,30,.55); border:2px solid rgba(255,255,255,.55); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; font-weight:700; pointer-events:auto; touch-action:none; }
+  .tbtn span { font-size:24px; line-height:1; }
+  .tbtn.ready { border-color:var(--gold); box-shadow:0 0 14px rgba(255,215,0,.6); animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { transform:scale(1.06); } }
+  .tbtn.big { width:92px; height:92px; }
+  #stick { position:absolute; width:120px; height:120px; border-radius:50%; border:2px solid rgba(255,255,255,.5); background:rgba(0,0,0,.2); display:none; pointer-events:none; }
+  #stick i { position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px; border-radius:50%; background:rgba(255,255,255,.6); }
+  #grabThumb { position:absolute; bottom:4px; font-size:9px; max-width:80px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  #vrbtn { position:fixed; right:12px; bottom:12px; z-index:20; display:none; }
+  @media (max-width:700px) { #help { display:none; } #meters { font-size:11px; min-width:150px; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="loading">
+  <div>
+    <h1>The Mason Family<br>Boxing Day Quiz</h1>
+    <p>Three families. One living room. One disputed answer sheet.</p>
+    <p id="loadStatus">Loading…</p>
+    <div id="startBtns" style="display:none">
+      <button class="btn" id="btnPlay">Play on this screen</button>
+      <button class="btn alt" id="btnVR" style="display:none">Enter VR (Quest 3)</button>
+      <p style="font-size:13px;opacity:.7">Mouse &amp; keyboard · touch · gamepad · Meta Quest 3 hand tracking</p>
+    </div>
+  </div>
+</div>
+<div id="hud">
+  <div id="meters">
+    <div>🎄 Banter <span id="banterLbl">green</span></div><div class="bar"><i id="banterBar"></i></div>
+    <div>🦖 Havoc <span id="havocLbl">Calm</span></div><div class="bar"><i id="havocBar"></i></div>
+    <div id="phaseLbl" style="opacity:.8"></div>
+  </div>
+  <div id="scores"></div>
+  <div id="cross"></div><div id="prompt"></div><div id="charge"><i></i></div>
+  <div id="toasts"></div>
+  <div id="subs"></div>
+  <div id="answers"></div>
+  <div id="help"><kbd>WASD</kbd> move · <kbd>Mouse</kbd> look · <kbd>LMB</kbd> grab/drop · hold <kbd>RMB</kbd> throw · <kbd>F</kbd> punch · <kbd>E</kbd> kick · <kbd>R</kbd> use · <kbd>G</kbd> drink/eat · <kbd>Q</kbd> hand up · <kbd>X</kbd> accuse · <kbd>1-4</kbd> answer · <kbd>J</kbd> joker · <kbd>T</kbd> torch · <kbd>V</kbd> 3rd person · <kbd>Enter</kbd> next · <kbd>Tab</kbd> scores · <kbd>Esc</kbd> menu</div>
+</div>
+<div id="touch">
+  <div id="stick"><i></i></div>
+</div>
+<button class="btn alt" id="vrbtn">Enter VR</button>
+<div class="modal" id="menu"><div class="card" id="menuCard"></div></div>
+<div class="modal" id="scoreModal"><div class="card" id="scoreCard"></div></div>
+<div class="modal" id="pickModal"><div class="card" id="pickCard"></div></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

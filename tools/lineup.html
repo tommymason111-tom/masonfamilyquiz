@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#222}</style>
+<script type="importmap">{"imports":{"three":"../lib/three.module.js","three/addons/":"../lib/addons/"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { buildCharacter } from '../src/chars/body.js';
+import { CAST, SKIN } from '../src/chars/cast.js';
+import { hashStr } from '../src/core.js';
+const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const s = new THREE.Scene(); s.background = new THREE.Color('#556');
+s.add(new THREE.HemisphereLight('#fff','#543',1.2)); const dl = new THREE.DirectionalLight('#fff',2); dl.position.set(2,4,5); s.add(dl);
+const q = new URLSearchParams(location.search);
+const only = q.get('only'); const close = q.get('close');
+let x = 0; let tris=0; const list = CAST.filter(c=>!only || only.split(',').includes(c.name));
+list.forEach((c,i)=>{ const spec = {...c, seed: hashStr(c.name), skin: SKIN[i%SKIN.length]}; const ch = buildCharacter(spec); ch.root.position.x = x - (list.length-1)*0.3; x += 0.6; s.add(ch.root); tris += ch.tris; if (q.get('rot')) ch.root.rotation.y = +q.get('rot'); });
+const cam = new THREE.PerspectiveCamera(close?20:35, innerWidth/innerHeight, 0.01, 100);
+if (close) { cam.position.set(0, +close, 1.2); cam.lookAt(0, +close, 0); } else { cam.position.set(0, 1.0, list.length*0.62+1); cam.lookAt(0,0.9,0); }
+r.render(s, cam); document.title = 'tris:'+tris;
+</script></body></html>
