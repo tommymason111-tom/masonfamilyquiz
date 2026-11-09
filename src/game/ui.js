@@ -6,7 +6,7 @@ import { canvasTex } from '../engine/textures.js';
 import { saveSettings, loadStore, saveStore } from './settings.js';
 import { OUTFITS } from '../chars/cast.js';
 import { Ceremony } from './ceremony.js';
-import { initAudio, resumeAudio, sfx } from '../engine/audio.js';
+import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../engine/audio.js';
 
 const $ = (id) => document.getElementById(id);
 const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top in % / px), action
@@ -41,7 +41,7 @@ class UI {
   // ---------------- start / VR ----------------
   startScreen() {
     $('startBtns').style.display = 'block'; $('loadStatus').textContent = 'Ready. ' + G.chars.length + ' people, ' + G.items.count() + ' things to throw.';
-    const go = () => { initAudio(); resumeAudio(); $('loading').style.display = 'none'; this.started = true; if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else $('touch').classList.add('on'); };
+    const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else $('touch').classList.add('on'); };
     $('btnPlay').onclick = go;
     if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { go(); this.enterVR(); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) $('touch').classList.add('on'); } }, { once: true });
@@ -83,7 +83,9 @@ class UI {
       if (held && f && (f.kind === 'char' || f.kind === 'dog') && f.dist < 2.2) txt = `R: give ${held.type.name} to ${f.ref.name}`;
       else if (held) txt = `${held.type.name} — RMB throw · R use${held.type.food || held.type.drink ? ' · G eat/drink' : ''} · LMB drop`;
       else if (G.player.holders.D) txt = `Holding ${G.player.holders.D.ref.name || 'it'} — hold RMB to throw`;
-      else if (f) { if (f.kind === 'item') txt = `LMB grab ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The tree (careful)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
+      else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `LMB grab ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
+      if (!txt && !held && !G.player.seated && G.player.freeSeat()) txt = 'R: sit down';
+      if (!txt && G.player.seated) txt = 'Move to stand up';
       $('prompt').textContent = txt;
       const ch = G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
       this.updateTouchReady(f, held);
@@ -170,7 +172,7 @@ class UI {
   }
   updateTouchReady(f, held) {
     if (!this.touchMode || !this.tbtn) return; const r = (id, on) => this.tbtn[id]?.classList.toggle('ready', !!on);
-    r('grab', f && !held && f.kind !== 'spot' && f.kind !== 'tv'); r('throw', !!G.player.holders.D); r('use', held || (f && (f.kind === 'spot' || f.kind === 'item' && f.ref.type.use || f.kind === 'hinged')));
+    r('grab', f && !held && f.kind !== 'spot' && f.kind !== 'tv' && f.kind !== 'tree' && !(f.kind === 'item' && f.ref.type.fixed)); r('throw', !!G.player.holders.D); r('use', held || G.player.freeSeat() || (f && (f.kind === 'spot' || f.kind === 'item' && f.ref.type.use || f.kind === 'hinged')));
     r('drink', held && (held.type.food || held.type.drink)); r('handUp', G.quiz?.phase === 'marking'); r('punch', f && f.kind === 'char' && !f.ref.protected);
     const th = $('grabThumb'); if (th) th.textContent = held ? 'DROP' : f && f.ref ? (f.ref.type?.name || f.ref.name || '') : '';
   }

@@ -37,11 +37,16 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   Martin's armchair, fireplace + mantelpiece with the Mason Cup, tree in the bay window), dining/games room (table against
   the right wall, PC in the far corner), conservatory (glass roof), garden + patio. Hinged doors, fridge doors with lights,
   freezer lid, toilet lid, stair gate — all physical.
-- **~170 item types / 400+ physical objects, every one grabbable:** the full buffet (sausage rolls, pigs in blankets,
+- **~170 item types / ~260 physical objects.** Small things are grabbable; heavy furniture (sofas, the tree, tables,
+  Martin's armchair, appliances, the hoover, wheelbarrow…) stays put. The house is useful: sit on any free seat
+  (R / USE), light switches in each room, fill a glass at the kitchen tap, make a tea with the kettle (leave a mug
+  next to it). Everyday things: the full buffet (sausage rolls, pigs in blankets,
   cold turkey, cheeseboard + throwable Brie that sticks to windows, Scotch eggs that roll, pork pie, trifle, pudding,
   mince pies…), drinks (lager, cider, bitter, Prosecco with a cork that fires at Martin, wine, Baileys, squash…),
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
+- **Where everyone is:** living room — Paul, Karen, Tasha, Charli, Martin (armchair), Debbie, Kirsty, Gary, Mason;
+  kitchen — Julie, Jodie, Hollie & Dan; games room — Sophie & James, Harry; conservatory — Bradley with Harrison.
 - **The quiz:** five rounds (Sport, Telly/Film/Music, News & Nonsense, Picture round drawn on the TV, the Family Round),
   Martin reads from the armchair, Charli whispers the right answer, Paul overrules you (stop him with a mince pie, a
   cushion or a shove), sheets swapped and marked by Team Martin (harshly), the Dispute Wheel (Allow / Half / Deny /
@@ -51,7 +56,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   Showdown), Havoc Meter (Mason throws at the TV/whoever's talking/Paul, steals and hides things; Harrison throws rusks
   and sippy cups; Baby Ceasefire), Chip (zoomies, steals food, drops his squeaky toy in your lap, jumps at the TV,
   barks at Gary, lies on the answer sheets), Gary's Outfit Wheel (10 outfits with physics quirks), the Chaos Director
-  (25 events: tree falls, fuse trips, PC blue-screens, dead pens, beer run, pudding fire + smoke alarm, Siri betrayal…),
+  (24 events: fuse trips, PC blue-screens, dead pens, beer run, pudding fire + smoke alarm, Siri betrayal…),
   drink orders, coaster warnings, light cycle from 2pm to fairy-light o'clock, TV damage (crack, wobble, unplugged).
 - **MASON TV REPLAY:** the last 15 seconds of every moving thing are recorded (positions, not video) and replayed on
   Martin's TV from the corner camera — slow-mo, second angle, score out of 10, VAR, and the Replay of the Night.
@@ -78,8 +83,9 @@ The 2026 questions are the ones from the design doc; the others are evergreen ge
 
 ## Honest limits (and what would make it better)
 
-- **Voices** use the browser's built-in speech synthesis with a different pitch/speed per person; the Quest browser's
-  voices are limited and not Essex. Recorded lines (Option A in the doc) or ElevenLabs voices can be dropped in later —
+- **Voices** use the device's built-in text-to-speech (British voices where available) with a different voice/pitch per
+  person. On iPhone, tap *Play* first (iOS only allows speech after a tap) and turn the silent switch off. They won't sound
+  Essex. Recorded lines (Option A in the doc) or ElevenLabs voices can be dropped in later —
   every line goes through `say()` in `src/engine/audio.js`.
 - **Characters are procedural**, so they look like *your family's build, hair and colouring*, not their real faces.
   For real likenesses, export Character Creator / MetaPerson GLBs and swap them in for `buildCharacter()` (the

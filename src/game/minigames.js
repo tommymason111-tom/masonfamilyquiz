@@ -22,7 +22,7 @@ export class MiniGames {
     q.mSay(`Mini-game! Everyone into the games room. It's ${NAMES[id].toLowerCase()}!`, 2);
     // a rep from each team wanders in
     for (const [n, s] of [['Charli', [4.6, -2.4]], ['Hollie', [4.6, -4.2]], ['Kirsty', [5.1, -5.0]], ['Martin', [4.2, -3.3]]]) G.ai?.sendTo(n, new THREE.Vector3(s[0], 0, s[1]), () => { const p = G.charByName[n]; if (p) { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 60; } });
-    this.active = { id, t: -6, score: 0, state: {} };
+    this.active = { id, t: -6, score: 0, state: {}, before: new Set(G.items.instances) };
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'MINI-GAME: ' + NAMES[id], '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, HELP[id], 60, 160, 900, 42); g.fillStyle = '#ffd700'; g.font = 'bold 32px sans-serif'; const a = this.active; if (a) g.fillText(a.t < 0 ? `Starting in ${Math.ceil(-a.t)}… (head to the games room!)` : `Score: ${a.score}   Time: ${Math.max(0, Math.ceil(a.limit - a.t))}s`, 60, 420); g.font = '22px sans-serif'; g.fillStyle = '#9ab'; g.fillText('Press NEXT to skip', 60, 520); });
     G.ui?.toast(`MINI-GAME: ${NAMES[id]}. ${HELP[id]}`, 7);
     this['setup_' + id]?.(this.active);
@@ -36,6 +36,8 @@ export class MiniGames {
   finish(skipped) {
     const a = this.active; if (!a) return; this.active = null; stopMusic();
     this['end_' + a.id]?.(a);
+    // tidy away anything the mini-game added, so the house doesn't fill up
+    setTimeout(() => { for (const it of G.items.instances.slice()) if (!a.before.has(it) && !it.held && ['sprout', 'celebration', 'present_s', 'present_m', 'paper_ball', 'cracker', 'paper_crown', 'satsuma'].includes(it.id)) G.items.remove(it); }, 6000);
     const q = G.quiz; const pts = skipped ? 0 : Math.min(3, Math.round(a.score * (a.id === 'sproutPong' ? 0.5 : 1)));
     const others = { martin: Math.floor(rand(0, 3)), debbie: Math.floor(rand(0, 3)) };
     q.bonus.paul += pts; q.bonus.martin += others.martin; q.bonus.debbie += others.debbie;

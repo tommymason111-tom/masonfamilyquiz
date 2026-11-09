@@ -49,9 +49,9 @@ export class Items {
     if (t.free.length) index = t.free.pop(); else { if (t.mesh.count >= t.cap) { console.warn('item cap', id); return null; } index = t.mesh.count++; }
     const R = G.R; const sh = t.shape;
     const y = pos.y + (opts.surface ? halfHeight(sh) + 0.002 : 0);
-    const bd = R.RigidBodyDesc.dynamic().setTranslation(pos.x, y, pos.z).setRotation(quat || { x: 0, y: 0, z: 0, w: 1 })
+    const bd = (t.fixed ? R.RigidBodyDesc.fixed() : R.RigidBodyDesc.dynamic()).setTranslation(pos.x, y, pos.z).setRotation(quat || { x: 0, y: 0, z: 0, w: 1 })
       .setLinearDamping(t.linDamp ?? 0.05).setAngularDamping(t.angDamp ?? 0.4).setCcdEnabled(t.mass < 2).setCanSleep(true);
-    if (opts.sleep) bd.setSleeping(true);
+    if (opts.sleep && !t.fixed) bd.setSleeping(true);
     const body = G.world.createRigidBody(bd);
     const cd = colliderDesc(sh).setMass(t.mass).setFriction(t.friction ?? 0.6).setRestitution(t.bounce ?? 0.2)
       .setCollisionGroups(groups(GR.ITEM, ALL)).setActiveEvents(R.ActiveEvents.COLLISION_EVENTS);

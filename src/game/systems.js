@@ -70,7 +70,7 @@ export class Systems {
     on('facepalm', () => { this.stats.eyeRolls++; G.ui?.toast('Eye-roll logged (' + this.stats.eyeRolls + ').', 2); });
     on('coverEars', () => { const p = G.charByName.Paul; if (p && G.time < p.talkUntil) { stopSpeech(); p.talkUntil = 0; G.ui?.toast('Muted. Paul stops mid-story.', 2); this.banter(-5); } else G.ui?.toast('Muted for 3 seconds. Bliss.', 2); });
     on('clap', () => { if (G.minigames?.waitingClap) G.minigames.clapStart(); else { const p = G.charByName.Paul; if (p && G.time - p.talkUntil < 4) { p.say('Thank you, thank you. I\'m here all night.'); } sfx('slap'); } });
-    on('protectedTouch', (c) => { if (c?.name === 'Mason') { c.say(pick(['No!', 'Hehehe!', 'Again!'])); sfx('giggle', c.pos); G.ui?.toast('You can\'t grab Mason. He giggles and runs off.', 2); } else if (c?.name === 'Harrison') { this.harrisonLaugh(); } });
+    on('protectedTouch', (c) => { if (c?.name === 'Mason') { c.say(pick(['No!', 'Hehehe!', 'Again!'])); G.ui?.toast('You can\'t grab Mason. He giggles and runs off.', 2); } else if (c?.name === 'Harrison') { this.harrisonLaugh(); } });
     on('masonGiven', (inst) => { const m = G.charByName.Mason; m.brain.calmUntil = G.time + 30; m.say('Thank you!'); if (inst.id === 'remote') { this.cbeebiesEvent(); } if (inst.id === 'celeb_tin' || inst.id === 'quality_tin') { this.havoc = Math.max(this.havoc, 60); G.ui?.toast('You gave Mason the sweets. Havoc Meter: WILD.', 4); G.ai.say('Julie', 'Who gave him the Celebrations?!', 1); } else G.ui?.toast('Mason is happy. He stops throwing for 30 seconds.', 3); this.havoc = Math.max(0, this.havoc - 10); });
     on('harrisonGiven', (inst) => { this.harrisonLaugh(); });
     on('dogFed', () => { this.havoc = Math.max(0, this.havoc - 8); });
@@ -91,7 +91,7 @@ export class Systems {
     on('chipVsGary', () => G.ai.say('Gary', 'It\'s me, Chip. It\'s Gary.', 0));
     on('masonHid', (it, where) => { this.stats.hidden++; G.ui?.toast(`Mason has hidden the ${it.type.name.toLowerCase()} ${where}.`, 3); });
     on('kidThrow', (who, inst, at) => { this.stats.kidsThrows++; });
-    on('treeFell', () => { G.ai.say('Julie', 'THE TREE! Who\'s knocked my tree over?!', 2); this.banter(10); G.ui?.toast('The tree is down. Tree Rescue: stand it back up and re-hang the baubles before Julie sees!', 5); G.dog?.goTo(G.tree.group.position.clone(), 3); });
+    on('treeFellUnused', () => { G.ai.say('Julie', 'THE TREE! Who\'s knocked my tree over?!', 2); this.banter(10); G.ui?.toast('The tree is down. Tree Rescue: stand it back up and re-hang the baubles before Julie sees!', 5); G.dog?.goTo(G.tree.group.position.clone(), 3); });
     on('treeUp', () => { G.ui?.toast('Tree back up! Re-hang the baubles by placing them on it. Put the angel back on top for a bonus.', 4); if (G.quiz) G.quiz.bonus.paul += 1; });
     on('baubleHung', () => { if (G.tree.star?.onTree === false) {} });
     on('caught', () => {});
@@ -133,7 +133,7 @@ export class Systems {
   }
   deflect(inst, kid) { // anything thrown near the little ones bounces gently away
     const v = inst.body.linvel(); inst.body.setLinvel({ x: -v.x * 0.3, y: Math.abs(v.y) * 0.3 + 0.5, z: -v.z * 0.3 }, true);
-    if (kid.name === 'Mason') { kid.say(pick(['Again!', 'Hehehe!'])); sfx('giggle', kid.pos); }
+    if (kid.name === 'Mason') { kid.say(pick(['Again!', 'Hehehe!']), { prio: 0 }); }
   }
   tvHit(inst) {
     this.tvDamage++; this.stats.tvHits++; sfx('crack', G.house.tv.center, 0.8);
@@ -161,7 +161,7 @@ export class Systems {
     order.forEach((n, i) => { const o = G.charByName[n]; if (!o || o.isDown() || (src && o.pos.distanceTo(src.pos) > 8)) return; setTimeout(() => { o.gesture = n === 'Kirsty' || n === 'Jodie' ? 'laughDouble' : 'laugh'; o.gestureT = 0; if (i < 2) o.bark('laugh', { prio: 0 }); setTimeout(() => { if (o.gesture?.startsWith('laugh')) o.gesture = null; }, 3500); }, 400 + i * 350); });
   }
   harrisonLaugh() {
-    const h = G.charByName.Harrison; if (!h) return; sfx('giggle', h.headPos(_v), 1); h.setMood('laugh', 3); h.say('Hehehehe!', { prio: 0 });
+    const h = G.charByName.Harrison; if (!h) return; h.setMood('laugh', 3); h.say('Hehehehe!', { prio: 0 });
     this.stats.ceasefires++; this.ceasefireUntil = G.time + 10; this.banter(-20);
     G.ui?.toast('BABY CEASEFIRE: Harrison laughs and the whole room melts for 10 seconds.', 4);
     for (const c of G.chars) if (!c.protected && !c.isPlayer && c.state === 'anim' && Math.random() < 0.6) { c.setMood('laugh', 3); }
@@ -214,7 +214,7 @@ export class Systems {
   onRoundStart(r) {
     setDaylight([1, 0.85, 0.45, 0.15, 0.05][r] ?? 0.05);
     this.havoc = Math.min(100, this.havoc + 12);
-    const pool = ['treeFalls', 'corkPop', 'phoneCheat', 'pcBlue', 'paulOverRoast', 'weddingTakeover', 'jamesTest', 'wineSpill', 'deadPens', 'remoteMissing', 'masonSheets', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'channelChange', 'volume100', 'doorbell', 'beerRun', 'puddingFire', 'siriBetrayal', 'toiletTrip', 'harrisonCries', 'fuse', 'chipOnSheets'];
+    const pool = ['corkPop', 'phoneCheat', 'pcBlue', 'paulOverRoast', 'weddingTakeover', 'jamesTest', 'wineSpill', 'deadPens', 'remoteMissing', 'masonSheets', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'channelChange', 'volume100', 'doorbell', 'beerRun', 'puddingFire', 'siriBetrayal', 'toiletTrip', 'harrisonCries', 'fuse', 'chipOnSheets'];
     const n = 2 + Math.floor(Math.random() * 3);
     const picks = shuffle(pool).slice(0, n);
     if (r === 2) picks.push('paulAsleep');
@@ -247,7 +247,7 @@ export class Systems {
       case 'puddingFire': { const pu = G.items.byType.pudding?.[0]; if (pu) this.puddingFire(pu); break; }
       case 'siriBetrayal': say(null, 'Here\'s what I found on the web for: ' + (G.quiz?.cur?.q || 'Grand National winner'), { prio: 2 }); T('A phone just shouted the question out loud. Who was that?!', 3); this.cheater = pick([G.charByName.Kirsty, G.charByName.Hollie]); break;
       case 'toiletTrip': { const c = pick([G.charByName.James, G.charByName.Hollie, G.charByName.Kirsty]); if (c) { this.cheater = c; G.ai.sendTo(c.name, G.house.spots.toilet.pos, () => { c.brain.state = 'scripted'; c.brain.timer = 25; c.gesture = 'phone'; }); T(`${c.name} has gone to the loo for "five minutes" during the hard round. Follow them in?`, 5); } break; }
-      case 'harrisonCries': { const h = G.charByName.Harrison; sfx('cry', h?.headPos(_v), 1); h?.say('WAAAAAH!', { prio: 2 }); G.ai.say('Bradley', 'I\'ll take him out for a bit.', 1); G.ai.sendTo('Bradley', new THREE.Vector3(0, 0, 3.5), () => { G.charByName.Bradley.brain.state = 'scripted'; G.charByName.Bradley.brain.timer = 20; }); T('Harrison cries. Bradley takes him out (with Team Debbie\'s only working pen).', 4); break; }
+      case 'harrisonCries': { const h = G.charByName.Harrison; h?.say('WAAAAAH!', { prio: 2 }); G.ai.say('Bradley', 'I\'ll take him out for a bit.', 1); G.ai.sendTo('Bradley', new THREE.Vector3(0, 0, 3.5), () => { G.charByName.Bradley.brain.state = 'scripted'; G.charByName.Bradley.brain.timer = 20; }); T('Harrison cries. Bradley takes him out (with Team Debbie\'s only working pen).', 4); break; }
       case 'fuse': this.heaterOn = true; this.kettleOn = true; this.powerCut(); break;
       case 'chipOnSheets': { const s = G.items.byType.answer_sheet?.[1]; if (s && G.dog) { const t = s.body.translation(); G.dog.goTo(new THREE.Vector3(t.x, 0, t.z), 2, () => { G.dog.state = 'lie'; G.dog.timer = 20; T('Chip is lying on the answer sheets and won\'t move. Bribe him with a sausage roll.', 4); }); } break; }
       case 'paulAsleep': this.paulAsleep = true; G.ai.sleep('Paul', true); T('Paul has fallen asleep. Wake him with a cushion — or leave him; he answers in his sleep.', 5); break;
@@ -257,7 +257,7 @@ export class Systems {
   harrisonThrow(id, atTV) {
     const h = G.charByName.Harrison; if (!h) return; const start = h.handPos('R', new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0));
     const tgt = atTV ? G.house.tv.center.clone() : pick(G.chars.filter(c => !c.protected && !c.isPlayer)).chestPos(new THREE.Vector3());
-    const inst = G.items.spawn(id, start, null); if (!inst) return; const T = clamp(start.distanceTo(tgt) / 6, 0.4, 1.0); const v = tgt.clone().sub(start).divideScalar(T); v.y += 0.5 * 9.81 * T; inst.body.setLinvel(v, true); inst.thrownBy = 'Harrison'; sfx('giggle', start, 0.6);
+    const inst = G.items.spawn(id, start, null); if (!inst) return; const T = clamp(start.distanceTo(tgt) / 6, 0.4, 1.0); const v = tgt.clone().sub(start).divideScalar(T); v.y += 0.5 * 9.81 * T; inst.body.setLinvel(v, true); inst.thrownBy = 'Harrison';
     emit('kidThrow', 'Harrison', inst);
   }
   roast(tooFar) {
@@ -293,12 +293,12 @@ export class Systems {
     this.havoc = clamp(this.havoc + dt * 0.05, 0, 100);
     if ((G.quiz?.round ?? 0) >= 4 && !this.asleepKids && Math.random() < 0.0005) { this.asleepKids = true; this.havoc = 10; G.ui?.toast('Mason has fallen asleep on the sofa. Havoc drops. (Until Paul laughs.)', 4); }
     // Harrison throws from the bouncer/Bradley's arm
-    this.harrisonT = (this.harrisonT ?? rand(30, 60)) - dt * (1 + this.havocLevel() * 0.6); if (this.harrisonT < 0) { this.harrisonT = rand(35, 70); this.harrisonThrow(pick(['rusk', 'dummy', 'squeaky_toy', 'yorkshire', 'sippy_cup'])); }
+    this.harrisonT = (this.harrisonT ?? rand(30, 60)) - dt * (1 + this.havocLevel() * 0.6); if (this.harrisonT < 0) { this.harrisonT = rand(70, 130); this.harrisonThrow(pick(['rusk', 'dummy', 'squeaky_toy', 'yorkshire', 'sippy_cup'])); }
     // drink orders
     if (t > this.nextOrder && G.quiz?.phase !== 'arrival') { this.nextOrder = t + rand(70, 120); const c = pick(G.chars.filter(c => !c.isPlayer && !c.protected && !c.isDown() && DRINK_ORDERS[c.name])); if (c) { const d = DRINK_ORDERS[c.name]; const what = { lager: 'a lager', bitter: 'a bitter', pint: 'a pint', prosecco: 'a Prosecco', wine: 'a wine', small: 'just a small one', juice: 'a juice' }[d]; c.say(`Tommy, get us ${what}, will you?`, { prio: 1 }); this.orders.push({ p: c, d, t }); G.ui?.toast(`Drink order: ${c.name} wants ${what}. (Grab it from a fridge, look at them, press USE.)`, 4); } }
     // ragdolls flung near the tree knock it over; against glass they "squash and slide"
     if (G.tree && G.frame % 3 === 0) for (const p of G.chars) { if (p.state !== 'ragdoll') continue; const hp = p.world[1].p; const tp = G.tree.group.position; const d = Math.hypot(hp.x - tp.x, hp.z - tp.z);
-      if (d < 1.0 && !G.tree.fallen && G.tree.upright) { const v = p.bodies[1].linvel(); if (Math.hypot(v.x, v.z) > 1.5) G.tree.knock(new THREE.Vector3(v.x, 0, v.z).normalize(), 1.2); }
+      if (d < 1.0 && !p._treeBump) { const v = p.bodies[1].linvel(); if (Math.hypot(v.x, v.z) > 1.5) { p._treeBump = true; setTimeout(() => p._treeBump = false, 3000); G.tree.knock(new THREE.Vector3(v.x, 0, v.z).normalize(), 1); G.ai.say('Julie', 'Mind my tree!', 1); } }
       if (!p._glass && (roomAt(hp.x, hp.z) === 'bay' || roomAt(hp.x, hp.z) === 'conservatory' || roomAt(hp.x, hp.z) === 'garden')) { const near = Math.abs(hp.z + 8) < 0.35 || Math.abs(hp.z + 7) < 0.25 && Math.abs(hp.x) < 1.5; if (near) { p._glass = true; emit('glassSquash', p); setTimeout(() => p._glass = false, 5000); } } }
     // coasters: drinks left on wooden furniture without a coaster
     if (G.frame % 120 === 0) this.coasterCheck();

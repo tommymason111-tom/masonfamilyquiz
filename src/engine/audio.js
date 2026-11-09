@@ -62,7 +62,7 @@ function noise(dur, dest, filterType = 'lowpass', freq = 1000, t0 = 0, vol = 1, 
 // Named sound library
 const SFX = {
   boff(d) { osc('sine', 160, 60, 0.18, d, 0, 0.9); noise(0.12, d, 'lowpass', 900, 0, 0.6); },
-  oof(d) { const f = rand(0.8, 1.2); osc('sawtooth', 180 * f, 110 * f, 0.22, d, 0, 0.25); noise(0.2, d, 'bandpass', 700 * f, 0, 0.3, 4); },
+  oof(d) { const f = rand(0.8, 1.2); noise(0.22, d, 'bandpass', 420 * f, 0, 0.45, 2); noise(0.12, d, 'lowpass', 300, 0, 0.3); },
   thud(d) { osc('sine', 90, 40, 0.3, d, 0, 1); noise(0.15, d, 'lowpass', 400, 0, 0.7); },
   bigthud(d) { osc('sine', 70, 30, 0.45, d, 0, 1); noise(0.3, d, 'lowpass', 300, 0, 0.9); },
   tap(d) { noise(0.05, d, 'bandpass', 2500, 0, 0.4, 2); },
@@ -96,9 +96,9 @@ const SFX = {
   creak(d) { osc('sawtooth', 300, 420, 0.5, d, 0, 0.06); },
   flush(d) { noise(2.5, d, 'lowpass', 900, 0, 0.6); },
   kettle(d) { noise(3, d, 'bandpass', 2500, 0, 0.15, 2); },
-  laugh(d) { for (let i = 0; i < 5; i++) { osc('sawtooth', 260 + rand(-20, 40), 220, 0.12, d, i * 0.16, 0.12); noise(0.1, d, 'bandpass', 900, i * 0.16, 0.12, 3); } },
-  giggle(d) { for (let i = 0; i < 6; i++) osc('sine', 700 + rand(0, 200), 600, 0.08, d, i * 0.1, 0.15); },
-  cry(d) { osc('sawtooth', 500, 700, 0.6, d, 0, 0.15); osc('sawtooth', 700, 450, 0.7, d, 0.6, 0.15); },
+  laugh(d) { for (let i = 0; i < 5; i++) noise(0.1, d, 'bandpass', 900, i * 0.16, 0.12, 2); },
+  giggle(d) { for (let i = 0; i < 4; i++) noise(0.07, d, 'bandpass', 1600, i * 0.11, 0.1, 2); },
+  cry(d) { noise(1.0, d, 'bandpass', 1200, 0, 0.12, 3); },
   star(d) { osc('sine', 1800, 2600, 0.2, d, 0, 0.12); },
   whoosh(d) { noise(0.35, d, 'bandpass', 800, 0, 0.35, 0.7); },
   footstep(d) { noise(0.05, d, 'lowpass', 300, 0, 0.12); },
@@ -139,23 +139,34 @@ export function playMusic(which = 'wewish', loop = true, tempo = 0.32) {
 export function stopMusic() { musicOn = false; clearTimeout(musicTimer); }
 
 // ---------- Voices ----------
-// Each character gets a speechSynthesis voice with their own pitch/rate. Lines are also shown as
-// speech bubbles + subtitles. Only one synth voice can talk at a time, so lower-priority lines are
-// shown as bubbles only (the "talk-over" rule: Martin's questions take priority).
+// Each character speaks with the device's text-to-speech (en-GB where available) at their own pitch/speed.
+// Lines queue up (newest important lines first, stale ones dropped) so people actually talk instead of
+// silently showing a bubble. iOS/Safari only allows speech after a tap, so unlockSpeech() is called from
+// the Play button.
 let voices = [];
 function loadVoices() { voices = (window.speechSynthesis?.getVoices?.() || []); }
 if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+const FEMALE = /female|woman|libby|sonia|maisie|hazel|susan|kate|serena|fiona|martha|stephanie|moira|tessa|karen|samantha|victoria|zira|aria|jenny|emma|amy|google uk english female/i;
+const MALE = /\bmale\b|\bman\b|ryan|thomas|george|daniel|arthur|oliver|jamie|alfie|brian|rishi|guy|david|mark|alex|fred|google uk english male/i;
 function chooseVoice(female, idx) {
-  const gb = voices.filter(v => /en[-_]GB/i.test(v.lang));
-  const pool = gb.length ? gb : voices.filter(v => /^en/i.test(v.lang));
-  if (!pool.length) return null;
-  const fem = pool.filter(v => /female|woman|libby|sonia|maisie|hazel|susan|kate|serena|fiona|martha|google uk english female/i.test(v.name));
-  const mal = pool.filter(v => /male|man|ryan|thomas|george|daniel|arthur|oliver|google uk english male/i.test(v.name) && !/female/i.test(v.name));
-  const p = female ? (fem.length ? fem : pool) : (mal.length ? mal : pool);
-  return p[idx % p.length];
+  if (!voices.length) loadVoices();
+  const en = voices.filter(v => /^en/i.test(v.lang));
+  const gb = en.filter(v => /GB|UK/i.test(v.lang) || /UK|British|Daniel|Arthur|Martha|Kate|Serena|Oliver|Stephanie|Libby|Sonia|Ryan|Thomas|Maisie|Hazel|George|Susan/i.test(v.name));
+  const pool = gb.length ? gb : en; if (!pool.length) return null;
+  const pickFrom = (list) => list[idx % list.length];
+  const fem = pool.filter(v => FEMALE.test(v.name) && !/\bmale\b/i.test(v.name.replace(/female/i, '')));
+  const mal = pool.filter(v => MALE.test(v.name) && !/female/i.test(v.name));
+  if (female) return pickFrom(fem.length ? fem : (en.filter(v => FEMALE.test(v.name)).length ? en.filter(v => FEMALE.test(v.name)) : pool));
+  return pickFrom(mal.length ? mal : (en.filter(v => MALE.test(v.name) && !/female/i.test(v.name)).length ? en.filter(v => MALE.test(v.name) && !/female/i.test(v.name)) : pool));
 }
-let speaking = null; // {char, prio}
+let speaking = null; // {char, prio, until}
 const queue = [];
+let unlocked = false;
+export function unlockSpeech() {
+  if (!window.speechSynthesis || unlocked) return; unlocked = true;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance('Merry Christmas!'); u.lang = 'en-GB'; const v = chooseVoice(false, 0); if (v) u.voice = v; u.volume = 0.8; speechSynthesis.speak(u); } catch (e) {}
+}
+export function voiceAvailable() { return !!window.speechSynthesis; }
 export function say(char, text, opts = {}) {
   const prio = opts.prio ?? 1;
   emit('say', char, text);
@@ -163,24 +174,40 @@ export function say(char, text, opts = {}) {
   if (char) char.talkUntil = G.time + dur;
   const voiceOn = (G.settings?.voices ?? true) && window.speechSynthesis && performance.now() > muteUntil;
   if (!voiceOn) return dur;
-  if (speaking && speaking.prio > prio) return dur;  // bubble only
-  if (speaking && prio >= 2) speechSynthesis.cancel();
-  else if (speaking) { if (queue.length < 2 && prio >= 1) queue.push([char, text, opts]); return dur; }
-  const u = new SpeechSynthesisUtterance(text);
-  const vp = char?.voice || { pitch: 1, rate: 1, female: false, idx: 0 };
-  const v = chooseVoice(vp.female, vp.idx || 0); if (v) u.voice = v;
-  u.lang = 'en-GB'; u.pitch = vp.pitch; u.rate = vp.rate; u.volume = Math.min(1, (opts.volume ?? 1) * (G.settings?.voiceVol ?? 1));
-  speaking = { char, prio };
-  u.onstart = () => { if (char) char.talkUntil = G.time + 30; };
-  u.onend = u.onerror = () => {
-    if (char) char.talkUntil = G.time + 0.1;
-    speaking = null;
-    const n = queue.shift(); if (n) say(...n);
-  };
-  try { speechSynthesis.speak(u); } catch (e) { speaking = null; }
+  const item = { char, text, opts, prio, t: performance.now() };
+  if (prio >= 2) { // Martin's questions & big moments jump the queue
+    if (speaking && speaking.prio < 2) { try { speechSynthesis.cancel(); } catch (e) {} speaking = null; }
+    queue.unshift(item);
+  } else {
+    // don't let the same person stack up lines, and keep the queue short
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i].char && queue[i].char === char) queue.splice(i, 1);
+    queue.push(item); queue.sort((a, b) => b.prio - a.prio);
+    while (queue.length > 4) queue.pop();
+  }
+  pump();
   return dur;
 }
+function pump() {
+  if (speaking) { if (performance.now() > speaking.until) { speaking = null; } else return; } // watchdog for engines that miss onend
+  let item;
+  while ((item = queue.shift())) { if (performance.now() - item.t < (item.prio >= 2 ? 15000 : 7000)) break; }
+  if (!item) return;
+  const { char, text, opts, prio } = item;
+  const u = new SpeechSynthesisUtterance(text);
+  const vp = char?.voice || { pitch: 1, rate: 1, female: false, idx: 3 };
+  const v = chooseVoice(vp.female, vp.idx || 0); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+  // keep pitch in a natural range (extreme values sound robotic on phones/Quest); kids stay high
+  const kid = vp.pitch >= 1.8;
+  u.pitch = kid ? 1.6 : Math.max(0.75, Math.min(1.3, 0.55 + vp.pitch * 0.45));
+  u.rate = Math.max(0.85, Math.min(1.2, vp.rate));
+  u.volume = Math.min(1, (opts.volume ?? 1) * (G.settings?.voiceVol ?? 1));
+  speaking = { char, prio, until: performance.now() + 2500 + text.length * 120 };
+  u.onstart = () => { if (char) char.talkUntil = G.time + 30; };
+  u.onend = u.onerror = () => { if (char) char.talkUntil = G.time + 0.1; speaking = null; setTimeout(pump, 120); };
+  try { speechSynthesis.speak(u); } catch (e) { speaking = null; }
+}
+setInterval(pump, 500);
 export function stopSpeech() { if (window.speechSynthesis) speechSynthesis.cancel(); speaking = null; queue.length = 0; }
 
-const api = { sfx, say, playMusic, stopMusic, setMuted, stopSpeech };
+const api = { sfx, say, playMusic, stopMusic, setMuted, stopSpeech, unlockSpeech };
 export default api;

@@ -56,7 +56,8 @@ export class Quiz {
     on('accuse', (p) => this.accuse(p));
     G.updaters.push((dt) => this.update(dt));
     this.drawSheet();
-    setTimeout(() => this.welcome(), 1500);
+    this.autoStart = Infinity;
+    on('started', () => setTimeout(() => this.welcome(), 1200));
   }
   teamName(t) { return TEAMS[t].name; } teamColor(t) { return TEAMS[t].color; }
   total(t) { return this.scores[t] + this.bonus[t]; }

@@ -150,7 +150,7 @@ export class XRInput {
       const hits = overlapSphere(rec.palm, 0.09, GRAB_GROUPS);
       const ch = hits.find(h => h.entry.kind === 'char' && !h.entry.ref.isPlayer);
       if (ch) { rec.punchCD = 0.45; const pp = ch.entry.ref; if (pp.protected) emit('protectedTouch', pp); else { pp.knock(rec.vel.clone().normalize().setY(0.35).normalize().multiplyScalar(pp.mass * Math.min(4, speed) * 0.9), ch.entry.part); sfx('boff', rec.palm, 1); p.knockCrown(pp, rec.vel.clone().normalize()); emit('punched', pp, rec.vel); p.stats.punches++; this.haptic(rec, 0.8, 80); } }
-      const it = hits.find(h => h.entry.kind === 'item' && !h.entry.ref.held);
+      const it = hits.find(h => h.entry.kind === 'item' && !h.entry.ref.held && !h.entry.ref.type.fixed);
       if (!ch && it) { rec.punchCD = 0.2; it.entry.ref.body.applyImpulse(rec.vel.clone().multiplyScalar(it.entry.ref.type.mass * 0.8), true); }
     }
     // two-palm shove
@@ -176,7 +176,7 @@ export class XRInput {
   }
   findGrab(pos, r) {
     const hits = overlapSphere(pos, r, GRAB_GROUPS); let best = null, bd = 1e9;
-    for (const h of hits) { const e = h.entry; if (!['item', 'char', 'hinged', 'tree'].includes(e.kind)) continue; if (e.kind === 'char' && e.ref.isPlayer) continue; if (e.kind === 'item' && e.ref.held) continue;
+    for (const h of hits) { const e = h.entry; if (!['item', 'char', 'hinged', 'tree'].includes(e.kind)) continue; if (e.kind === 'char' && e.ref.isPlayer) continue; if (e.kind === 'item' && (e.ref.held || e.ref.type.fixed)) continue; if (e.kind === 'tree') continue;
       const t = h.collider.translation(); const d = (t.x - pos.x) ** 2 + (t.y - pos.y) ** 2 + (t.z - pos.z) ** 2; const pr = e.kind === 'item' ? 0 : 0.01; if (d + pr < bd) { bd = d + pr; best = { ...e, point: pos.clone(), dist: Math.sqrt(d) }; } }
     return best;
   }

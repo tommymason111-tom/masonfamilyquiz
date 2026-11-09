@@ -28,7 +28,11 @@ function useItem(inst, player, handKey) {
     case 'squeak': sfx('squeak', p); emit('squeak', inst); return;
     case 'phone': return player.toggleTorch();
     case 'torch': return player.toggleTorch();
-    case 'kettle': sfx('kettle', p); toast('Kettle on. Queue forms behind you.'); emit('kettleOn'); return;
+    case 'kettle': {
+      sfx('kettle', p); toast('Kettle on... (leave a mug next to it)'); emit('kettleOn');
+      setTimeout(() => { const kp = pos(inst); const mug = (G.items.byType.mug || []).filter(m => m.alive).sort((a, b) => pos(a).distanceTo(kp) - pos(b).distanceTo(kp))[0];
+        if (mug && (pos(mug).distanceTo(kp) < 1.3 || mug.held)) { mug.drinkOverride = 'tea'; mug.state.open = true; mug.uses = 4; sfx('sip', kp); toast('Tea made in the mug by the kettle. Julie wants "just a small one".', 4); } else toast('Kettle\'s boiled, but there\'s no mug next to it.', 3); }, 4000);
+      return; }
     case 'wave': sfx('whoosh', p); emit('towelWave', inst); return;
     case 'clean': emit('clean', inst, p); return;
     case 'spray': sfx('fizz', p); toast('Pssshhh. The toilet now smells of "Winter Berries".'); return;
@@ -43,17 +47,18 @@ function useItem(inst, player, handKey) {
     case 'pour': sfx('sip', p); toast('You pour cream on the pudding. Lovely.'); return;
     case 'cone': toast('Nobody remembers how this got here. (2009, apparently.)'); return;
   }
-  if (t.drink || t.food) return consume(inst, player);
+  if (t.drink || t.food || inst.drinkOverride) return consume(inst, player);
+  if (t.kind === 'glass' || inst.id === 'mug') return toast('It\'s empty. Fill it at the kitchen tap (USE the tap) or make a tea with the kettle.', 3);
   toast(t.name);
 }
 
 function consume(inst, player) {
-  const t = inst.type; const p = pos(inst);
-  if (t.drink) {
+  const t = inst.type; const p = pos(inst); const drink = inst.drinkOverride || t.drink;
+  if (drink) {
     if (!inst.state.open) return openDrink(inst);
-    if (t.drink === 'empty') return toast('It\'s empty.');
+    if (inst.state.empty) return toast('It\'s empty.');
     sfx('sip', p); inst.uses = (inst.uses ?? t.uses ?? 5) - 1; player.stats.drinks++;
-    const alcoholic = ['lager', 'cider', 'bitter', 'prosecco', 'wine', 'baileys', 'brandy'].includes(t.drink) && !G.settings.softDrinks;
+    const alcoholic = ['lager', 'cider', 'bitter', 'prosecco', 'wine', 'baileys', 'brandy'].includes(drink) && !G.settings.softDrinks;
     if (alcoholic) { player.drunk = Math.min(1, player.drunk + 0.07); if (player.drunk > 0.5) toast('Everything is slightly wobbly.'); }
     emit('drank', inst);
     if (inst.uses <= 0) { toast('Empty! Better find a coaster for it.'); inst.state.empty = true; }
@@ -118,9 +123,9 @@ function give(inst, person, player) {
   // food & drink orders
   if (t.food === 'mincePie' && name === 'Paul') { take(); emit('paulMincePie'); return; }
   if (t.food === 'sausageRoll' && name === 'Debbie') { take(); emit('debbiePeace'); return; }
-  if (t.drink) {
+  if (t.drink || inst.drinkOverride) {
     const want = DRINK_ORDERS[name];
-    let got = t.drink; if (got === 'wine') got = 'wine'; const ok = want === got || (want === 'pint' && (got === 'lager' || got === 'bitter')) || (want === 'small' && ['prosecco', 'wine'].includes(got)) || (want === 'juice' && ['juice', 'squash'].includes(got));
+    let got = inst.drinkOverride || t.drink; if (got === 'wine') got = 'wine'; const ok = want === got || (want === 'pint' && (got === 'lager' || got === 'bitter')) || (want === 'small' && ['prosecco', 'wine', 'tea'].includes(got)) || (want === 'juice' && ['juice', 'squash'].includes(got));
     take(); emit('drinkServed', person, ok, inst);
     if (t.drink === 'baileys' && name === 'Debbie') emit('debbieBaileys');
     return;
@@ -146,7 +151,8 @@ function useSpot(id, player) {
     case 'garageLight': sfx('click', s.pos, 0.6); G.ui?.toast('Click. Click. The garage light still doesn\'t work. (Phone torch: T / pinch your phone)'); emit('garageSwitch'); return;
     case 'heater': emit('heater'); return;
     case 'karaoke': emit('karaoke'); return;
-    case 'tap': sfx('fizz', s.pos, 0.5); G.ui?.toast('Tap on. Tap off.'); return;
+    case 'tap': { sfx('fizz', s.pos, 0.5); const h = player.heldItem(); if (h && (h.type.kind === 'glass' || h.id === 'mug')) { h.drinkOverride = 'water'; h.state.open = true; h.uses = 4; G.ui?.toast(`Filled the ${h.type.name.toLowerCase()} with water.`, 2); } else G.ui?.toast('Tap on. Tap off. (Hold a glass or mug to fill it.)', 2); return; }
+    case 'light': { const L = G.house.lights[s.room]; if (!L) return; sfx('click', s.pos, 0.6); L.userData.on = L.userData.on === false; if (L.userData.on === false) { L.userData.saved = L.intensity; L.intensity = 0; } else L.intensity = L.userData.saved ?? 4; G.ui?.toast(`${s.room[0].toUpperCase() + s.room.slice(1)} light ${L.userData.on === false ? 'off' : 'on'}.`, 1.5); return; }
     case 'smokeAlarm': emit('towelWave'); return;
     case 'pc': emit('pcTouched'); return;
   }

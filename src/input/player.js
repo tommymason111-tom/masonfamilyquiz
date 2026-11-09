@@ -47,7 +47,7 @@ export class Player {
       const head = this.headPos(_v);
       t.pos.set(G.xr ? head.x : this.pos.x, this.pos.y, G.xr ? head.z : this.pos.z);
       const f = this.forward(_f); t.yaw = Math.atan2(f.x, f.z);
-      const sp = this.speedXZ || 0; t.speed = sp; t.base = this.crouch > 0.5 ? 'stand' : sp > 2.6 ? 'run' : sp > 0.2 ? 'walk' : 'stand';
+      const sp = this.speedXZ || 0; t.speed = sp; t.base = this.seated ? 'sit' : this.crouch > 0.5 ? 'stand' : sp > 2.6 ? 'run' : sp > 0.2 ? 'walk' : 'stand';
       if (this.holdingAny() && !t.gesture) t.gesture = 'carryCrate'; else if (!this.holdingAny() && t.gesture === 'carryCrate') t.gesture = null;
       t.root.visible = this.thirdPerson && !G.xr;
     }
@@ -69,12 +69,13 @@ export class Player {
     let mx = (fx * c.move.z + rx * c.move.x) * speed, mz = (fz * c.move.z + rz * c.move.x) * speed;
     if (this.drunk > 0.3) { mx += Math.sin(G.time * 1.3) * this.drunk * 0.6; mz += Math.cos(G.time * 1.1) * this.drunk * 0.6; }
     if (c.btn('jump').pressed && this.grounded) { this.vy = 3.6; sfx('whoosh', this.pos, 0.3); }
+    if (this.seated && (Math.hypot(c.move.x, c.move.z) > 0.3 || c.btn('jump').pressed)) this.stand();
     this.vy -= 9.81 * dt; if (this.grounded && this.vy < 0) this.vy = -0.5;
-    this.moveBy(mx * dt, this.vy * dt, mz * dt);
+    if (this.seated) { mx = mz = 0; this.vy = 0; } else this.moveBy(mx * dt, this.vy * dt, mz * dt);
     this.speedXZ = Math.hypot(mx, mz);
     if (c.btn('crouch').pressed) this.crouchToggle = !this.crouchToggle;
     this.crouch += ((this.crouchToggle ? 1 : 0) - this.crouch) * Math.min(1, dt * 10);
-    const eye = this.eyeH - this.crouch * 0.6;
+    const eye = this.seated ? this.seated.seatY + 0.72 : this.eyeH - this.crouch * 0.6;
     if (c.btn('view').pressed) { this.thirdPerson = !this.thirdPerson; }
     this.rig.position.copy(this.pos); this.rig.rotation.set(0, this.yaw, 0);
     if (this.thirdPerson) {
@@ -167,6 +168,7 @@ export class Player {
   tryGrab(key, f, handPos) {
     if (f.protected || (f.kind === 'char' && f.ref.protected)) { emit('protectedTouch', f.ref); return false; }
     if (f.kind === 'dog') { emit('pet', f.ref); return false; }
+    if (f.kind === 'tree' || (f.kind === 'item' && f.ref.type.fixed)) { G.ui?.toast(f.kind === 'tree' ? 'The tree is staying put. (Julie would kill you.)' : `${f.ref.type.name}: too heavy to pick up.`, 2); return false; }
     const holder = { key, kind: f.kind, ref: f.ref, local: new THREE.Vector3(), relQ: new THREE.Quaternion() };
     let body;
     if (f.kind === 'item') { body = f.ref.body; if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
@@ -254,7 +256,6 @@ export class Player {
       sfx('boff', hit ? hit.point : p.chestPos(), 1); emit('punched', p, imp);
       this.knockCrown(p, imp);
     } else if (tgt.kind === 'item') { const b = tgt.ref.body; b.applyImpulse(imp.multiplyScalar(Math.min(8, b.mass() * 6) * power), true); sfx('boff', hit.point, 0.6); }
-    else if (tgt.kind === 'tree') G.tree.knock(imp, 0.6);
   }
   knockCrown(p, dir) {
     if (!p.crown || !p.crown.parent) return;
@@ -273,13 +274,27 @@ export class Player {
     for (const p of G.chars) { if (p.isPlayer || p.protected || !p.bodies) continue; const pp = p.world[0].p; _v.copy(pp).sub(o); _v.y = 0; const t = _v.dot(dir); if (t < 0 || t > 1.4) continue; const perp = _v.addScaledVector(dir, -t).length(); if (perp < 0.45 && t < bd) { bd = t; best = p; } }
     if (best) { const imp = dir.clone().multiplyScalar(best.mass * 2.2).setY(best.mass * 2.6); best.knock(imp, 8); best.bodies[10].applyImpulse({ x: imp.x * 0.3, y: 0, z: imp.z * 0.3 }, true); sfx('boff', best.world[0].p, 1); emit('kicked', best); if (best.state === 'ragdoll' && best.ragdollT > 0.5) emit('rolled', best); return; }
     const hits = overlapSphere(o.clone().addScaledVector(dir, 0.6).setY(this.pos.y + 0.25), 0.45, RAY_GROUPS);
-    for (const h of hits) if (h.entry.kind === 'item') { const b = h.entry.ref.body; const k = h.entry.ref.type.kickable ? 3.5 : 1.2; b.applyImpulse({ x: dir.x * b.mass() * 7 * k, y: b.mass() * 3 * k, z: dir.z * b.mass() * 7 * k }, true); sfx(h.entry.ref.type.kickable ? 'boing' : 'thud', b.translation(), 0.8); emit('kickedItem', h.entry.ref); break; }
+    for (const h of hits) if (h.entry.kind === 'item' && !h.entry.ref.type.fixed) { const b = h.entry.ref.body; const k = h.entry.ref.type.kickable ? 3.5 : 1.2; b.applyImpulse({ x: dir.x * b.mass() * 7 * k, y: b.mass() * 3 * k, z: dir.z * b.mass() * 7 * k }, true); sfx(h.entry.ref.type.kickable ? 'boing' : 'thud', b.translation(), 0.8); emit('kickedItem', h.entry.ref); break; }
   }
 
+  // ---------------- sitting ----------------
+  freeSeat(maxD = 1.4) {
+    if (!G.house?.seats) return null; const fw = this.forward(_f).setY(0).normalize(); let best = null, bd = maxD;
+    for (const s of G.house.seats) { const d = Math.hypot(s.pos.x - this.pos.x, s.pos.z - this.pos.z); if (d > bd) continue; _v.set(s.pos.x - this.pos.x, 0, s.pos.z - this.pos.z).normalize(); if (d > 0.4 && _v.dot(fw) < 0.2) continue;
+      if (G.chars.some(c => !c.isPlayer && c.state === 'anim' && Math.hypot(c.pos.x - s.pos.x, c.pos.z - s.pos.z) < 0.45)) continue; best = s; bd = d; }
+    return best;
+  }
+  sit(seat) {
+    this.seated = seat; this.releaseAll(); this.teleport(seat.pos.x, seat.pos.z, seat.yaw + Math.PI); this.pitch = -0.05;
+    if (G.tommy) { G.tommy.seatY = seat.seatY; } G.ui?.toast('Sitting down. Move to stand up.', 2);
+  }
+  stand() { const s = this.seated; this.seated = null; if (!s) return; const f = new THREE.Vector3(Math.sin(s.yaw), 0, Math.cos(s.yaw)); this.teleport(s.pos.x + f.x * 0.55, s.pos.z + f.z * 0.55); }
   // ---------------- use / consume ----------------
   use(handKey) {
     const held = this.heldItem(handKey);
     const f = this.focus;
+    if (!held && !this.seated && (!f || (f.kind === 'item' && !f.ref.type.use) || f.kind === 'tree')) { const seat = this.freeSeat(); if (seat) return this.sit(seat); }
+    if (this.seated && !held && !f) return this.stand();
     if (held && f && f.kind === 'char' && !f.protected && f.dist < 2.2) return G.interact.give(held, f.ref, this);
     if (held && f && (f.kind === 'char' || f.kind === 'dog') && f.protected && f.dist < 2.2) return G.interact.give(held, f.ref, this);
     if (held) return G.interact.useItem(held, this, handKey);

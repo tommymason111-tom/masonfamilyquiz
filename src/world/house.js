@@ -252,6 +252,13 @@ export function buildHouse() {
   solid(4.0, 0.3, -10.2, 0.25, 0.3, 0.2);
   H.interact.push({ id: 'karaoke', pos: new THREE.Vector3(4.0, 0.6, -10.0), r: 0.4, label: 'Karaoke machine' });
 
+  // ---------- seats the player can use + light switches ----------
+  const SP = H.spots;
+  H.seats = [...SP.sofaL, ...SP.sofaR, SP.sofaArmL, SP.toilet,
+    { pos: new THREE.Vector3(4.2, 0, -8.6), yaw: 0.5, seatY: 0.44 }, { pos: new THREE.Vector3(6.4, 0, -9.5), yaw: -0.5, seatY: 0.44 }, { pos: new THREE.Vector3(5.6, 0, -10.0), yaw: 0.1, seatY: 0.44 },
+    { pos: new THREE.Vector3(3.6, 0, 2.05), yaw: Math.PI, seatY: 0.7 }, { pos: new THREE.Vector3(4.8, 0, 2.05), yaw: Math.PI, seatY: 0.7 }];
+  const sw = (room, x, y, z, ry) => { props.box(0.08, 0.12, 0.015, '#f4f4f4', x, y, z, 0, ry).box(0.02, 0.04, 0.02, '#ddd', x, y, z, 0, ry); H.interact.push({ id: 'light', room, pos: new THREE.Vector3(x, y, z), r: 0.3, label: 'Light switch' }); };
+  sw('living', 0.75, 1.3, -0.075, 0); sw('kitchen', 1.175, 1.3, 2.2, Math.PI / 2); sw('dining', 3.575, 1.3, -0.5, Math.PI / 2); sw('hall', 0.65, 1.3, 5.93, 0);
   // ---------- merge statics ----------
   for (const [mat, geos] of statics) {
     const g = mergeGeometries(geos.map(x => x.index ? x.toNonIndexed() : x).map(x => { x.deleteAttribute && x.attributes.uv2 && x.deleteAttribute('uv2'); return x; }), false);

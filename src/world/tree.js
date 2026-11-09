@@ -40,7 +40,7 @@ export function buildTree(pos) {
   for (let i = 0; i < NL; i++) { const t = i / NL; const y = 0.45 + t * (H - 0.55); const r = 0.84 * (1 - (y - 0.35) / (H - 0.3)) + 0.12; const a = t * Math.PI * 13 + 0.6; const p = new THREE.Vector3(Math.sin(a) * r, y, Math.cos(a) * r); lp.push(p); m4.makeTranslation(p.x, p.y, p.z); lights.setMatrixAt(i, m4); lights.setColorAt(i, new THREE.Color('#ffcf70')); }
   group.add(lights);
   // physics: pot + trunk + cone (compound)
-  const body = G.world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(pos.x, pos.y, pos.z).setAngularDamping(0.8).setLinearDamping(0.3).setCanSleep(true).setSleeping(true));
+  const body = G.world.createRigidBody(R.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z)); // the tree stays put
   const gr = groups(GR.ITEM, ALL);
   const c1 = G.world.createCollider(R.ColliderDesc.cylinder(0.16, 0.24).setTranslation(0, 0.16, 0).setMass(9).setCollisionGroups(gr).setFriction(0.8), body);
   const c2 = G.world.createCollider(R.ColliderDesc.cone((H - 0.35) / 2, 0.7).setTranslation(0, 0.35 + (H - 0.35) / 2, 0).setMass(6).setCollisionGroups(gr).setFriction(0.9).setActiveEvents(R.ActiveEvents.COLLISION_EVENTS), body);
@@ -54,8 +54,8 @@ export function buildTree(pos) {
     inst.onTree = true; if (!tree.baubles.includes(inst)) tree.baubles.push(inst);
   }
   tree.hang = hang;
-  for (let i = 0; i < 26; i++) {
-    const t = 0.08 + (i / 26) * 0.82; const y = 0.5 + t * (H - 0.7); const r = 0.8 * (1 - (y - 0.35) / (H - 0.3)) + 0.12; const a = i * 2.4;
+  for (let i = 0; i < 16; i++) {
+    const t = 0.08 + (i / 16) * 0.82; const y = 0.5 + t * (H - 0.7); const r = 0.8 * (1 - (y - 0.35) / (H - 0.3)) + 0.12; const a = i * 2.4;
     const local = new THREE.Vector3(Math.sin(a) * r, y - 0.05, Math.cos(a) * r);
     const inst = G.items.spawn('bauble', local.clone().add(pos), null, {}); if (inst) hang(inst, local);
   }
@@ -66,9 +66,9 @@ export function buildTree(pos) {
       b.body.setLinvel({ x: (vel?.x || 0) + rand(-1, 1), y: rand(0, 1.5), z: (vel?.z || 0) + rand(-1, 1) }, true); }
     tree.baubles = tree.baubles.filter(b => b.onTree);
   };
-  tree.knock = (dir, strength = 1) => {
-    body.wakeUp();
-    body.applyImpulseAtPoint({ x: dir.x * 25 * strength, y: 0, z: dir.z * 25 * strength }, { x: pos.x, y: pos.y + 1.6, z: pos.z }, true);
+  tree.knock = (dir, strength = 1) => { // a bump shakes a couple of baubles off instead of toppling it
+    let n = 0; for (const b of tree.baubles.slice()) { if (n >= 2 * strength) break; if (Math.random() < 0.5) continue; b.attached = null; b.onTree = false; b.body.setBodyType(R.RigidBodyType.Dynamic, true); b.body.setLinvel({ x: dir.x * 1.5, y: 0.5, z: dir.z * 1.5 }, true); tree.baubles.splice(tree.baubles.indexOf(b), 1); n++; }
+    if (n) sfx('bauble', pos, 0.6);
   };
   tree.update = (dt) => {
     const t = body.translation(), r = body.rotation();

@@ -16,14 +16,26 @@ export class AI {
     G.ai = this; this.brains = new Map();
     const H = G.house.spots;
     const seat = (s) => ({ ...s, pos: s.pos.clone() });
+    const V = (x, z) => new THREE.Vector3(x, 0, z);
     const plan = {
+      // Living room: the quiz lot
       Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Tasha: seat(H.sofaL[2]), Charli: { ...seat(H.sofaArmL) },
-      Martin: { ...seat(H.armchair), armchair: true }, Julie: { pos: new THREE.Vector3(0.6, 0, -0.9), yaw: Math.PI, stand: true },
-      Hollie: { ...seat(H.floor[0]), floor: true }, Dan: { ...seat(H.floor[1]), floor: true },
-      Sophie: { ...seat(H.stand[2]), stand: true }, James: { pos: H.stand[2].pos.clone().add(new THREE.Vector3(-0.55, 0, 0.1)), yaw: H.stand[2].yaw, stand: true },
-      Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]), Jodie: seat(H.sofaR[2]),
-      Gary: { ...seat(H.stand[3]), stand: true }, Harry: { ...seat(H.stand[1]), stand: true }, Bradley: { ...seat(H.stand[0]), stand: true },
-      Mason: { ...seat(H.floor[2]), floor: true }, Harrison: { carried: 'Bradley' },
+      Martin: { ...seat(H.armchair), armchair: true },
+      Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]),
+      Gary: { pos: V(1.9, -6.0), yaw: -Math.PI * 0.8, stand: true },
+      Mason: { ...seat(H.floor[2]), floor: true },
+      // Kitchen: Julie at the hob, Jodie by the kettle, Hollie & Dan leaning on the island by the drinks
+      Julie: { pos: V(6.0, 3.6), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Jodie: { pos: V(5.5, 4.9), yaw: 0, stand: true, room: 'kitchen' },
+      Hollie: { pos: V(2.75, 2.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Dan: { pos: V(2.75, 3.3), yaw: Math.PI / 2 + 0.3, stand: true, room: 'kitchen' },
+      // Games room: Sophie & James planning the wedding at the table, Harry by the PC
+      Sophie: { pos: V(5.45, -2.7), yaw: Math.PI / 2, stand: true, room: 'dining' },
+      James: { pos: V(5.45, -3.4), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
+      Harry: { pos: V(5.2, -5.9), yaw: Math.PI * 0.75, stand: true, room: 'dining' },
+      // Conservatory: Bradley keeping Harrison calm in the quiet
+      Bradley: { pos: V(4.2, -8.6), yaw: 0.5, seatY: 0.44, room: 'conservatory' },
+      Harrison: { carried: 'Bradley' },
     };
     for (const p of G.chars) {
       if (p.isPlayer) continue;
@@ -211,7 +223,7 @@ export class AI {
     // Chip joins in
     G.dog?.follow(b.p, 10);
     // trail of toys
-    if (Math.random() < 0.6) setTimeout(() => { const d = G.items.spawn(pick(['duplo', 'toy_car']), b.p.pos.clone().setY(0.05), null); }, 2500);
+    if (Math.random() < 0.15) setTimeout(() => { G.items.spawn(pick(['duplo', 'toy_car']), b.p.pos.clone().setY(0.05), null); }, 2500);
   }
   masonThrow(b) {
     const m = b.p; m.base = 'stand'; m.gesture = 'cheer'; m.gestureT = 0;
