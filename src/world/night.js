@@ -27,7 +27,7 @@ export function buildLights(H) {
   mk('tv', '#8fb0ff', 0.9, -4.6, 1.0, -4.9, 4.5);
   // kitchen: bright for the buffet (pendants over the island + a ceiling light)
   mk('kitchen', '#ffe2bd', G.settings?.shadows ? 3 : 5.5, 3.9, 2.15, 2.6, 9);
-  mk('pendants', '#ffcf95', 2.4, 3.9, 1.55, 1.1, 4.5);
+  mk('pendants', '#ffcf95', 2.4, 4.0, 1.55, 0.4, 4.5);
   mk('dining', '#ffcf95', 4.0, 3.0, 2.05, -3.3, 7.5);
   mk('hall', '#ffd9a8', 2.6, 0.1, 2.0, 2.9, 6);
   if (!low) { mk('landing', '#ffd9a8', 1.4, -2.1, 4.3, 1.2, 5); mk('toilet', '#fff0dc', 1.4, -2.1, 2.3, 4.6, 3.2); }

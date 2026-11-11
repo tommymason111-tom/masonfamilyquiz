@@ -129,7 +129,7 @@ export function buildDecor(P, add, M, solid, H) {
   // ---------- kitchen ----------
   const krx = (KX(1148) + KX(1212)) / 2;
   P.cyl(0.004, 0.004, 0.3, '#222', 3.9, 2.35, 2.6).cyl(0.3, 0.3, 0.06, '#f4f4f4', 3.9, 2.2, 2.6, 0, 0, 0, 20); glow.cyl(0.26, 0.26, 0.005, '#fff3d0', 3.9, 2.165, 2.6);
-  for (const x of [3.3, 3.9, 4.5]) { P.cyl(0.004, 0.004, 0.75, '#222', x, 2.12, 0.95).cone(0.12, 0.16, '#1a1a1a', x, 1.7, 0.95, Math.PI, 0, 0, 16); glow.sph(0.03, '#fff3d0', x, 1.65, 0.95); } // pendants over the breakfast bar
+  for (const x of [3.5, 4.0, 4.5]) { P.cyl(0.004, 0.004, 0.75, '#222', x, 2.12, 0.2).cone(0.12, 0.16, '#1a1a1a', x, 1.7, 0.2, Math.PI, 0, 0, 16); glow.sph(0.03, '#fff3d0', x, 1.65, 0.2); } // pendants over the breakfast bar
   P.box(0.21, 0.28, 0.003, '#ffffff', 5.35, 1.5, 0.48, 0, 0, 0.05).box(0.21, 0.28, 0.003, '#fff8e0', 5.7, 1.45, 0.48, 0, 0, -0.08); // Mason's drawings on the fridge
   P.cyl(0.05, 0.045, 0.14, '#e8e0d0', krx + 0.15, 0.98, 2.2).cyl(0.004, 0.004, 0.25, '#c8a070', krx + 0.13, 1.08, 2.19, 0.1).cyl(0.004, 0.004, 0.25, '#888', krx + 0.17, 1.08, 2.21, -0.1);
   P.box(0.14, 0.22, 0.1, '#3a2216', krx + 0.15, 1.02, 1.85, 0, 0, 0.2); for (let i = 0; i < 5; i++) P.box(0.015, 0.08, 0.015, '#222', krx + 0.12 + Math.floor(i / 3) * 0.03, 1.16, 1.82 + (i % 3) * 0.02);
@@ -176,7 +176,8 @@ export function buildDecor(P, add, M, solid, H) {
   const X0 = xLW, X1 = xR, Z0 = zBack, Z1 = zF, F1 = WALL_H, F2 = 5.0, T = 0.18;
   add(brick, uvBox((X0 + X1) / 2, (F1 + F2) / 2, Z1, X1 - X0 + T, F2 - F1, T, 1.5));
   add(brick, uvBox((X0 + X1) / 2, (F1 + F2) / 2, Z0, X1 - X0 + T, F2 - F1, T, 1.5));
-  add(brick, uvBox(X1, (F1 + F2) / 2, (Z0 + Z1) / 2, T, F2 - F1, Z1 - Z0, 1.5));
+  add(brick, uvBox(X1, (F1 + F2) / 2, (Z0 + zMid) / 2, T, F2 - F1, zMid - Z0, 1.5));
+  add(brick, uvBox(X1, (F1 + 0.12 + F2) / 2, (zMid + Z1) / 2, T, F2 - F1 - 0.12, Z1 - zMid, 1.5)); // over the kitchen: starts above its ceiling
   add(brick, uvBox(X0, (F1 + F2) / 2, (Z0 + Z1) / 2, T, F2 - F1, Z1 - Z0, 1.5));
   // seal above the ground-floor ceilings (with the stairwell cut out)
   const cw0 = xGS - 0.09, cw1 = xHW + 0.09, cz0 = zMid - 0.09, cz1 = zBT + 0.09;

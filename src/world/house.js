@@ -85,7 +85,7 @@ export function buildHouse() {
   const poly = (pts, mat, y, s = 1.2) => { const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z))); const g = new THREE.ShapeGeometry(sh, 24); g.rotateX(-Math.PI / 2); g.translate(0, y, 0);
     const p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / s, p.getZ(i) / s); add(mat, g); return g; };
   floor(ROOMS.hall, M.oak); floor(ROOMS.hallTop, M.oak); floor(ROOMS.stairs, M.oak); floor(ROOMS.living, M.oak, 1.6); floor(ROOMS.dining, M.oak, 1.6);
-  floor(ROOMS.kitchen, M.tileFloor, 1.2); floor(ROOMS.toilet, M.bathFloor, 0.9); floor(ROOMS.under, M.concrete, 2); floor(ROOMS.garage, M.concrete, 3);
+  floor(ROOMS.kitchen, M.oak, 1.6); floor(ROOMS.toilet, M.bathFloor, 0.9); floor(ROOMS.under, M.concrete, 2); floor(ROOMS.garage, M.concrete, 3);
   floor(ROOMS.conservatory, M.tileCons, 1.5);
   // the bay is a trapezoid (angled sides)
   const BAY = [[PX(380), PZ(805)], [PX(430), PZ(722)], [PX(575), PZ(722)], [PX(620), PZ(805)]];
@@ -367,8 +367,8 @@ function kitchen(P, add, M, solid, H) {
   // wall cupboards: right wall (not over the hob), front wall either side of the window
   for (let z = rz0 + 0.35; z < rz1 - 0.2; z += 0.6) { if (Math.abs(z - hz) < 0.6) continue; P.box(0.33, 0.7, 0.58, '#e6e2d8', xR - 0.18, 1.85, z).box(0.02, 0.02, 0.12, '#999', xR - 0.36, 1.55, z); }
   for (const x of [xL + 0.3, KX(1112), KX(1112) + 0.6]) P.box(0.58, 0.7, 0.33, '#e6e2d8', x, 1.85, zF - 0.18).box(0.12, 0.02, 0.02, '#999', x, 1.55, zF - 0.36);
-  // breakfast bar to the left of the fridge, with three stools
-  const bx0 = 2.9, bx1 = fx - 0.62, bzc = 0.95, bdz = 0.62, bh = 1.0, bcx = (bx0 + bx1) / 2;
+  // breakfast bar against the back wall, right next to the fridge, with three stools
+  const bx0 = 3.0, bx1 = fx - 0.52, bzc = 0.02, bdz = 0.62, bh = 1.0, bcx = (bx0 + bx1) / 2;
   P.box(bx1 - bx0, 0.05, bdz, '#5a3a24', bcx, bh, bzc).box(bx1 - bx0 - 0.1, bh - 0.05, 0.35, '#e6e2d8', bcx, (bh - 0.05) / 2, bzc - 0.1).box(bx1 - bx0 - 0.1, 0.03, 0.04, '#c0c0c0', bcx, 0.25, bzc + 0.2);
   solid(bcx, bh / 2, bzc, (bx1 - bx0) / 2, bh / 2, bdz / 2);
   H.spots.bar = { x0: bx0, x1: bx1, z: bzc, y: bh + 0.025 };
