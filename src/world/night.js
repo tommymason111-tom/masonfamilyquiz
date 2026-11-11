@@ -17,25 +17,25 @@ export function buildLights(H) {
   moon.castShadow = !!G.settings?.shadows; moon.shadow.mapSize.set(2048, 2048); Object.assign(moon.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 70 }); moon.shadow.bias = -0.0004; moon.shadow.normalBias = 0.02;
   const mk = (name, color, I, x, y, z, dist = 8, decay = 1.7) => { const l = new THREE.PointLight(color, I, dist, decay); l.position.set(x, y, z); s.add(l); H.lights[name] = l; return l; };
   // living room: dimmed ceiling light, the floor lamp, a table lamp, the tree, the fire (decor.js), the TV glow
-  mk('living', WARM, G.settings?.shadows ? 2.4 : 4.2, 0, 2.15, -3.5, 8.5);
+  mk('living', WARM, G.settings?.shadows ? 2.4 : 4.2, -2.5, 2.15, -3.3, 8.5);
   if (G.settings?.shadows) { // a soft downlight from the ceiling light that casts real shadows of the family and furniture
-    const sp = new THREE.SpotLight(WARM, 9, 9, 1.25, 0.85, 1.6); sp.position.set(0, 2.38, -3.5); sp.target.position.set(0, 0, -3.5); sp.castShadow = true; sp.shadow.mapSize.set(1024, 1024); sp.shadow.bias = -0.0006; sp.shadow.normalBias = 0.02; sp.shadow.radius = 4; s.add(sp, sp.target); H.lights.livingSpot = sp;
-    const ks = new THREE.SpotLight('#ffe2bd', 8, 9, 1.2, 0.85, 1.6); ks.position.set(4.2, 2.38, 3.0); ks.target.position.set(4.2, 0, 3.0); ks.castShadow = true; ks.shadow.mapSize.set(1024, 1024); ks.shadow.bias = -0.0006; ks.shadow.normalBias = 0.02; s.add(ks, ks.target); H.lights.kitchenSpot = ks; H.lights.kitchen && (H.lights.kitchen.intensity = 3); }
-  mk('lamp', LAMP, 3.0, 3.15, 1.45, -0.4, 5.5);
-  if (!low) mk('lamp2', LAMP, 2.0, -3.2, 1.05, -5.4, 4.5);
-  mk('tree', '#ffb060', 2.5, 0, 1.4, -7.3, 4.5);
-  mk('tv', '#8fb0ff', 0.9, -2.4, 1.0, -5.9, 4.5);
+    const sp = new THREE.SpotLight(WARM, 9, 9, 1.25, 0.85, 1.6); sp.position.set(-2.5, 2.38, -3.3); sp.target.position.set(-2.5, 0, -3.3); sp.castShadow = true; sp.shadow.mapSize.set(1024, 1024); sp.shadow.bias = -0.0006; sp.shadow.normalBias = 0.02; sp.shadow.radius = 4; s.add(sp, sp.target); H.lights.livingSpot = sp;
+    const ks = new THREE.SpotLight('#ffe2bd', 8, 9, 1.2, 0.85, 1.6); ks.position.set(3.4, 2.38, 2.6); ks.target.position.set(3.4, 0, 2.6); ks.castShadow = true; ks.shadow.mapSize.set(1024, 1024); ks.shadow.bias = -0.0006; ks.shadow.normalBias = 0.02; s.add(ks, ks.target); H.lights.kitchenSpot = ks; H.lights.kitchen && (H.lights.kitchen.intensity = 3); }
+  mk('lamp', LAMP, 3.0, -1.4, 1.45, -0.85, 5.5);
+  if (!low) mk('lamp2', LAMP, 2.0, 0.45, 1.05, -1.8, 4.5);
+  mk('tree', '#ffb060', 2.5, -2.47, 1.4, -6.2, 4.5);
+  mk('tv', '#8fb0ff', 0.9, -4.6, 1.0, -4.9, 4.5);
   // kitchen: bright for the buffet (pendants over the island + a ceiling light)
-  mk('kitchen', '#ffe2bd', G.settings?.shadows ? 3 : 5.5, 4.2, 2.25, 3.2, 9);
-  mk('pendants', '#ffcf95', 2.8, 4.2, 1.6, 2.9, 4.5);
-  mk('dining', '#ffcf95', 4.0, 5.2, 2.05, -3.5, 7.5);
-  mk('hall', '#ffd9a8', 2.6, 0, 2.0, 3.0, 6);
-  if (!low) { mk('landing', '#ffd9a8', 1.4, -1.55, 4.3, 1.4, 5); mk('toilet', '#fff0dc', 1.4, -2.0, 2.3, 5.1, 3.2); }
-  mk('conservatory', '#ffd08a', 1.8, 5.3, 2.3, -8.9, 6);
-  mk('garage', '#9aa8d8', 0.12, -5.8, 2.3, 2.5, 7); // the bulb's gone; just a glow from the street through the door
+  mk('kitchen', '#ffe2bd', G.settings?.shadows ? 3 : 5.5, 3.4, 2.15, 2.6, 9);
+  mk('pendants', '#ffcf95', 2.4, 3.6, 1.6, 4.8, 4.5);
+  mk('dining', '#ffcf95', 4.0, 3.0, 2.05, -3.3, 7.5);
+  mk('hall', '#ffd9a8', 2.6, 0.1, 2.0, 2.9, 6);
+  if (!low) { mk('landing', '#ffd9a8', 1.4, -2.1, 4.3, 1.2, 5); mk('toilet', '#fff0dc', 1.4, -2.1, 2.3, 4.6, 3.2); }
+  mk('conservatory', '#ffd08a', 1.8, 3.2, 2.3, -7.7, 6);
+  mk('garage', '#9aa8d8', 0.12, -5.2, 2.3, 2.5, 7); // the bulb's gone; just a glow from the street through the door
   // outside: porch lantern, patio wall light, two sodium street lamps
-  mk('porch', '#ffd890', 2.2, 0.7, 1.9, 6.45, 6);
-  mk('patio', '#ffd08a', 3.0, 2.2, 2.25, -7.2, 9);
+  mk('porch', '#ffd890', 2.2, 0.7, 1.9, 6.5, 6);
+  mk('patio', '#ffd08a', 3.0, -4.6, 2.25, -6.4, 9);
   mk('street', SODIUM, 9, -5.5, 4.6, 13.2, 16, 1.5);
   if (!low) mk('street2', SODIUM, 9, 8.5, 4.6, 13.2, 16, 1.5);
   H.daylight = 0;
@@ -98,22 +98,18 @@ export function buildNight(H) {
   const grass = new THREE.MeshStandardMaterial({ map: TX.grass(), roughness: 1, color: '#9ab0a0' });
   add(grass, uvBox(0, -0.1, 0, 120, 0.1, 120, 3));
   const slab = new THREE.MeshStandardMaterial({ map: TX.slabs(), roughness: 0.95 });
-  add(slab, uvBox(-8.75, -0.03, -3.5, 1.2, 0.06, 7.0, 1.5));          // path down the garage side to the garden
-  add(slab, uvBox(9.0, -0.03, -0.5, 1.4, 0.06, 13.0, 1.5));           // path down the kitchen side
   const P = new Prop(), glow = new Prop();
   const fence = (x0, z0, x1, z1, h = 1.8) => { const len = Math.hypot(x1 - x0, z1 - z0); const ang = Math.atan2(x1 - x0, z1 - z0); const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     for (let t = 0; t < len; t += 0.15) { const x = x0 + (x1 - x0) * t / len, z = z0 + (z1 - z0) * t / len; P.box(0.14, h, 0.02, t % 0.3 < 0.15 ? '#4a3626' : '#523c2a', x, h / 2, z, 0, ang + Math.PI / 2); }
     for (let t = 0; t <= len; t += 1.8) P.box(0.1, h + 0.1, 0.1, '#3a2a1c', x0 + (x1 - x0) * t / len, (h + 0.1) / 2, z0 + (z1 - z0) * t / len);
     staticBox(cx, h / 2, cz, Math.abs(x1 - x0) < 0.01 ? 0.05 : len / 2, h / 2, Math.abs(x1 - x0) < 0.01 ? len / 2 : 0.05); };
-  fence(-9.5, -7, -9.5, 7.5); fence(10.5, -7, 10.5, 7.5); fence(-9.5, -7, -9, -7);
-  // side gates
-  P.box(1.1, 1.8, 0.05, '#5a4030', -8.75, 0.9, 0.05).box(1.3, 1.8, 0.05, '#5a4030', 9.0, 0.9, -6.0);
-  staticBox(-8.75, 0.9, 0.05, 0.55, 0.9, 0.04); staticBox(9.0, 0.9, -6.0, 0.65, 0.9, 0.04);
+  // the front garden is fenced off from the neighbours on both sides
+  fence(-7.66, 6.1, -7.66, 12.1); fence(5.72, 6.1, 5.72, 12.1);
   // front garden: low brick wall, gravel, bushes
   const brick = new THREE.MeshStandardMaterial({ map: TX.brick(), roughness: 1 });
-  add(brick, mergeGeometries([uvBox(-2.4, 0.35, 12.2, 2.0, 0.7, 0.25, 1.5), uvBox(5.6, 0.35, 12.2, 9.8, 0.7, 0.25, 1.5)].map(x => x.toNonIndexed())));
-  staticBox(-2.4, 0.35, 12.2, 1.0, 0.35, 0.13); staticBox(5.6, 0.35, 12.2, 4.9, 0.35, 0.13);
-  P.box(2.0, 0.06, 0.32, '#8a8278', -2.4, 0.73, 12.2).box(9.8, 0.06, 0.32, '#8a8278', 5.6, 0.73, 12.2).box(0.4, 0.9, 0.4, '#a85a3a', -3.6, 0.45, 12.2).box(0.4, 0.9, 0.4, '#a85a3a', -9.6, 0.45, 12.2);
+  add(brick, mergeGeometries([uvBox(-2.1, 0.35, 12.2, 2.8, 0.7, 0.25, 1.5), uvBox(3.2, 0.35, 12.2, 5.0, 0.7, 0.25, 1.5)].map(x => x.toNonIndexed())));
+  staticBox(-2.1, 0.35, 12.2, 1.4, 0.35, 0.13); staticBox(3.2, 0.35, 12.2, 2.5, 0.35, 0.13);
+  P.box(2.8, 0.06, 0.32, '#8a8278', -2.1, 0.73, 12.2).box(5.0, 0.06, 0.32, '#8a8278', 3.2, 0.73, 12.2).box(0.4, 0.9, 0.4, '#a85a3a', -3.6, 0.45, 12.2).box(0.4, 0.9, 0.4, '#a85a3a', -7.5, 0.45, 12.2);
 
   // ---------- the street: pavement, road, kerbs, lamps, parked cars ----------
   const tar = new THREE.MeshStandardMaterial({ color: '#2a2a2e', roughness: 0.85, metalness: 0.05 });
@@ -130,9 +126,9 @@ export function buildNight(H) {
     for (const sx of [-1.35, 1.35]) for (const sz of [-0.82, 0.82]) P.cyl(0.33, 0.33, 0.22, '#111', x + sx, 0.33, z + sz, Math.PI / 2, 0, 0, 14);
     glow.box(0.02, 0.1, 0.3, '#ff2020', x - 2.1, 0.62, z + 0.6).box(0.02, 0.1, 0.3, '#ff2020', x - 2.1, 0.62, z - 0.6); }
   // the drive: Martin's car with frost on the windscreen
-  P.rbox(1.8, 0.7, 4.2, 0.2, '#3a3a3e', -7.4, 0.55, 9.3).rbox(1.6, 0.55, 2.2, 0.2, '#3a3a3e', -7.4, 1.1, 9.1).box(1.5, 0.45, 0.02, '#c8d8e8', -7.4, 1.12, 10.22, -0.5);
-  for (const sx of [-0.82, 0.82]) for (const sz of [-1.35, 1.35]) P.cyl(0.33, 0.33, 0.22, '#111', -7.4 + sx, 0.33, 9.3 + sz, 0, 0, Math.PI / 2, 14);
-  staticBox(-7.4, 0.7, 9.3, 0.9, 0.7, 2.1);
+  P.rbox(1.8, 0.7, 4.2, 0.2, '#3a3a3e', -5.3, 0.55, 9.3).rbox(1.6, 0.55, 2.2, 0.2, '#3a3a3e', -5.3, 1.1, 9.1).box(1.5, 0.45, 0.02, '#c8d8e8', -5.3, 1.12, 10.22, -0.5);
+  for (const sx of [-0.82, 0.82]) for (const sz of [-1.35, 1.35]) P.cyl(0.33, 0.33, 0.22, '#111', -5.3 + sx, 0.33, 9.3 + sz, 0, 0, Math.PI / 2, 14);
+  staticBox(-5.3, 0.7, 9.3, 0.9, 0.7, 2.1);
 
   // ---------- the neighbours (with their own Christmas lights) ----------
   const bulbs = { data: [] };

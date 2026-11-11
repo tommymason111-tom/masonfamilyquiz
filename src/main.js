@@ -53,7 +53,7 @@ async function boot() {
   buildHouse();
   status('Filling it with stuff…', 0.2);
   new Items().build();
-  buildTree(new THREE.Vector3(0, 0, -7.45));
+  buildTree(G.house.spots.tree.clone());
   status('The family are arriving…');
   await loadModels((f, n) => status(`The family are arriving… ${n} is here`, 0.25 + f * 0.65));
   createPeople();

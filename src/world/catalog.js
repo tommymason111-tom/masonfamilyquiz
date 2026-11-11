@@ -24,7 +24,7 @@ const bowl = (r, h, c, fill) => { const p = P().lathe([[0, -h / 2], [r * 0.6, -h
 export const CATALOG = {
   // ===================== LIVING ROOM =====================
   cushion: { name: 'Cushion', geo: () => P().rbox(0.44, 0.14, 0.44, 0.06, '#ffffff', 0, 0, 0, 0, 0, 0, 3).box(0.2, 0.002, 0.2, '#dddddd', 0, 0.071, 0).build(), shape: ['box', 0.22, 0.07, 0.22], mass: 0.4, sound: 'cushion', tints: ['#b23a48', '#e9c46a', '#264653', '#f4f1de', '#2a9d8f', '#6d597a'], bounce: 0.3, throwSquad: true },
-  coffee_table: { name: 'Coffee table', geo: () => P().box(1.2, 0.05, 0.62, '#4a2e1c', 0, 0.185, 0).box(1.1, 0.03, 0.55, '#3a2216', 0, -0.1, 0).box(0.05, 0.4, 0.05, '#3a2216', -0.55, 0, -0.27).box(0.05, 0.4, 0.05, '#3a2216', 0.55, 0, -0.27).box(0.05, 0.4, 0.05, '#3a2216', -0.55, 0, 0.27).box(0.05, 0.4, 0.05, '#3a2216', 0.55, 0, 0.27).build(), shape: ['box', 0.6, 0.21, 0.31], mass: 18, sound: 'thud', fixed: true },
+  coffee_table: { name: 'Coffee table', geo: () => P().cyl(0.42, 0.42, 0.05, '#6a4428', 0, 0.185, 0, 0, 0, 0, 32).cyl(0.4, 0.4, 0.01, '#7a5434', 0, 0.211, 0, 0, 0, 0, 32).cyl(0.07, 0.09, 0.36, '#4a2e1c', 0, -0.02, 0, 0, 0, 0, 12).cyl(0.26, 0.28, 0.03, '#4a2e1c', 0, -0.195, 0, 0, 0, 0, 20).build(), shape: ['cyl', 0.21, 0.42], mass: 18, sound: 'thud', fixed: true },
   armchair: { name: "Martin's armchair", geo: () => P().rbox(0.9, 0.42, 0.85, 0.05, '#6b4a3a', 0, -0.2, 0).rbox(0.9, 0.6, 0.2, 0.08, '#7a5543', 0, 0.3, -0.33).rbox(0.16, 0.3, 0.85, 0.07, '#7a5543', -0.37, 0.12, 0).rbox(0.16, 0.3, 0.85, 0.07, '#7a5543', 0.37, 0.12, 0).rbox(0.58, 0.12, 0.62, 0.05, '#8a6553', 0, 0.06, 0.06).build(), shape: ['box', 0.45, 0.42, 0.42], mass: 32, sound: 'thud', angDamp: 1.5, fixed: true },
   pouffe: { name: 'Pouffe', geo: () => P().cyl(0.25, 0.25, 0.38, '#8a3a3a', 0, 0, 0, 0, 0, 0, 20).torus(0.25, 0.02, '#6a2a2a', 0, 0.19, 0, Math.PI / 2).build(), shape: ['cyl', 0.19, 0.25], mass: 4, sound: 'cushion', fixed: true },
   remote: { name: 'TV remote', geo: () => { const p = P().rbox(0.05, 0.022, 0.18, 0.008, '#1a1a1a'); for (let i = 0; i < 12; i++) p.box(0.009, 0.004, 0.009, i === 0 ? '#c22' : '#555', -0.013 + (i % 3) * 0.013, 0.012, -0.05 + Math.floor(i / 3) * 0.022); return p.build(); }, shape: ['box', 0.025, 0.011, 0.09], mass: 0.15, use: 'remote', important: true },
@@ -168,7 +168,7 @@ export const CATALOG = {
   torch: { name: 'Torch', geo: () => P().cyl(0.02, 0.02, 0.18, '#222', 0, 0, 0, 0, 0, Math.PI / 2).cyl(0.03, 0.02, 0.05, '#555', 0.11, 0, 0, 0, 0, Math.PI / 2).build(), shape: ['cap', 0.1, 0.03], mass: 0.3, use: 'torch' },
   // ===================== DINING / GAMES ROOM =====================
   dining_chair: { name: 'Dining chair', geo: () => P().box(0.44, 0.04, 0.42, '#4a2e1c', 0, -0.02, 0).box(0.44, 0.48, 0.04, '#4a2e1c', 0, 0.26, -0.19).box(0.4, 0.05, 0.37, '#8a3a3a', 0, 0.02, 0.01).box(0.04, 0.44, 0.04, '#3a2216', -0.19, -0.26, 0.18).box(0.04, 0.44, 0.04, '#3a2216', 0.19, -0.26, 0.18).box(0.04, 0.44, 0.04, '#3a2216', -0.19, -0.26, -0.18).box(0.04, 0.44, 0.04, '#3a2216', 0.19, -0.26, -0.18).build(), shape: ['box', 0.22, 0.48, 0.21], mass: 5, sound: 'thud' },
-  dining_table: { name: 'Dining table', geo: () => P().box(0.95, 0.05, 2.2, '#4a2e1c', 0, 0.36, 0).box(0.07, 0.72, 0.07, '#3a2216', -0.42, 0, -1.03).box(0.07, 0.72, 0.07, '#3a2216', 0.42, 0, -1.03).box(0.07, 0.72, 0.07, '#3a2216', -0.42, 0, 1.03).box(0.07, 0.72, 0.07, '#3a2216', 0.42, 0, 1.03).build(), shape: ['box', 0.475, 0.385, 1.1], mass: 45, sound: 'bigthud', angDamp: 2, fixed: true },
+  dining_table: { name: 'Dining table', geo: () => P().box(0.95, 0.05, 1.7, '#7a4a26', 0, 0.36, 0).box(0.07, 0.72, 0.07, '#5a3418', -0.42, 0, -0.78).box(0.07, 0.72, 0.07, '#5a3418', 0.42, 0, -0.78).box(0.07, 0.72, 0.07, '#5a3418', -0.42, 0, 0.78).box(0.07, 0.72, 0.07, '#5a3418', 0.42, 0, 0.78).build(), shape: ['box', 0.475, 0.385, 0.85], mass: 45, sound: 'bigthud', angDamp: 2, fixed: true },
   office_chair: { name: 'Office chair', geo: () => P().rbox(0.48, 0.08, 0.46, 0.03, '#222', 0, 0.05, 0).rbox(0.44, 0.5, 0.06, 0.03, '#222', 0, 0.35, -0.21).cyl(0.03, 0.03, 0.3, '#888', 0, -0.15, 0).cyl(0.28, 0.28, 0.03, '#333', 0, -0.32, 0, 0, 0, 0, 5).build(), shape: ['box', 0.24, 0.35, 0.23], mass: 9, sound: 'thud', angDamp: 0.2, fixed: true },
   pong_cup: { name: 'Pong cup', geo: () => P().lathe([[0, -0.06], [0.03, -0.06], [0.045, 0.06], [0.042, 0.06], [0.028, -0.055], [0, -0.055]], '#d62828', 0, 0, 0, 14).build(), shape: ['cyl', 0.06, 0.04], mass: 0.02, extra: 0 },
   parcel: { name: 'Pass the Parcel', geo: () => P().rbox(0.3, 0.22, 0.25, 0.04, '#ffffff').build(), shape: ['box', 0.15, 0.11, 0.125], mass: 0.6, tints: ['#c1121f', '#2d6a4f', '#3a86ff', '#ffd60a', '#7b2cbf', '#ff006e', '#f77f00', '#06d6a0'], use: 'parcel', important: true },
@@ -189,8 +189,8 @@ export const CATALOG = {
   watering_can: { name: 'Watering can', geo: () => P().cyl(0.09, 0.1, 0.22, '#2d6a4f', 0, 0, 0).cyl(0.012, 0.02, 0.28, '#2d6a4f', 0.15, 0.06, 0, 0, 0, -0.9).torus(0.07, 0.01, '#2d6a4f', -0.02, 0.13, 0, 0, 0, 0, Math.PI).build(), shape: ['cyl', 0.11, 0.1], mass: 1.2 },
   microphone: { name: 'Karaoke microphone', geo: () => P().cyl(0.015, 0.012, 0.16, '#222', 0, 0, 0).sph(0.03, '#888', 0, 0.1, 0, 1, 1, 1, 10).build(), shape: ['cap', 0.08, 0.025], mass: 0.25, use: 'mic' },
   magazine: { name: 'Magazine', geo: () => box(0.21, 0.006, 0.28, '#ffffff'), tints: ['#ff006e', '#3a86ff', '#ffd60a'], shape: ['box', 0.105, 0.003, 0.14], mass: 0.15, linDamp: 0.6 },
-  patio_table: { name: 'Patio table', geo: () => P().cyl(0.5, 0.5, 0.03, '#e8e8e8', 0, 0.36, 0, 0, 0, 0, 20).cyl(0.025, 0.025, 0.72, '#ddd', 0, 0, 0).cyl(0.25, 0.3, 0.03, '#ccc', 0, -0.35, 0).build(), shape: ['cyl', 0.37, 0.5], mass: 7, sound: 'thud', fixed: true },
-  patio_chair: { name: 'Patio chair', geo: () => P().box(0.45, 0.03, 0.45, '#e8e8e8', 0, 0, 0).box(0.45, 0.45, 0.03, '#e8e8e8', 0, 0.24, -0.21, -0.15).box(0.03, 0.44, 0.03, '#ddd', -0.2, -0.22, 0.2).box(0.03, 0.44, 0.03, '#ddd', 0.2, -0.22, 0.2).box(0.03, 0.44, 0.03, '#ddd', -0.2, -0.22, -0.2).box(0.03, 0.44, 0.03, '#ddd', 0.2, -0.22, -0.2).build(), shape: ['box', 0.225, 0.45, 0.225], mass: 2.5, sound: 'tap' },
+  patio_table: { name: 'Patio table', geo: () => { const p = P(); for (let k = 0; k < 9; k++) p.box(0.2, 0.035, 0.95, k % 2 ? '#8a6038' : '#7a5430', -0.88 + k * 0.22, 0.36, 0); return p.box(0.06, 0.72, 0.06, '#5a3a22', -0.92, 0, -0.4).box(0.06, 0.72, 0.06, '#5a3a22', 0.92, 0, -0.4).box(0.06, 0.72, 0.06, '#5a3a22', -0.92, 0, 0.4).box(0.06, 0.72, 0.06, '#5a3a22', 0.92, 0, 0.4).build(); }, shape: ['box', 1.0, 0.38, 0.475], mass: 30, sound: 'thud', fixed: true },
+  patio_chair: { name: 'Patio chair', geo: () => P().box(0.45, 0.03, 0.45, '#5e6266', 0, 0, 0).box(0.45, 0.45, 0.03, '#5e6266', 0, 0.24, -0.21, -0.15).box(0.03, 0.44, 0.03, '#ddd', -0.2, -0.22, 0.2).box(0.03, 0.44, 0.03, '#ddd', 0.2, -0.22, 0.2).box(0.03, 0.44, 0.03, '#ddd', -0.2, -0.22, -0.2).box(0.03, 0.44, 0.03, '#ddd', 0.2, -0.22, -0.2).build(), shape: ['box', 0.225, 0.45, 0.225], mass: 2.5, sound: 'tap' },
   gnome: { name: 'Garden gnome', geo: () => P().cyl(0.07, 0.09, 0.16, '#1d3557', 0, -0.08, 0).sph(0.06, '#f2d0b0', 0, 0.04, 0).cone(0.06, 0.14, '#c1121f', 0, 0.14, 0).sph(0.055, '#f4f4f4', 0, 0.0, 0.03, 1, 1.1, 0.7).build(), shape: ['cyl', 0.16, 0.09], mass: 2, sound: 'thud', fragile: 10 },
   wheelbarrow: { name: 'Wheelbarrow', geo: () => P().box(0.6, 0.3, 0.8, '#2d6a4f', 0, 0.05, 0).cyl(0.15, 0.15, 0.06, '#222', 0, -0.15, 0.45, 0, 0, Math.PI / 2).box(0.04, 0.04, 0.6, '#888', -0.25, 0.0, -0.6).box(0.04, 0.04, 0.6, '#888', 0.25, 0.0, -0.6).build(), shape: ['box', 0.3, 0.22, 0.6], mass: 12, sound: 'thud', fixed: true },
   bird_feeder: { name: 'Bird feeder', geo: () => P().cyl(0.04, 0.04, 0.2, '#e8f0f4', 0, 0, 0).cone(0.07, 0.06, '#2d6a4f', 0, 0.13, 0).cyl(0.06, 0.06, 0.02, '#2d6a4f', 0, -0.1, 0).build(), shape: ['cyl', 0.13, 0.06], mass: 0.4 },
@@ -204,78 +204,77 @@ export const CATALOG = {
 };
 
 // [typeId, x, surfaceY, z, yaw, count, dx, dz, dy]
+// [id, x, y(surface), z, yaw, count, dx, dz, dy, tilt] — positions follow the floor plan (see house.js PX/PZ)
+const CF = [-1.5, -3.6];                         // round coffee table, top 0.42
 export const PLACEMENTS = [
   // ---- living room ----
-  ['coffee_table', 0, 0, -3.6, 0], ['armchair', -1.9, 0, -6.1, Math.PI * 0.82], ['pouffe', 1.2, 0, -5.2],
-  // cushions stand up against the sofa backs at the ends (people sit on the seats, not in the cushions)
-  ['cushion', -2.4, 0.02, -1.4, 0.7], ['cushion', 1.2, 0.38, -5.2], ['cushion', 3.0, 0.02, -1.7, 0.4], ['cushion', 0.8, 0.02, -2.3],
-  ['answer_sheet', -0.35, 0.42, -3.75, 0], ['answer_sheet', 0.3, 0.42, -3.5, 0.3], ['answer_sheet', -2.0, 0.6, -5.9, 0],
-  ['pen', -0.1, 0.42, -3.75, 0, 2, 0.05, 0.02], ['pen', 0.45, 0.42, -3.75, 1],
-  ['remote', 0.1, 0.42, -3.35, 0.4], ['cracker', -0.45, 0.42, -3.4, 0.2, 3, 0.06, 0.05],
-  ['celeb_tin', 0.3, 0.42, -3.9], ['quality_tin', -0.25, 0.42, -3.42],
-  ['coaster', 0.5, 0.42, -3.35], ['coaster', -0.55, 0.42, -3.85],
-  ['wine_glass', 0.35, 0.43, -3.85], ['wine_glass', 0.52, 0.43, -3.33], ['wine_glass', -0.52, 0.43, -3.85],
-  ['card', -2.95, 1.25, -0.3, 0, 3, 0.2, 0], ['mason_cup', -2.2, 1.25, -0.3, 0], ['photo_frame', -1.55, 1.25, -0.25, -0.3], ['candle', -1.45, 1.25, -0.28],
-  ['nutcracker', -1.65, 1.25, -0.4], ['snow_globe', -3.3, 2.0, -0.6],
-  ['tv_guide', 0.0, 0.42, -3.7, 0.2], ['tissues', -3.2, 0.5, -5.25],
-  ['present_s', -0.7, 0, -6.85, 0.3, 2, 0.5, 0.0], ['present_m', 0.7, 0, -6.85, -0.4], ['present_l', -0.1, 0, -6.6, 0.2],
-  ['duplo', -0.6, 0.012, -2.7, 0, 3, 0.08, 0.03], ['toy_car', -0.8, 0.012, -4.4, 0.5], ['toy_dino', 0.9, 0.012, -2.8, 2], ['teddy', -0.6, 0.0, -0.25, Math.PI],
-  ['dog_toy', -0.8, 0.02, -0.5], ['tennis_ball', -1.1, 0.02, -0.7], ['celebration', 0.3, 0.6, -3.9, 0, 3, 0.01, 0.0, 0.03], ['sweet', -0.1, 0.42, -3.45, 0, 2, 0.05, 0],
-  ['phone', -0.4, 0.42, -3.6, 1.2],
-  ['gamepad', 2.75, 0.5, -3.0, -1.5],
+  ['coffee_table', CF[0], 0, CF[1], 0], ['armchair', -0.62, 0, CF[1], -Math.PI / 2], ['pouffe', -3.6, 0, -3.9],
+  ['cushion', -3.7, 0.57, -0.9, Math.PI], ['cushion', -2.0, 0.57, -0.9, Math.PI], ['cushion', 0.35, 0.57, -2.45, -Math.PI / 2], ['cushion', -0.75, 0.57, -5.35, 0],
+  ['answer_sheet', CF[0] - 0.2, 0.42, CF[1] - 0.15, 0], ['answer_sheet', CF[0] + 0.15, 0.42, CF[1] + 0.12, 0.3], ['answer_sheet', -0.3, 0.6, CF[1] + 0.3, 0],
+  ['pen', CF[0] + 0.1, 0.42, CF[1] - 0.12, 0, 2, 0.05, 0.02], ['pen', CF[0] + 0.25, 0.42, CF[1] - 0.05, 1],
+  ['remote', CF[0] + 0.1, 0.42, CF[1] + 0.3, 0.4], ['cracker', -3.5, 0, -5.55, 0.3, 3, 0.15, 0],
+  ['celeb_tin', CF[0] + 0.2, 0.42, CF[1] - 0.25], ['quality_tin', CF[0] - 0.15, 0.42, CF[1] + 0.25],
+  ['coaster', CF[0] + 0.28, 0.42, CF[1] + 0.12],
+  ['wine_glass', CF[0] + 0.28, 0.43, CF[1] + 0.12],
+  ['card', -5.1, 1.25, -3.5, Math.PI / 2, 3, 0, 0.2], ['mason_cup', -5.08, 1.25, -3.0, Math.PI / 2], ['photo_frame', -5.1, 1.25, -2.65, Math.PI / 2 - 0.3], ['candle', -5.05, 1.25, -2.6],
+  ['nutcracker', -5.05, 1.25, -2.75], ['snow_globe', -5.55, 2.0, -1.3],
+  ['tv_guide', CF[0], 0.42, CF[1], 0.2], ['tissues', 0.6, 0.565, -1.95],
+  ['present_s', -3.1, 0, -6.2, 0.3, 2, 0.0, 0.4], ['present_m', -1.85, 0, -6.25, -0.4], ['present_l', -2.45, 0, -5.75, 0.2],
+  ['duplo', -2.6, 0.012, -2.6, 0, 3, 0.08, 0.03], ['toy_car', -2.9, 0.012, -4.4, 0.5], ['toy_dino', -2.2, 0.012, -2.2, 2], ['teddy', -4.6, 0.0, -0.75, Math.PI],
+  ['dog_toy', -4.45, 0.02, -1.35], ['tennis_ball', -4.2, 0.02, -1.6], ['celebration', CF[0] + 0.05, 0.6, CF[1] - 0.1, 0, 3, 0.01, 0.0, 0.03],
+  ['phone', CF[0] + 0.05, 0.42, CF[1] + 0.15, 1.2],
+  ['gamepad', 0.2, 0.5, -3.4, -1.5],
   // ---- hallway ----
   ['shoe', -0.4, 0, 5.55, 0.3, 4, 0.18, -0.04], ['shoe', 0.3, 0, 5.3, -0.6, 2, 0.1, 0.12], ['slipper', 0.6, 0, 5.0, 2.5],
-  ['no_shoes_sign', -0.93, 0.87, 2.0, Math.PI / 2], ['keys', -0.9, 0.87, 2.4], ['handbag', -0.9, 0.87, 2.6, Math.PI / 2],
-  ['photo_frame', -0.93, 0.87, 2.25, Math.PI / 2],
-  // ---- toilet ----
-  ['toilet_roll', -1.4, 0, 5.8], ['air_freshener', -1.85, 0.93, 5.85], ['rubber_duck', -2.15, 0.93, 5.85],
-  // ---- under stairs / garage ----
-  ['hoover', -1.4, 0, 0.4], ['deco_box', -2.5, 0, 0.35, 0, 2, 0, 0, 0.3], ['deco_box', -2.55, 0, 1.2], ['folding_chair', -1.9, 0, 1.5, 0.2, 2, 0.05, 0.06, 0.05], ['outfit_box', -2.4, 1.43, 0.25],
-  ['paint_tin', -8.15, 0.52, 0.6, 0, 2, 0, 0.3], ['toolbox', -5.2, 0.93, 0.4], ['traffic_cone', -7.8, 0, 4.8], ['mop_bucket', -7.6, 0, 0.6], ['mop', -7.4, 0.62, 0.5], ['cool_box', -4.8, 0, 2.0],
-  ['sledge', -8.0, 0, 3.2, 0.1], ['football', -4.5, 0, 1.5], ['torch', -5.5, 0.93, 0.5],
-  ['beer_crate', -4.0, 0.92, 5.5, 0], ['beer_crate', -3.5, 0.92, 5.5, 0], 
-  ['lager', -4.12, 0.96, 5.5, 0, 4, 0.08, 0], ['lager', -3.62, 0.96, 5.5, 0, 4, 0.08, 0],
-  // garage fridge contents (fridge at x=-4.9,z=5.6, shelves y=0.12/0.57/1.02)
-  ['lager', -5.08, 0.13, 5.62, 0, 3, 0.1, 0], ['cider', -5.08, 0.58, 5.62, 0, 2, 0.12, 0], ['bitter', -5.05, 1.03, 5.65, 0, 2, 0.12, 0], ['prosecco', -4.75, 1.03, 5.7], ['pork_pie', -4.9, 0.58, 5.45],
-  // ---- kitchen buffet along the worktop: from the sink round to the fridge ----
-  ['paper_plate', 1.45, 0.91, 5.62, 0, 4, 0, 0, 0.014], ['napkins', 1.75, 0.91, 5.65],
-  ['sausage_roll', 2.05, 0.92, 5.6, 0, 5, 0.07, 0],
-  ['pig_tray', 2.75, 0.91, 5.62, 0], ['pig_blanket', 2.62, 0.935, 5.6, 0, 5, 0.06, 0],
-  ['platter', 3.35, 0.91, 5.62], ['tongs', 3.35, 0.95, 5.4, 0.3],
-  ['trifle', 4.95, 0.91, 5.62], ['serving_spoon', 4.75, 0.91, 5.4, 0.4],
-  ['cheeseboard', 5.6, 0.91, 5.6], ['brie', 5.62, 0.95, 5.45], ['cracker_bis', 5.95, 0.91, 5.5, 0, 3, 0, 0, 0.007],
-  ['coleslaw', 6.25, 0.91, 5.62], ['potato_salad', 6.65, 0.91, 5.62],
-  ['scotch_egg', 6.6, 0.95, 5.0, 0, 3, 0, -0.1], ['pork_pie', 6.65, 0.91, 4.4], ['crisps_bowl', 6.65, 0.91, 4.0],
-  ['pudding', 6.65, 0.91, 2.3], ['cream_jug', 6.6, 0.91, 2.0], ['brandy', 6.75, 0.91, 1.85],
-  ['mince_pie', 6.65, 0.91, 1.4, 0, 5, 0, -0.08],
-  ['sprout', 4.1, 0.95, 3.0, 0, 4, 0.04, 0.03], ['roasting_tin', 6.7, 0.92, 3.0], ['turkey', 6.7, 0.96, 3.0],
-  
-  // drinks station on the island + kettle corner
-  ['kettle', 5.6, 0.91, 5.75], ['mug', 5.85, 0.91, 5.75, 0, 3, 0.12, 0], ['tea_caddy', 6.3, 0.91, 5.8],
-  ['wine_glass', 3.6, 0.925, 2.7, 0, 2, 0.14, 0], ['pint_glass', 4.1, 0.925, 2.65, 0, 2, 0.14, 0], ['coaster', 3.6, 0.925, 3.2],
-  ['squash', 4.9, 0.925, 2.65], ['juice', 5.0, 0.925, 3.15], ['baileys', 3.5, 0.925, 3.1],
-  ['toaster', 1.6, 0.91, 0.35], ['microwave', 2.5, 0.91, 0.38], ['tea_towel', 3.0, 0.91, 0.3], ['kitchen_roll', 4.0, 0.91, 5.8], ['oven_glove', 6.6, 0.91, 3.4],
-  ['frying_pan', 6.72, 0.92, 2.75], ['chopping_board', 2.9, 0.91, 5.55, 0.1],
-  ['fruit_bowl', 3.9, 0.925, 3.2], ['satsuma', 4.15, 0.925, 3.2, 0, 2, 0.08, 0], ['banana', 3.7, 0.925, 3.2, 1.2],
-  ['biscuit_tin', 1.8, 1.47, 0.14], ['spray', 4.6, 0.91, 5.85], ['bin', 1.5, 0, 1.2],
-  ['stool', 3.6, 0, 2.15], ['stool', 4.8, 0, 2.15],
-  // kitchen fridge contents (fridge x=3.8, z≈0.45; shelves y=0.12, 0.57, 1.02, 1.42)
-  ['prosecco', 3.55, 0.13, 0.45], ['white_wine', 3.75, 0.13, 0.45], ['red_wine', 3.95, 0.13, 0.4], ['lager', 4.05, 0.58, 0.35, 0, 3, 0.07, 0.12],
-  ['milk', 3.5, 0.58, 0.5], ['juice', 3.65, 0.58, 0.5], ['foil', 3.8, 1.03, 0.45], ['squash', 3.55, 1.43, 0.45], ['baileys', 3.75, 1.43, 0.45],
-  // ---- dining / games room ----
-  ['dining_table', 6.45, 0, -3.5], ['dining_chair', 5.75, 0, -4.6, Math.PI / 2], ['dining_chair', 5.75, 0, -3.5, Math.PI / 2], ['dining_chair', 5.75, 0, -2.4, Math.PI / 2], ['dining_chair', 6.45, 0, -1.95, Math.PI], ['dining_chair', 6.45, 0, -5.05, 0], ['dining_chair', 4.6, 0, -6.3, 0.8],
-  ['office_chair', 6.0, 0, -6.0, Math.PI], ['highchair', 4.3, 0, -1.6, 0.4], ['bouncer', 4.6, 0, -4.5, 1.2],
-  ['pong_cup', 6.2, 0.77, -4.3, 0, 3, 0.11, 0], ['pong_cup', 6.25, 0.77, -4.2, 0, 2, 0.11, 0], ['pong_cup', 6.3, 0.77, -4.1, 0, 1],
-  ['parcel', 6.4, 0.77, -3.2], ['board_game', 6.5, 0.77, -2.65, 0.2], ['buzzer', 6.6, 0.77, -3.9, 0, 3, 0, 0.18],
-  ['sippy_cup', 6.25, 0.77, -2.75], ['rusk', 6.65, 0.77, -2.8], ['baby_bottle', 3.85, 0.86, -2.8],
-  ['cracker', 3.85, 0.86, -4.0, 0, 2, 0, 0.12], ['present_s', 4.9, 0, -5.4, 0, 2, 0.4, 0],
+  ['no_shoes_sign', 1.2, 0.87, 2.95, -Math.PI / 2], ['keys', 1.2, 0.87, 3.4], ['handbag', 1.2, 0.87, 3.62, -Math.PI / 2],
+  ['photo_frame', 1.25, 0.87, 3.15, -Math.PI / 2],
+  // ---- bathroom ----
+  ['toilet_roll', -1.55, 0, 5.75], ['air_freshener', -2.5, 0.93, 3.6], ['rubber_duck', -2.05, 0.93, 3.6],
+  // ---- under the stairs / garage ----
+  ['hoover', -3.45, 0, 2.7], ['deco_box', -6.0, 0, 4.4], ['outfit_box', -2.2, 1.43, -0.1],
+  ['folding_chair', -5.4, 0, 5.5, 0.2, 2, 0.05, 0.06, 0.05],
+  ['paint_tin', -7.19, 0.52, 1.6, 0, 2, 0, 0.3], ['deco_box', -7.15, 1.02, 2.4], ['toolbox', -3.45, 0.93, 3.85, Math.PI / 2], ['traffic_cone', -6.1, 0, 5.4], ['mop_bucket', -7.0, 0, 3.6], ['mop', -6.7, 0, 3.4], ['cool_box', -5.6, 0, 3.9],
+  ['sledge', -4.6, 0, 5.4, 0.1], ['football', -4.5, 0, 3.0], ['torch', -3.45, 0.93, 4.6],
+  ['beer_crate', -5.5, 0, 0.0, 0], ['beer_crate', -5.5, 0, 0.5, 0],
+  ['lager', -5.62, 0.04, 0.0, 0, 4, 0.08, 0], ['lager', -5.62, 0.04, 0.5, 0, 4, 0.08, 0],
+  // garage fridge contents (fridge centre -4.63, 0.1; shelves y=0.12/0.57/1.02)
+  ['lager', -4.78, 0.13, 0.1, 0, 3, 0.1, 0], ['cider', -4.78, 0.58, 0.1, 0, 2, 0.12, 0], ['bitter', -4.75, 1.03, 0.12, 0, 2, 0.12, 0], ['prosecco', -4.45, 1.03, 0.12], ['pork_pie', -4.5, 0.58, 0.1],
+  // ---- kitchen: the buffet along the front worktop (either side of the sink) and down the right-hand run ----
+  ['paper_plate', 1.7, 0.91, 5.45, 0, 4, 0, 0, 0.014], ['napkins', 1.95, 0.91, 5.75],
+  ['sausage_roll', 2.0, 0.92, 5.4, 0, 5, 0.07, 0],
+  ['pig_tray', 4.15, 0.91, 5.45, 0], ['pig_blanket', 4.04, 0.935, 5.43, 0, 3, 0.06, 0],
+  ['platter', 4.3, 0.91, 5.7], ['tongs', 3.95, 0.95, 5.75, 0.3],
+  ['coleslaw', 2.3, 0.91, 5.72], ['potato_salad', 4.55, 0.91, 5.5],
+  ['trifle', 5.05, 0.91, 4.1], ['serving_spoon', 4.88, 0.91, 3.95, 0.4],
+  ['cheeseboard', 5.08, 0.91, 3.68], ['brie', 5.1, 0.95, 3.6], ['cracker_bis', 5.0, 0.91, 3.85, 0, 3, 0, 0, 0.007],
+  ['scotch_egg', 4.9, 0.95, 0.75, 0, 3, 0, 0.1], ['crisps_bowl', 5.2, 0.91, 0.85],
+  ['sprout', 5.0, 0.95, 3.25, 0, 4, 0.0, -0.04], ['roasting_tin', 5.1, 0.92, 2.6], ['turkey', 5.1, 0.96, 2.6], ['frying_pan', 5.0, 0.92, 3.1],
+  // drinks station (right-hand run by the fridge) + kettle corner
+  ['kettle', 5.1, 0.91, 4.85], ['mug', 5.18, 0.91, 4.6, 0, 3, 0, -0.12], ['tea_caddy', 5.25, 0.91, 5.05],
+  ['wine_glass', 4.92, 0.925, 1.2, 0, 2, 0, 0.14], ['pint_glass', 5.12, 0.925, 1.2, 0, 2, 0, 0.14], ['coaster', 4.95, 0.925, 1.6],
+  ['squash', 5.3, 0.925, 1.2], ['juice', 5.3, 0.925, 1.45], ['baileys', 5.2, 0.925, 1.65],
+  ['toaster', 2.0, 0.91, 5.78], ['tea_towel', 3.9, 0.91, 5.5], ['kitchen_roll', 4.65, 0.91, 5.78], ['oven_glove', 4.92, 0.91, 2.15],
+  ['chopping_board', 4.95, 0.91, 4.35, 1.5],
+  ['fruit_bowl', 5.15, 0.925, 0.6], ['satsuma', 5.15, 0.96, 0.6, 0, 2, 0.06, 0], ['banana', 5.05, 0.96, 0.62, 1.2],
+  ['spray', 3.85, 0.91, 5.8], ['bin', 2.35, 0, -0.05],
+  // kitchen fridge contents (fridge x=4.61, z≈0.1; shelves y=0.12, 0.57, 1.02, 1.42)
+  ['prosecco', 4.35, 0.13, 0.12], ['white_wine', 4.55, 0.13, 0.12], ['red_wine', 4.75, 0.13, 0.08], ['lager', 4.85, 0.58, 0.05, 0, 3, -0.07, 0.0],
+  ['milk', 4.3, 0.58, 0.15], ['juice', 4.45, 0.58, 0.15], ['foil', 4.6, 1.03, 0.12], ['squash', 4.35, 1.43, 0.12], ['baileys', 4.55, 1.43, 0.12],
+  // ---- dining room ----
+  ['dining_table', 3.0, 0, -3.3], ['dining_chair', 2.25, 0, -3.7, Math.PI / 2], ['dining_chair', 2.25, 0, -2.9, Math.PI / 2], ['dining_chair', 3.75, 0, -3.7, -Math.PI / 2], ['dining_chair', 3.75, 0, -2.9, -Math.PI / 2], ['dining_chair', 3.0, 0, -4.45, 0], ['dining_chair', 3.0, 0, -2.15, Math.PI],
+  ['office_chair', 4.62, 0, -1.3, Math.PI / 2], ['highchair', 3.75, 0, -4.6, 0.4], ['bouncer', 4.0, 0, -0.95, 1.2],
+  ['pong_cup', 2.8, 0.77, -3.95, 0, 3, 0.11, 0], ['pong_cup', 2.85, 0.77, -3.85, 0, 2, 0.11, 0], ['pong_cup', 2.9, 0.77, -3.75, 0, 1],
+  ['parcel', 3.2, 0.77, -3.3], ['board_game', 3.0, 0.77, -2.75, 0.2], ['buzzer', 2.75, 0.77, -3.45, 0, 3, 0, 0.18],
+  ['sippy_cup', 3.25, 0.77, -2.6], ['rusk', 2.75, 0.77, -2.6], ['pork_pie', 3.25, 0.77, -3.6], ['baby_bottle', 5.22, 0.88, -3.1],
+  ['pudding', 5.2, 0.88, -4.6], ['cream_jug', 5.2, 0.88, -4.3], ['brandy', 5.28, 0.88, -4.1], ['mince_pie', 5.15, 0.88, -3.85, 0, 5, 0, 0.08],
+  ['cracker', 2.7, 0.77, -2.9, 0, 2, 0, 0.12],
   // ---- conservatory ----
-  ['wicker_chair', 4.2, 0, -8.6, 0.5], ['wicker_chair', 6.4, 0, -9.5, -0.5],  ['wicker_table', 5.3, 0, -9.0],
-  ['plant_pot', 7.0, 0, -7.4], ['plant_pot', 3.6, 0, -10.2], ['watering_can', 6.9, 0, -9.4], ['microphone', 4.0, 0.62, -10.2], ['magazine', 5.3, 0.43, -9.0, 0.4],
+  ['wicker_table', 3.13, 0, -7.75], ['wicker_chair', 4.6, 0, -7.2, -1.8], ['wicker_chair', 4.65, 0, -8.15, -1.4],
+  ['watering_can', 4.95, 0, -6.55], ['microphone', 1.5, 0.62, -8.95], ['magazine', 3.13, 0.43, -7.75, 0.4],
   // ---- garden / patio ----
-  ['patio_table', -1.2, 0, -9.4], ['patio_chair', -1.9, 0, -9.4, Math.PI / 2], ['patio_chair', -0.5, 0, -9.4, -Math.PI / 2], ['patio_chair', -1.2, 0, -10.1, 0], ['patio_chair', -1.2, 0, -8.7, Math.PI],
-  ['gnome', -4.0, 0, -10.5, 0.4], ['football', -3.0, 0, -12.5], ['wheelbarrow', 6.5, 0, -16.0, 0.6], ['plant_pot', -2.6, 0, -7.3], ['bird_feeder', -6.0, 0, -15.5],
-  // ---- tree baubles are spawned by the tree; extras spare ----
+  ['patio_table', -2.47, 0, -8.36], ['patio_chair', -3.08, 0, -9.08, 0], ['patio_chair', -2.44, 0, -9.08, 0], ['patio_chair', -1.78, 0, -9.08, 0], ['patio_chair', -3.08, 0, -7.63, Math.PI], ['patio_chair', -2.44, 0, -7.63, Math.PI], ['patio_chair', -1.78, 0, -7.63, Math.PI],
+  ['patio_chair', -3.71, 0, -8.36, Math.PI / 2], ['patio_chair', -1.23, 0, -8.36, -Math.PI / 2],
+  ['gnome', -6.8, 0, -10.5, 0.4], ['football', 0.5, 0, -12.0], ['wheelbarrow', -6.4, 0, -13.7, 0.6], ['plant_pot', -5.6, 0, -6.35], ['bird_feeder', -6.7, 0, -12.6],
 ];
 
 // ---------------- hinged things (doors, fridge doors, lids, stair gate) ----------------
@@ -309,8 +308,8 @@ export function buildHinged() {
     return p.build(); };
   // room doorways are open walkways (no doors) so you can wander freely
   // stair gate (Mason's)
-  const gateGeo = (() => { const p = new Prop().box(0.86, 0.04, 0.03, '#f4f4f4', 0, 0.38, 0).box(0.86, 0.04, 0.03, '#f4f4f4', 0, -0.38, 0); for (let i = 0; i < 10; i++) p.box(0.02, 0.76, 0.02, '#f4f4f4', -0.4 + i * 0.089, 0, 0); return p.build(); })();
-  hinge({ name: 'Stair gate', size: [0.86, 0.8, 0.03], center: V(-1.55, 0.42, 4.36), hinge: V(-1.98, 0.42, 4.36), axis: { x: 0, y: 1, z: 0 }, limits: [-1.5, 0.02], mass: 3, geo: gateGeo, kind: 'gate', closeSpring: 3 });
+  const gateGeo = (() => { const p = new Prop().box(0.03, 0.04, 0.68, '#f4f4f4', 0, 0.38, 0).box(0.03, 0.04, 0.68, '#f4f4f4', 0, -0.38, 0); for (let i = 0; i < 8; i++) p.box(0.02, 0.76, 0.02, '#f4f4f4', 0, 0, -0.31 + i * 0.089); return p.build(); })();
+  hinge({ name: 'Stair gate', size: [0.03, 0.8, 0.68], center: V(-1.12, 0.42, 2.9), hinge: V(-1.12, 0.42, 2.55), axis: { x: 0, y: 1, z: 0 }, limits: [-0.02, 1.5], mass: 3, geo: gateGeo, kind: 'gate', closeSpring: 3 });
   // fridges: hollow carcass (static walls) + hinged door with a light inside
   const fridge = (name, cx, cz, facing, w, h, d, color, shelves) => {
     const s = facing; // +1 opens towards +z, -1 towards -z
@@ -331,11 +330,11 @@ export function buildHinged() {
     const up = door.update.bind(door); door.update = (dt) => { up(dt); light.intensity = door.closed ? 0 : 2.5; };
     return door;
   };
-  const kf = fridge('Kitchen fridge', 3.8, 0.42, 1, 0.92, 1.85, 0.68, '#d4d8dc', [0.1, 0.55, 1.0, 1.4]); kf.kitchen = true;
-  const gf = fridge('Garage fridge', -4.9, 5.6, -1, 0.62, 1.4, 0.6, '#f2f2f2', [0.1, 0.55, 1.0]); gf.garage = true;
+  const kf = fridge('Kitchen fridge', 4.61, 0.1, 1, 0.95, 1.85, 0.68, '#d4d8dc', [0.1, 0.55, 1.0, 1.4]); kf.kitchen = true;
+  const gf = fridge('Garage fridge', -4.63, 0.1, 1, 0.62, 1.4, 0.6, '#f2f2f2', [0.1, 0.55, 1.0]); gf.garage = true;
   // chest freezer lid
-  hinge({ name: 'Chest freezer lid', size: [1.2, 0.06, 0.7], center: V(-3.75, 0.88, 5.55), hinge: V(-3.75, 0.88, 5.9), axis: { x: 1, y: 0, z: 0 }, limits: [-1.6, 0.02], mass: 4, geo: new Prop().rbox(1.2, 0.06, 0.7, 0.02, '#f4f4f4').box(0.25, 0.03, 0.04, '#bbb', 0, 0.02, -0.33).build(), kind: 'lid' });
+  hinge({ name: 'Chest freezer lid', size: [1.2, 0.06, 0.7], center: V(-6.6, 0.88, 0.12), hinge: V(-6.6, 0.88, -0.23), axis: { x: 1, y: 0, z: 0 }, limits: [-1.6, 0.02], mass: 4, geo: new Prop().rbox(1.2, 0.06, 0.7, 0.02, '#f4f4f4').box(0.25, 0.03, 0.04, '#bbb', 0, 0.02, 0.33).build(), kind: 'lid' });
   // toilet lid
-  hinge({ name: 'Toilet seat lid', size: [0.36, 0.025, 0.42], center: V(-2.55, 0.43, 5.0), hinge: V(-2.76, 0.43, 5.0), axis: { x: 0, y: 0, z: 1 }, limits: [-0.02, 1.6], mass: 1, geo: new Prop().rbox(0.42, 0.025, 0.36, 0.01, '#f8f8f8', 0, 0, 0, 0, Math.PI / 2).build(), kind: 'lid' });
+  { const tl = G.house.spots.toiletLid; hinge({ name: 'Toilet seat lid', size: [0.36, 0.025, 0.42], center: V(tl.x, 0.43, tl.z), hinge: V(tl.x, 0.43, tl.z + 0.21), axis: { x: 1, y: 0, z: 0 }, limits: [-0.02, 1.6], mass: 1, geo: new Prop().rbox(0.36, 0.025, 0.42, 0.01, '#f8f8f8').build(), kind: 'lid' }); }
   return out;
 }

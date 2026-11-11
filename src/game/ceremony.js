@@ -19,13 +19,13 @@ export class Ceremony {
       g.fillStyle = '#f4ecd8'; g.font = '24px Georgia'; winners.slice(-7).forEach((w, i) => g.fillText(`${w.year}  ${w.team} ${w.note || ''}`, 40, 120 + i * 28));
     });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.375), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }));
-    m.position.set(-2.2, 1.75, -0.03); m.rotation.y = Math.PI; G.scene.add(m); this.plaque = m;
+    m.position.set(0.78, 1.65, -3.5); m.rotation.y = -Math.PI / 2; G.scene.add(m); this.plaque = m;
   }
   run(winner) {
     const q = G.quiz; q.phase = 'ceremony'; const name = q.teamName(winner);
     const cup = G.items.byType.mason_cup?.[0];
     // everyone gathers in front of the tree
-    const spots = [[-1.2, -5.6], [-0.6, -5.8], [0, -5.9], [0.6, -5.8], [1.2, -5.6], [-0.9, -5.0], [0.9, -5.0], [-1.6, -4.8], [1.6, -4.8], [0, -4.8], [-0.4, -4.4], [0.4, -4.4], [-1.2, -4.2], [1.2, -4.2], [-2.0, -5.2], [2.0, -5.2], [0, -5.2]];
+    const spots = [[-1.2, -5.6], [-0.6, -5.8], [0, -5.9], [0.6, -5.8], [1.2, -5.6], [-0.9, -5.0], [0.9, -5.0], [-1.6, -4.8], [1.6, -4.8], [0, -4.8], [-0.4, -4.4], [0.4, -4.4], [-1.2, -4.2], [1.2, -4.2], [-2.0, -5.2], [2.0, -5.2], [0, -5.2]].map(([x, z]) => [x - 2.7, z + 0.35]);
     let i = 0; for (const p of G.chars) { if (p.isPlayer || p.protected || !p.brain) continue; const s = spots[i++ % spots.length]; G.ai.sendTo(p.name, new THREE.Vector3(s[0], 0, s[1]), () => { p.brain.state = 'scripted'; p.brain.timer = 9999; p.base = 'stand'; p.yaw = 0; }); }
     sfx('drum', null, 1);
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'THE MASON CUP'); g.fillStyle = '#ffd700'; g.font = 'bold 60px Georgia'; g.fillText(name.toUpperCase(), 60, 220); g.fillStyle = '#fff'; g.font = '30px sans-serif'; g.fillText('WIN THE MASON CUP ' + new Date().getFullYear(), 60, 290); q.drawBigScores?.call(q, g, W, H); });
@@ -37,7 +37,7 @@ export class Ceremony {
     // the turkey falls off the cup during the presentation; Chip runs off with it
     setTimeout(() => { if (cup) { const t = cup.body.translation(); const tk = G.items.spawn('cup_turkey', new THREE.Vector3(t.x, t.y + 0.3, t.z), null); tk?.body.setLinvel({ x: 0.5, y: 1, z: 0.5 }, true); G.ui?.toast('The little turkey has fallen off the Mason Cup. Chip has it.', 4); G.dog?.goTo(new THREE.Vector3(t.x, 0, t.z), 3); } }, 9000);
     // losers' prizes
-    setTimeout(() => { const lose = ['paul', 'martin', 'debbie'].sort((a, b) => q.total(a) - q.total(b))[0]; G.items.spawn('wooden_spoon_prize', new THREE.Vector3(0, 0.6, -3.6), null); G.items.spawn('certificate', new THREE.Vector3(0.2, 0.6, -3.6), null); G.ui?.toast(`Wooden spoon and a gravy-stained certificate for ${q.teamName(lose)}.`, 4); }, 12000);
+    setTimeout(() => { const lose = ['paul', 'martin', 'debbie'].sort((a, b) => q.total(a) - q.total(b))[0]; G.items.spawn('wooden_spoon_prize', new THREE.Vector3(-1.5, 0.6, -3.6), null); G.items.spawn('certificate', new THREE.Vector3(-1.3, 0.6, -3.6), null); G.ui?.toast(`Wooden spoon and a gravy-stained certificate for ${q.teamName(lose)}.`, 4); }, 12000);
     // Replay of the Night on the TV, then awards
     setTimeout(() => { q.mSay('And now... the Replay of the Night.', 2); G.replay.playHighlights(() => this.awards(winner)); }, 15000);
     // record the win

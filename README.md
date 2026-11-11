@@ -32,12 +32,16 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   Heavy class (Paul, Martin, Gary) needs a two-hand lift in VR. Flying relatives knock others over (pile-ups).
   Mason (3), Harrison (1) and Chip can't be grabbed or hit — things bounce off them. People only fall over (and
   comic WHACK pop-ups only appear) when YOU hit, throw or grab them — bumping into furniture on their own never floors them.
-- **Martin's ground floor:** hallway + front door and doorbell, downstairs toilet (left), stairs with Mason's stair gate,
-  under-stairs cupboard → dark garage (car, chest freezer, garage fridge, broken light switch), kitchen (sink on the
-  front wall, American fridge on the back wall, island), living room (TV in the far corner, sofas left and right,
-  Martin's armchair, fireplace + mantelpiece with the Mason Cup, tree in the bay window), dining/games room (table against
-  the right wall, PC in the far corner), conservatory (glass roof), garden + patio. Open doorways between every room (no doors to fight with), fridge doors with lights,
-  freezer lid, toilet lid, stair gate — all physical.
+- **Martin's ground floor, built to the family's floor plan** (plan pixels → metres, 90 px = 1 m; see `PX`/`PZ` in
+  `src/world/house.js`): hallway from the front door, bathroom (basin + toilet) and the stairs (three steps up to a quarter
+  landing, then the flight up to a closed-off upstairs landing) on the left with a cupboard beside them, the under-stairs
+  cupboard leading through to the garage (fridge, chest freezer of beer, broken light), the kitchen on the right (fridge
+  top-right, worktop down the side with the hob, sink under the front window), the living room at the top of the hall
+  (TV in the corner, fireplace on the left wall, the tree in the bay window, L-shaped sofa, sofa along the bottom wall,
+  round coffee table on the rug and Martin's armchair), the dining room through the door beside it (table for six,
+  sideboard, plants, the desk with the PC), the conservatory through the walkway (sofa, TV, door out to the patio), the
+  L-shaped patio round the back (BBQ, table with eight chairs) and the lawn with a hedge all round. Open doorways
+  between rooms, fridge doors with lights, freezer lid, toilet lid, stair gate — all physical.
 - **~170 item types / ~260 physical objects.** Small things are grabbable; heavy furniture (sofas, the tree, tables,
   Martin's armchair, appliances, the hoover, wheelbarrow…) stays put. The house is useful: sit on any free seat
   (R / USE), light switches in each room, fill a glass at the kitchen tap, make a tea with the kettle (leave a mug
@@ -47,7 +51,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
 - **Where everyone is:** living room — Paul (who does the rounds between his family, Martin and Debbie), Karen, Charli, Martin (armchair), Debbie, Kirsty, Gary, Mason;
-  kitchen — Julie, Jodie, Hollie & Dan; games room — Sophie & James, Harry; conservatory — Bradley with Harrison.
+  kitchen — Julie, Jodie, Hollie & Dan; dining room — Sophie & James, Harry; conservatory — Bradley with Harrison.
 - **The quiz:** five rounds (Sport, Telly/Film/Music, News & Nonsense, Picture round drawn on the TV, the Family Round),
   Martin reads from the armchair, Charli whispers the right answer, Paul overrules you (stop him with a mince pie, a
   cushion or a shove), sheets swapped and marked by Team Martin (harshly), the Dispute Wheel (Allow / Half / Deny /

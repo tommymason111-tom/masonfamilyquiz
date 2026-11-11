@@ -12,18 +12,18 @@ const HELP = {
   crackerDuel: 'Grab the other end of the cracker your relative is holding and PULL (or press USE to yank). Best of three.',
   parcel: 'Grab the parcel. When the music STOPS, tear a layer (USE / pinch). Tear while the music is playing and you get a penalty.',
   stack: 'Build the tallest tower of chocolates on the dining table. 30 seconds. Mason is watching.',
-  giftGrab: 'Throw the presents into Team Paul\'s corner (the gold square in the games room). 40 seconds.',
+  giftGrab: 'Throw the presents into Team Paul\'s corner (the gold square in the dining room). 40 seconds.',
 };
 export class MiniGames {
   constructor() { G.minigames = this; this.active = null; on('next', () => { if (this.active) this.finish(true); }); G.updaters.push((dt) => this.update(dt)); }
   start(roundIdx, done) {
     const id = GAMES[roundIdx % GAMES.length]; this.done = done;
     const q = G.quiz; sfx('whistle', G.charByName.Martin?.headPos(new THREE.Vector3()), 1);
-    q.mSay(`Mini-game! Everyone into the games room. It's ${NAMES[id].toLowerCase()}!`, 2);
+    q.mSay(`Mini-game! Everyone into the dining room. It's ${NAMES[id].toLowerCase()}!`, 2);
     // a rep from each team wanders in
-    for (const [n, s] of [['Charli', [4.6, -2.4]], ['Hollie', [4.6, -4.2]], ['Kirsty', [5.1, -5.0]], ['Martin', [4.2, -3.3]]]) G.ai?.sendTo(n, new THREE.Vector3(s[0], 0, s[1]), () => { const p = G.charByName[n]; if (p) { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 60; } });
+    for (const [n, s] of [['Charli', [1.9, -2.3]], ['Hollie', [1.9, -4.4]], ['Kirsty', [4.2, -4.6]], ['Martin', [4.2, -2.3]]]) G.ai?.sendTo(n, new THREE.Vector3(s[0], 0, s[1]), () => { const p = G.charByName[n]; if (p) { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 60; } });
     this.active = { id, t: -6, score: 0, state: {}, before: new Set(G.items.instances) };
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'MINI-GAME: ' + NAMES[id], '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, HELP[id], 60, 160, 900, 42); g.fillStyle = '#ffd700'; g.font = 'bold 32px sans-serif'; const a = this.active; if (a) g.fillText(a.t < 0 ? `Starting in ${Math.ceil(-a.t)}… (head to the games room!)` : `Score: ${a.score}   Time: ${Math.max(0, Math.ceil(a.limit - a.t))}s`, 60, 420); g.font = '22px sans-serif'; g.fillStyle = '#9ab'; g.fillText('Press NEXT to skip', 60, 520); });
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'MINI-GAME: ' + NAMES[id], '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, HELP[id], 60, 160, 900, 42); g.fillStyle = '#ffd700'; g.font = 'bold 32px sans-serif'; const a = this.active; if (a) g.fillText(a.t < 0 ? `Starting in ${Math.ceil(-a.t)}… (head to the dining room!)` : `Score: ${a.score}   Time: ${Math.max(0, Math.ceil(a.limit - a.t))}s`, 60, 420); g.font = '22px sans-serif'; g.fillStyle = '#9ab'; g.fillText('Press NEXT to skip', 60, 520); });
     G.ui?.toast(`MINI-GAME: ${NAMES[id]}. ${HELP[id]}`, 7);
     this['setup_' + id]?.(this.active);
   }
@@ -50,7 +50,7 @@ export class MiniGames {
     a.limit = 45; a.cups = (G.items.byType.pong_cup || []); a.counted = new Set();
     // reset cups into a triangle on the table, and lay out sprouts on the sideboard
     a.cups.forEach((c, i) => { const row = i < 3 ? 0 : i < 5 ? 1 : 2; const k = i < 3 ? i : i < 5 ? i - 3 : 0; c.body.setTranslation({ x: 6.2 + row * 0.1 + k * 0.11 - (row * 0.055), y: 0.84, z: -4.4 + row * 0.1 }, true); c.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true); c.body.setLinvel({ x: 0, y: 0, z: 0 }, true); });
-    for (let i = 0; i < 10; i++) G.items.spawn('sprout', new THREE.Vector3(3.85, 0.9, -3.0 - i * 0.07), null);
+    for (let i = 0; i < 10; i++) G.items.spawn('sprout', new THREE.Vector3(2.7 + i * 0.06, 0.9, -2.55), null);
   }
   tick_sproutPong(a) {
     if (G.frame % 6) return;
@@ -97,13 +97,13 @@ export class MiniGames {
   }
   end_parcel(a) { clearTimeout(a.stopT); }
   // ---------- Stack the Celebrations ----------
-  setup_stack(a) { a.limit = 30; for (let i = 0; i < 14; i++) G.items.spawn('celebration', new THREE.Vector3(6.1 + (i % 4) * 0.06, 0.8, -2.8 - Math.floor(i / 4) * 0.05), null); }
-  tick_stack(a) { if (G.frame % 10) return; let top = 0; for (const c of G.items.byType.celebration || []) { const p = c.body.translation(); if (p.x > 5.95 && p.x < 6.95 && p.z > -4.6 && p.z < -2.4 && !c.held) { const v = c.body.linvel(); if (Math.hypot(v.x, v.y, v.z) < 0.1) top = Math.max(top, p.y - 0.78); } } a.height = top; a.score = Math.floor(top / 0.02); }
+  setup_stack(a) { a.limit = 30; for (let i = 0; i < 14; i++) G.items.spawn('celebration', new THREE.Vector3(2.85 + (i % 4) * 0.06, 0.8, -3.0 - Math.floor(i / 4) * 0.05), null); }
+  tick_stack(a) { if (G.frame % 10) return; let top = 0; for (const c of G.items.byType.celebration || []) { const p = c.body.translation(); if (p.x > 2.5 && p.x < 3.5 && p.z > -4.15 && p.z < -2.45 && !c.held) { const v = c.body.linvel(); if (Math.hypot(v.x, v.y, v.z) < 0.1) top = Math.max(top, p.y - 0.78); } } a.height = top; a.score = Math.floor(top / 0.02); }
   end_stack(a) { G.ui?.toast(`Tower height: ${Math.round((a.height || 0) * 100)} cm. Then Mason knocks it over and eats a Malteser.`, 4); G.ai.say('Mason', 'CRASH!', 1); for (const c of G.items.byType.celebration || []) { const p = c.body.translation(); if (p.x > 5.9) c.body.applyImpulse({ x: rand(-0.02, 0.02), y: 0.01, z: rand(-0.02, 0.02) }, true); } }
   // ---------- Gift Grab ----------
-  setup_giftGrab(a) { a.limit = 40; for (let i = 0; i < 6; i++) G.items.spawn(pick(['present_s', 'present_m']), new THREE.Vector3(5.2 + rand(-0.4, 0.4), 0.3 + i * 0.2, -3.3 + rand(-0.4, 0.4)), null);
-    const zone = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.35 })); zone.rotation.x = -Math.PI / 2; zone.position.set(4.05, 0.015, -6.5); G.scene.add(zone); a.zone = zone; }
-  tick_giftGrab(a) { if (G.frame % 10) return; let n = 0; for (const id of ['present_s', 'present_m', 'present_l']) for (const p of G.items.byType[id] || []) { const t = p.body.translation(); if (Math.abs(t.x - 4.05) < 0.45 && Math.abs(t.z + 6.5) < 0.45) n++; } a.score = Math.min(3, Math.floor(n / 2)); a.count = n; }
+  setup_giftGrab(a) { a.limit = 40; for (let i = 0; i < 6; i++) G.items.spawn(pick(['present_s', 'present_m']), new THREE.Vector3(1.7 + rand(-0.3, 0.3), 0.3 + i * 0.2, -3.3 + rand(-0.6, 0.6)), null);
+    const zone = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.35 })); zone.rotation.x = -Math.PI / 2; zone.position.set(1.5, 0.015, -5.4); G.scene.add(zone); a.zone = zone; }
+  tick_giftGrab(a) { if (G.frame % 10) return; let n = 0; for (const id of ['present_s', 'present_m', 'present_l']) for (const p of G.items.byType[id] || []) { const t = p.body.translation(); if (Math.abs(t.x - 1.5) < 0.45 && Math.abs(t.z + 5.4) < 0.45) n++; } a.score = Math.min(3, Math.floor(n / 2)); a.count = n; }
   end_giftGrab(a) { G.scene.remove(a.zone); G.ui?.toast(`${a.count || 0} presents in Team Paul's corner.`, 3); }
   // hooks from interact.js
   unwrapParcel(inst) { if (this.active?.id === 'parcel') this.tear(this.active); else G.ui?.toast('Save it for Pass the Parcel!'); }

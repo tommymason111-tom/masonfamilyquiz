@@ -95,8 +95,8 @@ export class Quiz {
     setTimeout(() => {
       sfx('cheer', null, 0.6); this.mSay('Gary! Come on out!');
       const gary = G.charByName.Gary; const gb = gary?.brain;
-      if (gary && gb) { gb.state = 'idle'; gary.teleport(-3.6, 0, 1.05, Math.PI / 2); G.ai.goHome(gb); setTimeout(() => { gary.say(G.garyOutfit.id === 'mrsclaus' ? 'Call me Gail.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
-        if (G.garyOutfit.onShelf) setTimeout(() => { gary.teleport(-3.2, 0, -0.9, Math.PI / 2); gb.state = 'scripted'; gb.timer = 9999; gary.base = 'sit'; gary.seatY = 1.42; G.ui?.toast('Martin has put Gary on the bookshelf. (Elf on the Shelf.) Grab him down!', 6); }, 6000);
+      if (gary && gb) { gb.state = 'idle'; gary.teleport(-3.7, 0, 0.25, Math.PI / 2); G.ai.goHome(gb); setTimeout(() => { gary.say(G.garyOutfit.id === 'mrsclaus' ? 'Call me Gail.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
+        if (G.garyOutfit.onShelf) setTimeout(() => { gary.teleport(-5.45, 0, -1.1, Math.PI / 2); gb.state = 'scripted'; gb.timer = 9999; gary.base = 'sit'; gary.seatY = 1.42; G.ui?.toast('Martin has put Gary on the bookshelf. (Elf on the Shelf.) Grab him down!', 6); }, 6000);
       }
       emit('outfitRevealed', G.garyOutfit);
       setTimeout(() => this.startRound(0), 9000);
@@ -290,7 +290,7 @@ export class Quiz {
     const lead = ['paul', 'martin', 'debbie'].sort((a, b) => this.total(b) - this.total(a))[0];
     this.mSay(`End of round. Team Paul ${gained.paul}, Team Martin ${gained.martin}, Team Debbie ${gained.debbie}.${lead === 'martin' ? ' Team Martin leading, as is right and proper.' : ''}`, 2);
     if (this.jokers.paul === null && this.round >= 1 && Math.random() < 0.7) setTimeout(() => G.charByName.Paul?.say('JOKER! We were playing the joker on that! ...Weren\'t we?'), 3000);
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < this.lastRound ? 'Next: mini-game in the games room (or press NEXT)' : 'Final scores are in...', 60, 520); });
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < this.lastRound ? 'Next: mini-game in the dining room (or press NEXT)' : 'Final scores are in...', 60, 520); });
     emit('roundEnd', this.round);
     this.roundEndTimer = setTimeout(() => this.afterRound(), 12000);
   }
@@ -338,7 +338,7 @@ export class Quiz {
   drawBigScores(g, W, H) {
     const order = ['paul', 'martin', 'debbie'];
     order.forEach((t, i) => { const y = 170 + i * 100; g.fillStyle = this.teamColor(t); g.fillRect(60, y - 60, 20, 80); g.fillStyle = '#fff'; g.font = 'bold 54px sans-serif'; g.fillText(this.teamName(t), 100, y); g.fillText(String(this.total(t)), 700, y); });
-    g.font = '18px sans-serif'; g.fillStyle = '#9ab'; g.fillText('(The PC in the games room disagrees by 2. Nobody knows which is right.)', 60, 470);
+    g.font = '18px sans-serif'; g.fillStyle = '#9ab'; g.fillText('(The PC in the dining room disagrees by 2. Nobody knows which is right.)', 60, 470);
   }
   // ---------------- the end ----------------
   final() {

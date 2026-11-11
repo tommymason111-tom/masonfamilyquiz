@@ -22,19 +22,19 @@ export class AI {
       Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Charli: { ...seat(H.sofaArmL) },
       Martin: { ...seat(H.armchair), armchair: true },
       Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]),
-      Gary: { pos: V(1.9, -6.0), yaw: -Math.PI * 0.8, stand: true },
+      Gary: { pos: V(-3.9, -5.1), yaw: 1.0, stand: true },
       Mason: { ...seat(H.floor[2]), floor: true },
       // Kitchen: Julie at the hob, Jodie by the kettle, Hollie & Dan leaning on the island by the drinks
-      Julie: { pos: V(6.0, 3.6), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Jodie: { pos: V(5.5, 4.9), yaw: 0, stand: true, room: 'kitchen' },
-      Hollie: { pos: V(2.75, 2.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Dan: { pos: V(2.75, 3.3), yaw: Math.PI / 2 + 0.3, stand: true, room: 'kitchen' },
+      Julie: { pos: V(4.35, 2.85), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Jodie: { pos: V(4.35, 4.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Hollie: { pos: V(3.0, 2.0), yaw: 2.16, stand: true, room: 'kitchen' },
+      Dan: { pos: V(3.6, 1.6), yaw: -0.98, stand: true, room: 'kitchen' },
       // Games room: Sophie & James planning the wedding at the table, Harry by the PC
-      Sophie: { pos: V(5.45, -2.7), yaw: Math.PI / 2, stand: true, room: 'dining' },
-      James: { pos: V(5.45, -3.4), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
-      Harry: { pos: V(5.2, -5.9), yaw: Math.PI * 0.75, stand: true, room: 'dining' },
+      Sophie: { pos: V(1.75, -3.0), yaw: Math.PI / 2, stand: true, room: 'dining' },
+      James: { pos: V(1.75, -3.7), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
+      Harry: { pos: V(4.25, -1.75), yaw: Math.PI / 2 + 0.3, stand: true, room: 'dining' },
       // Conservatory: Bradley keeping Harrison calm in the quiet
-      Bradley: { pos: V(4.2, -8.6), yaw: 0.5, seatY: 0.48, room: 'conservatory' },
+      Bradley: { ...seat(H.consSofa[0]), room: 'conservatory' },
       Harrison: { carried: 'Bradley' },
     };
     for (const p of G.chars) {
@@ -195,7 +195,7 @@ export class AI {
     };
   }
   // ---------- events used by systems ----------
-  storm(name) { const p = G.charByName[name]; const b = this.brains.get(p); if (!p || !b) return; this.goTo(b, new THREE.Vector3(2.4, 0, 2.3), () => { b.state = 'storm'; p.base = 'stand'; p.gesture = 'coatOn'; p.yaw = -Math.PI / 2; }); }
+  storm(name) { const p = G.charByName[name]; const b = this.brains.get(p); if (!p || !b) return; this.goTo(b, G.house.spots.stormOff.clone(), () => { b.state = 'storm'; p.base = 'stand'; p.gesture = 'coatOn'; p.yaw = 0; }); }
   calm(name) { const p = G.charByName[name]; const b = this.brains.get(p); if (!p || !b) return; b.state = 'idle'; p.gesture = null; this.goHome(b); }
   sleep(name, on) { const p = G.charByName[name]; const b = this.brains.get(p); if (!p || !b) return; if (on) { b.state = 'asleep'; p.base = 'sleep'; } else { b.state = 'idle'; p.base = b.home.stand ? 'stand' : 'sit'; } }
   release(name) { const p = G.charByName[name]; const b = this.brains.get(p); if (!b) return; b.state = 'idle'; this.goHome(b); }
@@ -235,12 +235,12 @@ export class AI {
     if (roll < 0.25 + havoc * 0.1) { this.masonThrow(b); b.timer = rand(14, 30) / (1 + havoc); return; }
     if (roll < 0.4 + havoc * 0.1) { this.masonLap(b); b.timer = 4; return; }
     if (roll < 0.52) { this.masonSteal(b); b.timer = 4; return; }
-    if (roll < 0.58) { this.goTo(b, new THREE.Vector3(-1.55, 0, 4.6), () => { m.base = 'stand'; m.gesture = 'stretch'; m.say(pick(['Up!', 'Stuck!', 'Uh oh.'])); b.state = 'scripted'; b.timer = 6; emit('masonGate'); setTimeout(() => { m.gesture = null; this.goTo(b, b.home.pos, () => this.sitAtHome(b)); }, 6000); }, 1.6); b.timer = 10; return; }
+    if (roll < 0.58) { this.goTo(b, G.house.spots.stairGate.clone(), () => { m.base = 'stand'; m.gesture = 'stretch'; m.say(pick(['Up!', 'Stuck!', 'Uh oh.'])); b.state = 'scripted'; b.timer = 6; emit('masonGate'); setTimeout(() => { m.gesture = null; this.goTo(b, b.home.pos, () => this.sitAtHome(b)); }, 6000); }, 1.6); b.timer = 10; return; }
     if (roll < 0.66) { m.say(pick(m.lines.idle), { prio: 0 }); }
     m.base = 'sitFloor'; b.timer = rand(5, 10);
   }
   masonLap(b) {
-    const loop = [new THREE.Vector3(0, 0, -1.0), new THREE.Vector3(0, 0, 2.8), new THREE.Vector3(3.0, 0, 1.7), new THREE.Vector3(5.85, 0, 0.6), new THREE.Vector3(5.0, 0, -3.3), new THREE.Vector3(3.0, 0, -1.15), new THREE.Vector3(0.5, 0, -3.0)];
+    const loop = [new THREE.Vector3(-2.4, 0, -2.2), new THREE.Vector3(0.1, 0, 2.8), new THREE.Vector3(2.8, 0, 2.0), new THREE.Vector3(3.8, 0, 4.2), new THREE.Vector3(1.7, 0, -2.4), new THREE.Vector3(4.3, 0, -4.6), new THREE.Vector3(-3.4, 0, -1.8)];
     b.p.say('Again!', { prio: 0 });
     let i = 0; const next = () => { if (i >= loop.length) { this.goTo(b, b.home.pos, () => this.sitAtHome(b)); return; } this.goTo(b, loop[i++], next, 2.3); };
     next();
@@ -260,7 +260,7 @@ export class AI {
     else if (r < 0.55 && G.charByName.Paul) { target = G.charByName.Paul.headPos(new THREE.Vector3()); label = 'Paul'; }
     else if (r < 0.75 && talker) { target = talker.headPos(new THREE.Vector3()); label = talker.name; }
     else { target = G.player.headPos(new THREE.Vector3()); label = 'you'; }
-    const nearBuffet = m.pos.distanceTo(new THREE.Vector3(4, 0, 5)) < 2.5, nearTree = m.pos.distanceTo(G.house.spots.tree) < 2.5;
+    const nearBuffet = m.pos.distanceTo(new THREE.Vector3(3.5, 0, 4.6)) < 2.5, nearTree = m.pos.distanceTo(G.house.spots.tree) < 2.5;
     const id = b.carry ? null : nearTree ? 'bauble' : nearBuffet ? 'sprout' : pick(['duplo', 'toy_car', 'duplo', 'cracker_toy', 'paper_ball']);
     setTimeout(() => {
       m.gesture = 'point';
@@ -288,7 +288,7 @@ export class AI {
       b.carry = it; it.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true);
       it.attached = (outP, outQ) => { b.p.handPos('L', outP); outQ.identity(); return outP; };
       b.p.say(pick(['Mine!', 'Hehehe!']), { prio: 0 }); emit('masonSteals', it);
-      const hides = [[G.house.spots.tree.clone().add(new THREE.Vector3(0.4, 0, 0.5)), 'in the tree'], [new THREE.Vector3(-2.6, 0, -3.3), 'under a sofa cushion'], [new THREE.Vector3(-2.3, 0, 5.0), 'in the toilet'], [G.house.spots.chipBed.clone(), 'in Chip\'s bed'], [new THREE.Vector3(-1.2, 0, -6.6), 'behind the TV']];
+      const hides = [[G.house.spots.tree.clone().add(new THREE.Vector3(0.4, 0, 0.5)), 'in the tree'], [new THREE.Vector3(-2.9, 0, -1.2), 'under a sofa cushion'], [new THREE.Vector3(-2.2, 0, 4.8), 'in the bathroom'], [G.house.spots.chipBed.clone(), 'in Chip\'s bed'], [new THREE.Vector3(-4.8, 0, -5.0), 'behind the TV']];
       const [where, label] = pick(hides);
       this.goTo(b, where, () => {
         if (b.carry === it) { b.carry = null; it.attached = null; it.body.setBodyType(G.R.RigidBodyType.Dynamic, true); it.hiddenAt = label; const hp = where.clone().setY(label === 'in the tree' ? 1.0 : 0.15); if (label === 'under a sofa cushion') hp.set(-3.0, 0.5, -3.3); it.body.setTranslation(hp, true); emit('masonHid', it, label); }

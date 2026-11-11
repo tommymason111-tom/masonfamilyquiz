@@ -28,7 +28,7 @@ export class Dog {
     this.kbody = G.world.createRigidBody(R.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0.3, 0));
     const col = G.world.createCollider(R.ColliderDesc.capsule(0.2, 0.13).setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))).setRestitution(0.9).setCollisionGroups(groups(GR.PROTECTED, GR.ITEM | GR.CHAR | GR.HELD | GR.SENSOR)), this.kbody);
     G.colliderMap.set(col.handle, { kind: 'dog', ref: this });
-    this.pos = new THREE.Vector3(-0.9, 0, -0.5); this.yaw = 0; this.speed = 0; this.vel = 0; this.phase = 0; this.state = 'sleep'; this.timer = 20; this.path = null;
+    this.pos = new THREE.Vector3(-4.75, 0, -1.0); this.yaw = 0; this.speed = 0; this.vel = 0; this.phase = 0; this.state = 'sleep'; this.timer = 20; this.path = null;
     this.wag = 0.4; this.mouth = null; this.followT = 0; this.jaw = 0; this.headDown = 0; this.sniff = 0; this.turn = 0; this.shake = 0;
     this.ears = [{ a: 0, v: 0 }, { a: 0, v: 0 }]; this.tailA = 0; this.prevYaw = 0; this.prevPos = this.pos.clone(); this.panting = 0;
     this.root = this.rig.root; this.body = new THREE.Object3D(); // (kept for replay tracking compatibility)
@@ -76,7 +76,7 @@ export class Dog {
     if (r < 0.12 + havoc * 0.05) return this.zoomies();
     if (r < 0.3) return this.stealFood();
     if (r < 0.43) return this.dropToy();
-    if (r < 0.52) { this.goTo(new THREE.Vector3(3.6, 0, 4.9), 1.0, () => { this.state = 'beg'; this.timer = 10; this.yaw = 0; sfx('whine', this.pos); }); return; }
+    if (r < 0.52) { this.goTo(new THREE.Vector3(3.4, 0, 4.5), 1.0, () => { this.state = 'beg'; this.timer = 10; this.yaw = 0; sfx('whine', this.pos); }); return; }
     if (r < 0.6 && G.house.tv) { this.goTo(G.house.tv.center.clone().setY(0).add(G.house.tv.normal.clone().multiplyScalar(0.5)), 1.8, () => { this.state = 'jumpTV'; this.timer = 3; this.yaw = Math.atan2(-G.house.tv.normal.x, -G.house.tv.normal.z); this.bark(2); emit('chipTV'); }); return; }
     if (r < 0.67) { const s = pick(G.items.byType.answer_sheet || []); if (s) { const t = s.body.translation(); this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.0, () => { this.state = 'lie'; this.timer = 15; emit('chipOnSheets'); }); return; } }
     if (r < 0.73 && G.charByName.Gary && G.charByName.Gary.brain?.state !== 'hidden') { const g = G.charByName.Gary; this.goTo(g.pos.clone().add(new THREE.Vector3(0.8, 0, 0.6)), 2, () => { this.yaw = Math.atan2(g.pos.x - this.pos.x, g.pos.z - this.pos.z); this.bark(4); this.state = 'sit'; this.timer = 3; emit('chipVsGary'); }); return; }
@@ -86,11 +86,11 @@ export class Dog {
   follow(p, secs) { this.followTarget = p; this.followT = secs; }
   zoomies() {
     this.state = 'zoom'; emit('zoomies');
-    const pts = [new THREE.Vector3(0, 0, -3), new THREE.Vector3(0, 0, 2), new THREE.Vector3(3.5, 0, 1.6), new THREE.Vector3(5.6, 0, 3.8), new THREE.Vector3(5.85, 0, 0.6), new THREE.Vector3(5, 0, -3.5), new THREE.Vector3(0, 0, -4)];
+    const pts = [new THREE.Vector3(-2.5, 0, -3), new THREE.Vector3(0.1, 0, 2), new THREE.Vector3(3.0, 0, 1.6), new THREE.Vector3(3.8, 0, 3.8), new THREE.Vector3(4.0, 0, 1.0), new THREE.Vector3(1.8, 0, -2.0), new THREE.Vector3(-2.0, 0, -4.2)];
     let i = 0; const next = () => { if (i >= pts.length) { this.state = 'sit'; this.timer = 3; this.panting = 8; return; } this.goTo(pts[i++], 4.4, next); }; next();
   }
   stealFood() {
-    const food = G.items.nearest(new THREE.Vector3(4, 0.9, 4.5), 6, (it) => it.type.food && !it.held && !it.attached && it.type.mass < 0.6 && it.id !== 'sprout');
+    const food = G.items.nearest(new THREE.Vector3(3.5, 0.9, 4.0), 6, (it) => it.type.food && !it.held && !it.attached && it.type.mass < 0.6 && it.id !== 'sprout');
     if (!food) { this.timer = 5; return; }
     const t = food.body.translation();
     this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.6, () => {
@@ -101,7 +101,7 @@ export class Dog {
         if (!food.alive || food.held) { this.state = 'sit'; return; }
         this.carry(food); sfx('yap', this.pos); emit('chipStole', food); G.ai?.say('Julie', pick(['CHIP! Drop it!', 'Who gave the dog a sausage roll?!', 'Chip, NO!']), 1);
         if (G.charByName.Julie && Math.random() < 0.6) G.ai.sendTo('Julie', this.pos.clone(), () => G.ai.release('Julie'), 2.4);
-        this.state = 'run'; this.timer = 6; this.goTo(pick([new THREE.Vector3(0, 0, -12), new THREE.Vector3(0, 0, 4), new THREE.Vector3(5.2, 0, -9)]), 3.4);
+        this.state = 'run'; this.timer = 6; this.goTo(pick([new THREE.Vector3(-2.5, 0, -11.6), new THREE.Vector3(0.1, 0, 4), new THREE.Vector3(3.0, 0, -7.4)]), 3.4);
       }, 700);
     });
   }

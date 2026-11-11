@@ -88,9 +88,9 @@ export class Modes {
   // ---------------- Hide & Seek ----------------
   hideSetup() { this.limit = 240; this.found = 0;
     const spots = shuffle([
-      ['in the Christmas tree', 0.35, 1.05, -7.1], ['under a sofa cushion', -2.95, 0.6, -3.3], ['in the downstairs toilet', -2.3, 0.5, 5.0], ['in Chip\'s bed', -0.9, 0.08, -0.5],
-      ['on the garage shelf', -8.15, 1.55, 1.0], ['behind the TV', -3.2, 0.6, -6.6], ['in the conservatory plant pot', 7.0, 0.5, -7.4], ['on top of the fridge', 3.8, 1.92, 0.45],
-      ['under the stairs', -2.6, 0.7, 0.35], ['by the shed', 7.4, 0.1, -15.4], ['in the fireplace', -2.2, 0.15, -0.3], ['in the kitchen bin', 1.5, 0.65, 1.2], ['on the landing', -1.55, 2.5, 1.0], ['under the BBQ', -6.2, 0.1, -7.9],
+      ['in the Christmas tree', -2.12, 1.05, -6.1], ['under a sofa cushion', -2.9, 0.62, -1.0], ['in the bathroom', -2.2, 0.5, 4.8], ['in Chip\'s bed', -4.75, 0.08, -1.0],
+      ['on the garage shelf', -7.19, 1.55, 3.0], ['behind the TV', -5.45, 0.6, -5.7], ['in the conservatory plant pot', 5.15, 0.5, -6.45], ['on top of the fridge', 4.61, 1.92, 0.1],
+      ['under the stairs', -2.7, 0.1, 0.4], ['behind the trampoline', 3.4, 0.1, -14.0], ['in the fireplace', -5.0, 0.15, -3.05], ['in the kitchen bin', 2.35, 0.65, -0.05], ['on the landing', -2.1, 2.5, 0.1], ['under the BBQ', -7.0, 0.1, -7.4],
     ]).slice(0, 6);
     const ids = shuffle(['remote', 'keys', 'phone', 'cup_turkey', 'red_nose', 'rubber_duck']);
     this.hidden = spots.map(([where, x, y, z], i) => { const it = G.items.spawn(ids[i], new THREE.Vector3(x, y, z), null); if (it) it.hiddenAt = where; return it; }).filter(Boolean);
@@ -100,7 +100,7 @@ export class Modes {
   }
   // ---------------- Games Room Marathon ----------------
   gamesSetup() { this.limit = 0; this.gi = 0; const q = G.quiz; this.base = q.bonus.paul;
-    G.player.teleport(4.6, -1.6, Math.PI * 0.9);
+    G.player.teleport(1.6, -1.3, -0.6);
     const next = () => { this.score = (q.bonus.paul - this.base) * 100; if (this.gi >= 5) return this.end(); G.minigames.start(this.gi++, next); };
     setTimeout(next, 2500);
   }

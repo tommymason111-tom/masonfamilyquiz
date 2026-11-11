@@ -1,4 +1,4 @@
-// Martin's TV and the games-room PC: canvas screens for questions, scores (they disagree by 2), the outfit
+// Martin's TV and the dining-room PC: canvas screens for questions, scores (they disagree by 2), the outfit
 // wheel, the dispute wheel, CBeebies, blue screens — and a render-target for the instant replay.
 import * as THREE from 'three';
 import { G } from '../core.js';

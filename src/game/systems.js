@@ -16,7 +16,7 @@ export class Systems {
     this.banterV = 15; this.banterReds = 0; this.havoc = 0; this.tvDamage = 0; this.hostPoints = 0; this.coasterWarnings = 0;
     this.dignity = 50; this.powerOut = false; this.paulCalmUsed = -1; this.nextRoast = G.time + rand(50, 80); this.roastCount = 0; this.nextJoke = G.time + rand(70, 110); this.nextOrder = G.time + rand(40, 70);
     this.orders = []; this.decals = []; this.events = []; this.noseprints = []; this.stats = { kidsThrows: 0, hidden: 0, tvHits: 0, ceasefires: 0, eyeRolls: 0, laughFits: 0, jokes: 0, coaster: 0, calmed: 0, chipStole: 0 };
-    this.kitchenBeer = () => (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 3.2 && t.x < 4.4 && t.z < 0.9; }).length;
+    this.kitchenBeer = () => (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 4.1 && t.x < 5.1 && t.z < 0.5; }).length;
     this.buildBanterLights();
     this.wire();
     G.updaters.push((dt) => this.update(dt));
@@ -208,7 +208,7 @@ export class Systems {
   sweetsLeft() { return (G.items.byType.celebration?.length || 0) + (G.items.byType.sweet?.length || 0); }
   refillBuffet() {
     if (G.quiz && G.quiz.round >= 4) { if (!this.noMore) { this.noMore = true; G.ai.say('Julie', 'That\'s it, there\'s no more.', 1); } return; }
-    const want = { sausage_roll: [2.1, 5.6], mince_pie: [6.65, 1.2], pig_blanket: [2.75, 5.62], scotch_egg: [6.6, 4.7] };
+    const want = { sausage_roll: [2.1, 5.4], mince_pie: [5.15, -3.7], pig_blanket: [4.1, 5.43], scotch_egg: [4.9, 0.85] };
     for (const id in want) { if ((G.items.byType[id]?.length || 0) < 3) { for (let i = 0; i < 3; i++) G.items.spawn(id, new THREE.Vector3(want[id][0] + rand(-0.1, 0.1), 0.93, want[id][1] + rand(-0.08, 0.08)), null, { surface: true }); } }
   }
   // ---------------- rounds & the Chaos Director ----------------
@@ -229,7 +229,7 @@ export class Systems {
       case 'treeFalls': { const d = new THREE.Vector3(rand(-1, 1), 0, 1).normalize(); G.tree?.knock(d, 1.6); break; }
       case 'corkPop': { const pr = G.items.byType.prosecco?.[0]; if (pr && !pr.state.open) { G.ai.say('Hollie', 'Who wants Prosecco?', 1); setTimeout(() => { G.interact.consume(pr, G.player); }, 2500); } break; }
       case 'phoneCheat': { const c = pick(['Hollie', 'Kirsty', 'James', 'Sophie'].map(n => G.charByName[n]).filter(Boolean)); this.cheater = c; c.gesture = 'phone'; setTimeout(() => { if (this.cheater === c) { c.gesture = null; this.cheater = null; } }, 30000); T(`Is that a phone glowing under the table...? (Point at the cheater for 1 second / look + X)`, 5); break; }
-      case 'pcBlue': this.pcBlue = true; T('The games room PC has blue-screened. Scores lost. Everyone claims they were winning.', 4); setTimeout(() => { if (this.pcBlue) { G.ai.sendTo('Dan', new THREE.Vector3(6.1, 0, -5.9), () => { G.charByName.Dan?.say('Have you tried turning it off and on again? ...There.'); this.pcBlue = false; G.ai.release('Dan'); }); } }, 15000); break;
+      case 'pcBlue': this.pcBlue = true; T('The dining room PC has blue-screened. Scores lost. Everyone claims they were winning.', 4); setTimeout(() => { if (this.pcBlue) { G.ai.sendTo('Dan', G.house.spots.pcChair.clone().add(new THREE.Vector3(-0.35, 0, 0.3)), () => { G.charByName.Dan?.say('Have you tried turning it off and on again? ...There.'); this.pcBlue = false; G.ai.release('Dan'); }); } }, 15000); break;
       case 'paulOverRoast': this.roast(true); break;
       case 'weddingTakeover': this.weddingTakeover = true; G.ai.say('Sophie', pick(G.charByName.Sophie.lines.wedding), 1); setTimeout(() => G.ai.say('Karen', 'Ooh, ivory.', 0), 3000); setTimeout(() => G.ai.say('Julie', 'Chair covers, definitely.', 0), 5000); T('Wedding takeover: three people have stopped answering to talk about centrepieces.', 4); setTimeout(() => this.weddingTakeover = false, 40000); break;
       case 'jamesTest': G.ai.say('Martin', 'James. Fiancé test. What\'s Sophie\'s middle name?', 1); setTimeout(() => G.ai.say('James', 'Is this a real question? Soph, do I answer that?', 1), 3000); setTimeout(() => G.ai.say('Paul', 'He doesn\'t know! He doesn\'t know!', 1), 6000); break;
@@ -243,7 +243,7 @@ export class Systems {
       case 'channelChange': this.cbeebiesEvent(); break;
       case 'volume100': playMusic('jingle', false, 0.2); sfx('bark', G.dog?.pos); T('Mason sat on the remote: the TV is at volume 100. Chip howls along.', 4); break;
       case 'doorbell': sfx('ding', new THREE.Vector3(0.65, 1.3, 5.95), 1); this.doorbell(); break;
-      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 3.2 && t.x < 4.4 && t.z < 0.9; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (through the under-stairs cupboard). Phone torch: T.', 6); break;
+      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 4.1 && t.x < 5.1 && t.z < 0.5; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (through the under-stairs cupboard). Phone torch: T.', 6); break;
       case 'puddingFire': { const pu = G.items.byType.pudding?.[0]; if (pu) this.puddingFire(pu); break; }
       case 'siriBetrayal': say(null, 'Here\'s what I found on the web for: ' + (G.quiz?.cur?.q || 'Grand National winner'), { prio: 2 }); T('A phone just shouted the question out loud. Who was that?!', 3); this.cheater = pick([G.charByName.Kirsty, G.charByName.Hollie]); break;
       case 'toiletTrip': { const c = pick([G.charByName.James, G.charByName.Hollie, G.charByName.Kirsty]); if (c) { this.cheater = c; G.ai.sendTo(c.name, G.house.spots.toilet.pos, () => { c.brain.state = 'scripted'; c.brain.timer = 25; c.gesture = 'phone'; }); T(`${c.name} has gone to the loo for "five minutes" during the hard round. Follow them in?`, 5); } break; }
@@ -299,7 +299,7 @@ export class Systems {
     // ragdolls flung near the tree knock it over; against glass they "squash and slide"
     if (G.tree && G.frame % 3 === 0) for (const p of G.chars) { if (p.state !== 'ragdoll') continue; const hp = p.world[1].p; const tp = G.tree.group.position; const d = Math.hypot(hp.x - tp.x, hp.z - tp.z);
       if (d < 1.0 && !p._treeBump) { const v = p.bodies[1].linvel(); if (Math.hypot(v.x, v.z) > 1.5) { p._treeBump = true; setTimeout(() => p._treeBump = false, 3000); G.tree.knock(new THREE.Vector3(v.x, 0, v.z).normalize(), 1); G.ai.say('Julie', 'Mind my tree!', 1); } }
-      if (!p._glass && (roomAt(hp.x, hp.z) === 'bay' || roomAt(hp.x, hp.z) === 'conservatory' || roomAt(hp.x, hp.z) === 'garden')) { const near = Math.abs(hp.z + 8) < 0.35 || Math.abs(hp.z + 7) < 0.25 && Math.abs(hp.x) < 1.5; if (near) { p._glass = true; emit('glassSquash', p); setTimeout(() => p._glass = false, 5000); } } }
+      if (!p._glass) { const near = (hp.z < -5.7 && hp.z > -7.25 && ((hp.x > -5.5 && hp.x < -3.6) || (hp.x > -3.9 && hp.x < -1.0 && hp.z < -6.6) || (hp.x > -1.2 && hp.x < 0.5))) || (Math.abs(hp.z + 9.39) < 0.35 && hp.x > 0.9 && hp.x < 5.56) || ((Math.abs(hp.x - 0.9) < 0.35 || Math.abs(hp.x - 5.56) < 0.35) && hp.z < -6.2 && hp.z > -9.4); if (near) { p._glass = true; emit('glassSquash', p); setTimeout(() => p._glass = false, 5000); } } }
     // coasters: drinks left on wooden furniture without a coaster
     if (G.frame % 120 === 0) this.coasterCheck();
     // power cut: torch-lit, TV off
@@ -309,7 +309,7 @@ export class Systems {
     const table = G.items.byType.coffee_table?.[0]; if (!table) return; const tt = table.body.translation();
     for (const it of G.items.instances) {
       if (!(it.type.drink || it.type.kind === 'glass') || it.held || !it.body.isSleeping()) continue;
-      const p = it.body.translation(); if (Math.abs(p.x - tt.x) > 0.6 || Math.abs(p.z - tt.z) > 0.32 || p.y < 0.4 || p.y > 0.75) continue;
+      const p = it.body.translation(); if (Math.hypot(p.x - tt.x, p.z - tt.z) > 0.42 || p.y < 0.4 || p.y > 0.75) continue;
       if (it.coasterChecked) continue; it.coasterChecked = true;
       const hasCoaster = (G.items.byType.coaster || []).some(c => { const q = c.body.translation(); return Math.hypot(q.x - p.x, q.z - p.z) < 0.06; });
       if (!hasCoaster && it.releasedRecently !== undefined) { this.coasterWarnings++; this.stats.coaster++; G.ai.say('Julie', pick(G.charByName.Julie.lines.coaster), 2); if (this.coasterWarnings >= 5) { G.ui?.toast('Five Coaster Warnings. Julie confiscates your drink.', 4); G.items.remove(it); this.coasterWarnings = 0; } }

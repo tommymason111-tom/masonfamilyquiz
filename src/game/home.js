@@ -79,7 +79,7 @@ export function renderPortraits() {
 let orbitT = 0;
 export function orbitCamera(dt) {
   orbitT += dt * 0.05;
-  const shots = [[[2.2, 1.6, -0.6], [-1.2, 0.9, -4.5]], [[-0.4, 1.3, -1.0], [0.2, 1.0, -6.8]], [[2.9, 1.5, -6.3], [-2.0, 0.8, -3.0]], [[-2.4, 1.7, -0.7], [1.5, 0.8, -4.0]]];
+  const shots = [[[-0.2, 1.6, -0.8], [-3.0, 0.9, -5.2]], [[-4.6, 1.3, -1.2], [-1.6, 1.0, -5.2]], [[-1.4, 1.5, -5.3], [-3.6, 0.8, -1.5]], [[-5.0, 1.7, -4.8], [-0.6, 0.8, -2.4]]];
   const i = Math.floor(orbitT) % shots.length, k = orbitT % 1; const e = k * k * (3 - 2 * k);
   const [p, t] = shots[i]; const [p2] = shots[(i + 1) % shots.length];
   const P = new THREE.Vector3(...p).lerp(new THREE.Vector3(...p).lerp(new THREE.Vector3(...p2), 0.25), e);
