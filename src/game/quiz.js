@@ -94,9 +94,9 @@ export class Quiz {
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, "GARY'S OUTFIT WHEEL", '#2d6a4f'); const k = clamp((G.time - start) / 6, 0, 1); const e = 1 - Math.pow(1 - k, 3); drawWheel(g, 420, 320, 230, labels, colors, finalAngle * e);
       if (k >= 1) { g.fillStyle = '#ffd700'; g.font = 'bold 34px sans-serif'; wrapText(g, 'THIS YEAR: ' + G.garyOutfit.label, 700, 200, 300, 44); } });
     setTimeout(() => {
-      sfx('cheer', null, 0.6); this.mSay('Gary! Come on out!');
+      sfx('cheer', null, 0.6); this.mSay('Gary! Stand up, give us a twirl!');
       const gary = G.charByName.Gary; const gb = gary?.brain;
-      if (gary && gb) { gb.state = 'idle'; gary.teleport(-3.7, 0, 0.25, Math.PI / 2); G.ai.goHome(gb); setTimeout(() => { gary.say(G.garyOutfit.id === 'fairy' ? 'Wish granted. You\'re all losing.' : G.garyOutfit.id === 'smurf' ? 'La la la-la-la-la.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
+      if (gary && gb) { if (gary.state === 'anim') { gary.gesture = 'cheer'; setTimeout(() => gary.gesture === 'cheer' && (gary.gesture = null), 3000); } setTimeout(() => { gary.say(G.garyOutfit.id === 'fairy' ? 'Wish granted. You\'re all losing.' : G.garyOutfit.id === 'smurf' ? 'La la la-la-la-la.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
         if (G.garyOutfit.onShelf) setTimeout(() => { gary.teleport(-5.45, 0, -1.1, Math.PI / 2); gb.state = 'scripted'; gb.timer = 9999; gary.base = 'sit'; gary.seatY = 1.42; G.ui?.toast('Martin has put Gary on the bookshelf. (Elf on the Shelf.) Grab him down!', 6); }, 6000);
       }
       emit('outfitRevealed', G.garyOutfit);

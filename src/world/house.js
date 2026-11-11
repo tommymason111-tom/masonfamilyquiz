@@ -85,7 +85,8 @@ export function buildHouse() {
   const poly = (pts, mat, y, s = 1.2) => { const sh = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z))); const g = new THREE.ShapeGeometry(sh, 24); g.rotateX(-Math.PI / 2); g.translate(0, y, 0);
     const p = g.attributes.position, uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / s, p.getZ(i) / s); add(mat, g); return g; };
   floor(ROOMS.hall, M.oak); floor(ROOMS.hallTop, M.oak); floor(ROOMS.stairs, M.oak); floor(ROOMS.living, M.oak, 1.6); floor(ROOMS.dining, M.oak, 1.6);
-  floor(ROOMS.kitchen, M.oak, 1.6); floor(ROOMS.toilet, M.bathFloor, 0.9); floor(ROOMS.under, M.concrete, 2); floor(ROOMS.garage, M.concrete, 3);
+  // kitchen floor stops where the hall's corner by the dining door begins (no two floors fighting there)
+  floor({ x0: 1.51, x1: 6.37, z0: 0.72, z1: 5.92 }, M.oak, 1.6); floor({ x0: 2.01, x1: 6.37, z0: -0.3, z1: 0.72 }, M.oak, 1.6); floor(ROOMS.toilet, M.bathFloor, 0.9); floor(ROOMS.under, M.concrete, 2); floor(ROOMS.garage, M.concrete, 3);
   floor(ROOMS.conservatory, M.tileCons, 1.5);
   // the bay is a trapezoid (angled sides)
   const BAY = [[PX(380), PZ(805)], [PX(430), PZ(722)], [PX(575), PZ(722)], [PX(620), PZ(805)]];

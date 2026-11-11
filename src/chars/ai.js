@@ -49,8 +49,7 @@ export class AI {
     // Harrison rides on Bradley's arm
     this.harrison = G.charByName.Harrison; this.bradley = G.charByName.Bradley;
     if (this.bradley) this.bradley.gesture = 'holdBaby';
-    // Gary waits in the garage until the outfit wheel has spun
-    const gary = G.charByName.Gary; if (gary) { const gb = this.brains.get(gary); gb.state = 'hidden'; gary.teleport(-5.0, 0, 3.0, Math.PI / 2); }
+    // Gary is in the living room from the start, already in his outfit of the year
     on('recover', (p) => this.onRecover(p));
     on('ragdoll', (p) => this.onRagdoll(p));
     G.updaters.push((dt) => this.update(dt));
