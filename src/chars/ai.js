@@ -33,8 +33,8 @@ export class AI {
       Sophie: { pos: V(1.75, -3.0), yaw: Math.PI / 2, stand: true, room: 'dining' },
       James: { pos: V(1.75, -3.7), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
       Harry: { pos: V(4.25, -1.75), yaw: Math.PI / 2 + 0.3, stand: true, room: 'dining' },
-      // Conservatory: Bradley keeping Harrison calm in the quiet
-      Bradley: { ...seat(H.consSofa[0]), room: 'conservatory' },
+      // Kitchen: Bradley (carrying Harrison) with the rest of his team
+      Bradley: { pos: V(2.75, 1.3), yaw: 1.65, stand: true, room: 'kitchen' }, // with his team (Hollie & Dan) by the bar
       Harrison: { carried: 'Bradley' },
     };
     for (const p of G.chars) {
