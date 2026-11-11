@@ -80,10 +80,10 @@ export const CAST = [
     face: { jaw: 0.98, nose: 0.6, noseW: 0.9, brow: 0.1, cheek: 0.9, lips: 0.8, eyeGap: 0.36 },
     voice: { pitch: 2, rate: 1.25, female: false, idx: 0 },
     lines: { idle: ["DINOSAUR!", "GARY BUM!", "SPAIN!", "CHIP!", "Again!", "Uh oh.", "KPOP DEMON HUNTERS!"] } },
-  { name: 'Harrison', role: 'Baby (1)', team: 'hollie', height: 0.75, build: 'baby', sex: 'm', hair: { style: 'wispy', color: '#ead6a8' }, rosy: 0.5,
+  { name: 'Harrison', role: 'Toddler (2), dressed as an elf', team: 'hollie', height: 0.86, build: 'toddler', sex: 'm', hair: { style: 'short', color: '#ead6a8' }, rosy: 0.5,
     top: { pattern: 'elf', c1: '#2a9a3a', hat: 'elf' }, legs: { type: 'onesie', c1: '#c41e1e' }, socks: '#c41e1e', eyes: '#4a6a9a', protected: true,
     face: { jaw: 1, nose: 0.5, noseW: 0.9, brow: 0, cheek: 1, lips: 0.75, eyeGap: 0.37 },
-    voice: { pitch: 2, rate: 1.3, female: true, idx: 0 }, lines: { idle: ["Ba ba!", "Da!", "Eeeee!"] } },
+    voice: { pitch: 2, rate: 1.3, female: true, idx: 0 }, lines: { idle: ["Daddy!", "ELF!", "Jingle bells!", "Mason!", "Chip! CHIP!", "Uh oh.", "Eeeee!", "Again!"] } },
 ];
 
 // Personal idles/behaviour flags used by the AI

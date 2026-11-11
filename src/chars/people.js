@@ -65,6 +65,15 @@ function dress(p, c, outfit) {
     case 'Debbie': p.attach(acc(P => { for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; P.sph(0.022, i % 2 ? '#c0c0c0' : '#d4af37', Math.sin(a) * 0.075 * H / 1.6, 0, Math.cos(a) * 0.07 * H / 1.6, 1, 1, 1, 5); } P.sph(0.022, '#d4af37', 0.03, -0.12, 0.08, 0.8, 3, 0.8, 5); }), 'spine', neck.clone().add(new THREE.Vector3(0, -0.01, 0)));
       for (const s of [-1, 1]) p.attach(acc(P => P.torus(0.018, 0.004, '#d4af37', 0, 0, 0, 0, Math.PI / 2, 0)), 'head', new THREE.Vector3(s * hd.rx * 1.02, hd.cy - O[2].y - hd.ry * 0.3, hd.cz - 0.01)); break;
     case 'Harry': p.attach(acc(P => P.sph(1, '#222', 0, 0, 0, hd.rx * 1.12, hd.ry * 0.62, hd.rz * 1.1, 14).box(hd.rx * 1.7, 0.008, hd.rz * 0.9, '#1a1a1a', 0, -hd.ry * 0.05, hd.rz * 1.15, -0.15)), 'head', new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.38, hd.cz)); break;
+    case 'Harrison': { // the full elf: bell on the hat, pointy ears, a jingly collar, belt and buckle, curly shoes
+      const g = '#1f8a3a', r = '#c41e1e', gold = '#d4af37';
+      p.attach(acc(P => P.sph(0.018 * H, gold, 0, 0, 0, 1, 1, 1, 10)), 'head', new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.6 + 0.16 * H, hd.cz - 0.01 * H - 0.08 * H - 0.02));
+      for (const s of [-1, 1]) p.attach(acc(P => P.cone(0.02, 0.07, '#f2c9a8', 0, 0, 0, 0, 0, -s * 1.1, 8)), 'head', new THREE.Vector3(s * hd.rx * 1.02, hd.cy - O[2].y + hd.ry * 0.05, hd.cz - 0.01));
+      p.attach(acc(P => { for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; P.cone(0.035, 0.05, k % 2 ? g : r, Math.sin(a) * 0.075, -0.01, Math.cos(a) * 0.06, Math.PI, a, 0, 3); if (k % 2) P.sph(0.009, gold, Math.sin(a) * 0.095, -0.045, Math.cos(a) * 0.08, 1, 1, 1, 6); } }), 'spine', neck.clone().add(new THREE.Vector3(0, -0.03, 0)));
+      p.attach(acc(P => P.cyl(0.12 * H, 0.12 * H, 0.03, '#111', 0, 0, 0, 0, 0, 0, 18).box(0.05, 0.04, 0.012, gold, 0, 0, 0.115).box(0.03, 0.022, 0.014, '#111', 0, 0, 0.116)), 'hips', new THREE.Vector3(0, (d.p ? d.p.waist * H : O[1].y) - O[0].y - 0.02, 0.0));
+      const foot = (sh) => acc(P => P.sph(0.03, g, 0, 0, 0.02, 1, 0.7, 1.6, 10).cone(0.016, 0.06, g, 0, 0.02, 0.08, -1.2, 0, 0, 6).sph(0.01, gold, 0, 0.05, 0.1, 1, 1, 1, 6));
+      p.attach(foot(), 'shinL', new THREE.Vector3(0, -(O[8].y - 0.03), 0.02)); p.attach(foot(), 'shinR', new THREE.Vector3(0, -(O[10].y - 0.03), 0.02));
+      break; }
     case 'Mason': p.attach(acc(P => P.sph(0.03, '#2d6a4f', 0, 0, 0, 1.4, 0.8, 0.8).cone(0.012, 0.04, '#2d6a4f', -0.05, 0, 0, 0, 0, Math.PI / 2)), 'lArmR', handR.clone()); p.attach(acc(P => P.rbox(0.07, 0.03, 0.04, 0.01, '#d62828')), 'lArmL', handL.clone()); break;
     case 'Gary':
       if (outfit.lights) { const L = acc(P => { for (let i = 0; i < 30; i++) { const a = i * 2.4, y = -0.2 + i * 0.02; P.sph(0.012, ['#ff2020', '#ffd700', '#40ff60', '#40a0ff'][i % 4], Math.sin(a) * (0.2 - i * 0.004) * H, y * H, Math.cos(a) * (0.2 - i * 0.004) * H, 1, 1, 1, 5); } }); L.material = new THREE.MeshBasicMaterial({ vertexColors: true }); p.attach(L, 'spine', new THREE.Vector3(0, 0.0, 0)); }

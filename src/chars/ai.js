@@ -28,8 +28,8 @@ export class AI {
       this.sitAtHome(b, true);
     }
     // Harrison rides on Bradley's arm
-    this.harrison = G.charByName.Harrison; this.bradley = G.charByName.Bradley;
-    if (this.bradley) this.bradley.gesture = 'holdBaby';
+    // (Harrison is a toddler now: he toddles about after his dad instead of being carried)
+    this.harrison = null; this.bradley = G.charByName.Bradley;
     // Gary is in the living room from the start, already in his outfit of the year
     // Tommy (when he isn't you) rolls his eyes at his dad
     on('say', (who) => { const t = G.charByName.Tommy; if (!who || who.name !== 'Paul' || !t || t.isPlayer || t.isDown() || Math.random() > 0.3 || G.time < (this._tommyT || 0)) return; this._tommyT = G.time + 20; setTimeout(() => { t.say(pick(t.lines.idle || ['Dad.']), { prio: 0 }); t.gesture = 'armsFolded'; setTimeout(() => t.gesture === 'armsFolded' && (t.gesture = null), 2500); }, 2200); });
@@ -48,14 +48,14 @@ export class AI {
       zone('dining', 3.6, -3.6, [], [[4.1, -3.45], [4.1, -4.25], [4.25, -1.75], [2.2, -4.0], [2.4, -2.0]], 0.2),
       zone('conservatory', 3.1, -7.8, H.consSofa, [[2.0, -7.4], [3.9, -6.8]], 0.16),
     ];
-    const plan = { Martin: { ...H.armchair, pos: H.armchair.pos.clone(), armchair: true }, Harrison: { carried: 'Bradley' } };
-    const groups = shuffle([['Paul', 'Karen', 'Charli', 'Tommy'], ['Julie', 'Sophie', 'James'], ['Hollie', 'Dan', 'Kirsty'], ['Bradley'], ['Debbie', 'Gary'], ['Jodie', 'Harry', 'Mason']]);
+    const plan = { Martin: { ...H.armchair, pos: H.armchair.pos.clone(), armchair: true }, };
+    const groups = shuffle([['Paul', 'Karen', 'Charli', 'Tommy'], ['Julie', 'Sophie', 'James'], ['Hollie', 'Dan', 'Kirsty'], ['Bradley', 'Harrison'], ['Debbie', 'Gary'], ['Jodie', 'Harry', 'Mason']]);
     for (const grp of groups) {
       // pick a room (weighted), falling back to whichever still has space
       let order = zones.slice().sort((a, b) => (b.w * Math.random()) - (a.w * Math.random()));
       const z = order.find(z => z.slots.length >= grp.length) || order.sort((a, b) => b.slots.length - a.slots.length)[0];
-      for (const n of grp) { if (!z.slots.length) break; const k = n === 'Mason' ? z.slots.findIndex(s => s.stand) : 0; const s = z.slots.splice(Math.max(0, k), 1)[0];
-        if (n === 'Mason' && z.name === 'living') { plan[n] = { ...H.floor[2], pos: H.floor[2].pos.clone(), floor: true }; continue; }
+      for (const n of grp) { if (!z.slots.length) break; const kid = n === 'Mason' || n === 'Harrison'; const k = kid ? z.slots.findIndex(s => s.stand) : 0; const s = z.slots.splice(Math.max(0, k), 1)[0];
+        if (kid && z.name === 'living') { const f = H.floor[n === 'Mason' ? 2 : 1] || H.floor[0]; plan[n] = { ...f, pos: f.pos.clone(), floor: true }; continue; }
         plan[n] = { ...s, room: z.name }; }
     }
     return plan;
@@ -82,6 +82,7 @@ export class AI {
       if (p.isPlayer || b.state === 'player' || p.state !== 'anim') continue;
       if (b.state === 'hidden' || b.state === 'carried') continue;
       if (p.name === 'Mason') { this.mason(b, dt); continue; }
+      if (p.name === 'Harrison') { this.toddle(b, dt); continue; }
       if (p.name === 'Paul') this.paulRounds(b, dt);
       if (b.state === 'walk') { this.walk(b, dt); continue; }
       if (b.state === 'storm' || b.state === 'sulk' || b.state === 'asleep' || b.state === 'knock' || b.state === 'scripted') { b.timer -= dt; if (b.timer < 0 && b.state !== 'storm' && b.state !== 'asleep') { b.state = 'idle'; p.gesture = null; this.goHome(b); } }
@@ -282,6 +283,22 @@ export class AI {
     }
   }
 
+  // ---------- Harrison: toddles after his dad and the family, plonks himself down, jingles about ----------
+  toddle(b, dt) {
+    const h = b.p; this.chooseLook(h, b);
+    if (b.state === 'walk') { this.walk(b, dt); return; }
+    if (b.state === 'scripted') { b.timer -= dt; if (b.timer < 0) { b.state = 'idle'; h.gesture = null; } return; }
+    b.timer -= dt; if (b.timer > 0) return;
+    if (G.systems?.asleepKids) { h.base = 'sleep'; b.timer = 5; return; }
+    const r = Math.random(); const fam = ['Bradley', 'Hollie', 'Dan', 'Kirsty', 'Mason'].map(n => G.charByName[n]).filter(o => o && o.state === 'anim');
+    if (r < 0.4 && fam.length) { const o = Math.random() < 0.55 && G.charByName.Bradley?.state === 'anim' ? G.charByName.Bradley : pick(fam);
+      const tgt = o.pos.clone().add(new THREE.Vector3(rand(-0.5, 0.5), 0, rand(-0.5, 0.5)));
+      this.goTo(b, tgt, () => { h.base = 'stand'; this.face(h, o.pos.x, o.pos.z); h.gesture = pick(['wave', 'bounce', 'handUp']); if (Math.random() < 0.6) h.say(o.name === 'Bradley' ? pick(['Daddy!', 'Up! Up!', 'Daddy look!']) : pick(h.lines.idle), { prio: 0 }); b.state = 'scripted'; b.timer = 4; }, 0.7);
+      b.timer = rand(8, 16); return; }
+    if (r < 0.6) { h.base = 'sitFloor'; h.seatY = 0.02; h.gesture = null; b.timer = rand(6, 12); return; }
+    if (r < 0.8) { h.base = 'stand'; h.gesture = pick(['dance', 'bounce', 'clap']); h.say(pick(['Jingle bells!', 'Eeeee!', 'Dance!']), { prio: 0 }); b.state = 'scripted'; b.timer = 4; return; }
+    h.base = 'stand'; h.gesture = null; b.timer = rand(4, 9);
+  }
   // ---------- Mason ----------
   mason(b, dt) {
     const m = b.p; this.chooseLook(m, b);

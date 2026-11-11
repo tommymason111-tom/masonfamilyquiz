@@ -97,7 +97,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 The 16 family members (Tommy included) and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
 with the colour re-baked from the originals so they still look the same; 256 MB -> 15 MB). They're auto-rigged at
 load time onto the ragdoll skeleton (`src/chars/glbrig.js`), so they fall, get thrown and get up exactly like
-everyone else. Mason and Harrison (no scans yet) use the procedural models. Chip runs on his own dog skeleton
+everyone else. Mason and Harrison (no scans yet) use procedural toddler models — Harrison in a full elf outfit. Chip runs on his own dog skeleton
 (`src/chars/dogrig.js`) with walk/trot/gallop gaits and carries things crosswise in his jaws.
 
 ## Controls

@@ -24,7 +24,8 @@ export function setAvatar(name) {
     if (p.name === 'Martin') { p.team = 'julie'; const j = G.charByName.Julie; if (j) j.team = 'host'; }
     G.myTeam = p.team === 'host' ? 'julie' : p.team;
     pl.eyeH = Math.max(0.55, p.H * 0.93); pl.small = p.H < 1.3;
-    pl.teleport(p.pos.x, p.pos.z, p.yaw + Math.PI);
+    const h = G.ai?.plan?.[p.name]; const at = p.pos.lengthSq() < 0.01 && h ? h.pos.clone().add(h.stand ? new THREE.Vector3() : new THREE.Vector3(Math.sin(h.yaw) * 0.7, 0, Math.cos(h.yaw) * 0.7)) : p.pos; // Tommy has never been placed: use his planned spot
+    pl.teleport(at.x, at.z, (p.pos.lengthSq() < 0.01 && h ? h.yaw : p.yaw) + Math.PI);
     if (p.name === 'Harrison' && G.ai) { G.ai.harrison = null; p.base = 'stand'; }
   }
   G.quiz?.jokers && (G.quiz.jokers = Object.fromEntries(Object.keys(G.quiz.jokers).map(t => [t, t === G.myTeam ? null : G.quiz.jokers[t] ?? 2])));

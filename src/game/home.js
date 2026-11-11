@@ -52,10 +52,10 @@ function countdown() {
 // team cards; portraits are filled in once the 3D family has loaded
 export function teamCards(withPortraits, portraits = {}) {
   const el = $('teams'); if (!el) return;
-  const emoji = { Mason: '🦖', Harrison: '👶', Tommy: '🧑', Dan: '🍺' };
+  const emoji = { Mason: '🦖', Harrison: '🧝', Chip: '🐶', Tommy: '🧑', Dan: '🍺' };
   const face = (c) => `<div class="face">${portraits[c.name] ? `<img src="${portraits[c.name]}" alt="${c.name}">` : `<div class="ph">${emoji[c.name] || '🎄'}</div>`}<span>${c.name === 'Tommy' ? 'You' : c.name}</span></div>`;
   el.innerHTML = Object.entries(TEAMS).map(([k, t]) => `<div class="team" style="--tc:${t.color}"><h4>${t.name}</h4><div class="faces">${CAST.filter(c => c.team === k).map(face).join('')}</div></div>`).join('')
-    + `<div class="team" style="--tc:#c8a050"><h4>Quizmaster &amp; chaos</h4><div class="faces">${CAST.filter(c => c.team === 'host').map(face).join('')}<div class="face"><div class="ph">🐶</div><span>Chip</span></div></div></div>`;
+    + `<div class="team" style="--tc:#c8a050"><h4>Quizmaster &amp; chaos</h4><div class="faces">${CAST.filter(c => c.team === 'host').map(face).join('')}<div class="face">${portraits.Chip ? `<img src="${portraits.Chip}" alt="Chip">` : '<div class="ph">🐶</div>'}<span>Chip</span></div></div></div>`;
 }
 // render a little portrait of each person from the live scene
 export function renderPortraits() {
@@ -64,7 +64,7 @@ export function renderPortraits() {
   const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'); const buf = new Uint8Array(160 * 160 * 4); const img = g.createImageData(160, 160);
   const xr = r.xr.enabled; r.xr.enabled = false;
   for (const p of G.chars) {
-    if (p.name === 'Harrison') continue; const wasVis = p.root.visible; p.root.visible = true; p._wasVis = wasVis;
+    const wasVis = p.root.visible; p.root.visible = true; p._wasVis = wasVis;
     if (p.isPlayer) { p._pp = [p.pos.clone(), p.yaw]; p.pos.set(-2.2, p.pos.y, -1.3); p.yaw = 0.67; try { p.update(1 / 60); } catch (e) { /* posing is best-effort */ } p.root.updateMatrixWorld(true); } // the player's body isn't animated while the menu is up
     const hp = p.headPos(new THREE.Vector3()); const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw));
     cam.position.copy(hp).addScaledVector(fwd, 0.62).add(new THREE.Vector3(0, 0.04, 0)); cam.lookAt(hp.x, hp.y - 0.02, hp.z);
@@ -76,6 +76,15 @@ export function renderPortraits() {
     g.putImageData(img, 0, 0); out[p.name] = c.toDataURL('image/jpeg', 0.85); p.root.visible = p._wasVis;
     if (p._pp) { p.pos.copy(p._pp[0]); p.yaw = p._pp[1]; p._pp = null; try { p.update(1 / 60); } catch (e) { /* best-effort */ } }
   }
+  // Chip: camera in front of his face, looking back at him
+  const d = G.dog; if (d?.rig) { try {
+    const wasVis = d.rig.root.visible, R = d.rig.root, p0 = R.position.clone(), q0 = R.quaternion.clone(); R.visible = true; R.position.set(p0.x - 2.2 - d.pos.x, p0.y, p0.z - 1.3 - d.pos.z); R.updateMatrixWorld(true); // somewhere open, away from the tree
+    const hp = d.rig.bones[3].getWorldPosition(new THREE.Vector3()); const fwd = hp.clone().sub(d.rig.bones[1].getWorldPosition(new THREE.Vector3())).setY(0).normalize();
+    hp.addScaledVector(fwd, 0.06).y += 0.07; cam.position.copy(hp).addScaledVector(fwd, 0.85).add(new THREE.Vector3(0, 0.08, 0)); cam.lookAt(hp); // his eyes, from a little way off
+    r.setRenderTarget(rt); r.render(G.scene, cam); r.setRenderTarget(null); r.readRenderTargetPixels(rt, 0, 0, 160, 160, buf);
+    for (let y = 0; y < 160; y++) for (let x = 0; x < 160; x++) { const si = ((159 - y) * 160 + x) * 4, di = (y * 160 + x) * 4; img.data[di] = buf[si]; img.data[di + 1] = buf[si + 1]; img.data[di + 2] = buf[si + 2]; img.data[di + 3] = 255; }
+    g.putImageData(img, 0, 0); out.Chip = c.toDataURL('image/jpeg', 0.85); R.visible = wasVis; R.position.copy(p0); R.quaternion.copy(q0); R.updateMatrixWorld(true);
+  } catch (e) { console.warn('Chip portrait', e); } }
   r.xr.enabled = xr; rt.dispose();
   return out;
 }
