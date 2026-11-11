@@ -5,9 +5,9 @@ import * as THREE from 'three';
 import { G } from '../core.js';
 
 export const FAMILIES = [
-  { id: 'martin', name: 'The Masons', sub: "Martin's family", people: ['Martin', 'Julie', 'Hollie', 'Dan', 'Sophie', 'James', 'Bradley', 'Harrison', 'Chip'] },
+  { id: 'martin', name: 'The Masons', sub: "Martin's family", people: ['Martin', 'Julie', 'Hollie', 'Dan', 'Sophie', 'James', 'Chip'] },
   { id: 'paul', name: 'The Masons', sub: "Paul's family", people: ['Paul', 'Karen', 'Tommy', 'Charli'] },
-  { id: 'debbie', name: 'The Hoopers', sub: "Debbie's family", people: ['Debbie', 'Gary', 'Kirsty', 'Jodie', 'Harry', 'Mason'] },
+  { id: 'debbie', name: 'The Hoopers', sub: "Debbie's family", people: ['Debbie', 'Gary', 'Kirsty', 'Jodie', 'Harry', 'Mason', 'Bradley', 'Harrison'] },
 ];
 export const ROAMERS = ['Chip', 'Mason', 'Harrison']; // no game mode: just roam and cause trouble
 

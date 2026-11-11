@@ -81,9 +81,9 @@ function wheelStep() {
 function characterStep() {
   return new Promise(res => {
     let sel = loadStore('lastAs', 'Tommy'); if (!G.charByName[sel] && sel !== 'Chip') sel = 'Tommy';
-    const team = (n) => n === 'Chip' ? 'Just here for the buffet' : n === 'Martin' ? 'Quizmaster (or play him!)' : TEAMS[CAST.find(c => c.name === n)?.team]?.name || '';
+    const team = (n) => n === 'Chip' ? 'Just here for the buffet' : n === 'Martin' ? 'Quizmaster (or play him!)' : ''; // no team names here: just who they are
     el.innerHTML = `<h2>Who are you playing as?</h2><p class="lead">Pick anyone in the family. Chip, Mason and Harrison just roam the house causing trouble.</p>
-      <div class="fams">${FAMILIES.map(f => `<div class="fam"><h3>${f.name}<small>${f.sub.toUpperCase()}</small></h3><div class="ppl">${f.people.filter(n => n === 'Chip' || G.charByName[n]).map(n => `<button class="who${n === sel ? ' sel' : ''}" data-n="${n}">${face(n)}${n}<small>${team(n)}</small></button>`).join('')}</div></div>`).join('')}</div>
+      <div class="fams">${FAMILIES.map(f => `<div class="fam"><h3>${f.name}<small>${f.sub.toUpperCase()}</small></h3><div class="ppl">${f.people.filter(n => n === 'Chip' || G.charByName[n]).map(n => `<button class="who${n === sel ? ' sel' : ''}" data-n="${n}">${face(n)}${n}${team(n) ? `<small>${team(n)}</small>` : ''}</button>`).join('')}</div></div>`).join('')}</div>
       <button class="go" id="cGo">Done ✓</button>`;
     el.scrollTop = 0;
     el.querySelectorAll('.who').forEach(b => b.onclick = () => { sel = b.dataset.n; el.querySelectorAll('.who').forEach(x => x.classList.toggle('sel', x === b)); sfx('tap', null, 0.4); });
