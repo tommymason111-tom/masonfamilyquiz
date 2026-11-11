@@ -24,6 +24,9 @@ import { loadModels } from './chars/glbrig.js';
 import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
+// shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
+export const BUILD = '11 Nov 2026 · faces fixed v2';
+const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
 const status = (t, f) => { const el = document.getElementById('loadStatus'); if (el) el.textContent = t; if (f !== undefined) homeProgress(f); };
