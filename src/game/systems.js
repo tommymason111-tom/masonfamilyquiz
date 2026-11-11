@@ -111,7 +111,7 @@ export class Systems {
     on('thrown', (h) => { if (h.kind === 'char') { if (h.ref.name === 'Gary') this.garyThrownCheck(h.ref, true); if (h.ref.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; } if (h.kind === 'item' && h.ref.id === 'cushion') h.ref.thrownByPlayer = G.time; if (h.kind === 'item') h.ref.playerT = G.time; if (h.kind === 'char') h.ref.playerHitT = G.time; });
     on('punched', (p) => { if (p.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; });
     on('shoved', (p) => { if (p.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; });
-    on('outfitRevealed', (o) => { if (o.id === 'speedo') G.ai.say('Gary', 'Boxing Day dip, Martin. I\'m going in the garden later.', 1); if (o.id === 'trex') G.ui?.toast('Gary can\'t hold a pen in the T-Rex. Team Debbie loses a writer.', 4); });
+    on('outfitRevealed', (o) => { const L = { fairy: ['Gary', 'Every tree needs a fairy, Martin.'], minion: ['Gary', 'Banana. That\'s all I\'m saying.'], smurf: ['Paul', 'Papa Smurf! Where\'s the rest of the village?'], mankini: ['Julie', 'Gary, it\'s December!'] }[o.id]; if (L) setTimeout(() => G.ai.say(L[0], L[1], 1), 2500); if (o.id === 'trex') G.ui?.toast('Gary can\'t hold a pen in the T-Rex. Team Debbie loses a writer.', 4); });
   }
   // ---------------- collisions → comedy ----------------
   impact(inst, other, sp) {

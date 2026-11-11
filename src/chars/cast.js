@@ -105,15 +105,13 @@ export const PERSONA = {
 export const DRINK_ORDERS = { Paul: 'lager', Martin: 'lager', Gary: 'bitter', Dan: 'pint', Karen: 'prosecco', Debbie: 'prosecco', Julie: 'small', Mason: 'juice', Hollie: 'prosecco', Sophie: 'prosecco', James: 'lager', Kirsty: 'wine', Jodie: 'prosecco', Harry: 'lager', Bradley: 'lager', Charli: 'prosecco' };
 
 // Gary's Outfit Wheel
+// Gary's outfit of the year (one at random each game). On his 3D scan the costume is painted on below the neck
+// (see costume.js), so his face is always his own.
 export const OUTFITS = [
   { id: 'mankini', label: 'Mankini (the classic)', top: { pattern: 'mankini' }, legs: { type: 'skin' }, bareFeet: true },
-  { id: 'sumo', label: 'Inflatable sumo suit', top: { pattern: 'sumo' }, legs: { type: 'skin' }, bareFeet: true, inflate: 1.9, inflateLegs: 1.5, bouncy: true },
+  { id: 'fairy', label: 'Christmas fairy (wings, wand and tutu)', top: { pattern: 'plain', c1: '#ec6fb4' }, legs: { type: 'trousers', c1: '#ffffff' }, socks: '#b0186a' },
+  { id: 'minion', label: 'Minion (dungarees and all)', top: { pattern: 'plain', c1: '#f5cf14' }, legs: { type: 'jeans', c1: '#2f5d9e' }, socks: '#151515' },
+  { id: 'smurf', label: 'Smurf (blue from the neck down)', top: { pattern: 'plain', c1: '#3d8ad8' }, legs: { type: 'trousers', c1: '#f6f6f6' }, socks: '#f6f6f6' },
   { id: 'santa', label: 'Father Christmas suit (wrong size)', top: { pattern: 'santa', c1: '#c41e1e', hat: 'santa' }, legs: { type: 'trousers', c1: '#c41e1e' }, socks: '#111', trousersFall: true },
-  { id: 'turkey', label: 'Giant turkey costume', top: { pattern: 'turkey' }, legs: { type: 'trousers', c1: '#e8c070' }, socks: '#e8a030', inflate: 1.35 },
-  { id: 'xmastree', label: 'Christmas tree (with real lights)', top: { pattern: 'xmastree' }, legs: { type: 'trousers', c1: '#3a2a1a' }, socks: '#3a2a1a', lights: true },
-  { id: 'mrsclaus', label: 'Mrs Claus dress and wig ("call me Gail")', top: { pattern: 'mrsclaus', c1: '#b81a24' }, legs: { type: 'skin' }, socks: '#111', wig: true },
   { id: 'elf', label: 'Elf on the Shelf', top: { pattern: 'elf', c1: '#1f8a3a' }, legs: { type: 'trousers', c1: '#c41e1e' }, socks: '#1f8a3a', onShelf: true },
-  { id: 'trex', label: 'Inflatable T-Rex', top: { pattern: 'trex' }, legs: { type: 'trousers', c1: '#4a9a42' }, socks: '#4a9a42', inflate: 1.5, inflateLegs: 1.4, noPen: true },
-  { id: 'donkey', label: 'Nativity donkey (back half only)', top: { pattern: 'donkey' }, legs: { type: 'trousers', c1: '#6e6258' }, socks: '#3a302a' },
-  { id: 'speedo', label: 'Speedos & swimming cap (Boxing Day dip)', top: { pattern: 'speedo', hat: 'swimcap' }, legs: { type: 'skin' }, bareFeet: true, wet: true },
 ];

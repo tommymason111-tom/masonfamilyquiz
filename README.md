@@ -50,6 +50,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   mince pies…), drinks (lager, cider, bitter, Prosecco with a cork that fires at Martin, wine, Baileys, squash…),
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
+- **Gary's outfit of the year** (random each game, or pick one in the menu): mankini, Christmas fairy (wings, wand, tutu), Minion, Smurf, Father Christmas, Elf on the Shelf. The costume is painted onto his real scan from the neck down (keeping the scan's folds and shading), plus hats/wings/wand where needed — his face is never changed, so it's always recognisably Gary.
 - **Teams:** Martin hosts. Team Paul — Tommy (you), Charli, Paul, Karen · Team Julie — Sophie, James, Julie ·
   Team Debbie — Debbie, Gary, Jodie, Harry, Mason (and Kirsty) · Team Hollie — Hollie, Dan, Bradley, Harrison. Chip isn't on
   a team; he's just chaos. Name tags show only the name, edged in the team colour.

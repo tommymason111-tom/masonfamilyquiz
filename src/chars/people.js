@@ -7,15 +7,15 @@ import { Prop } from '../engine/geo.js';
 import { knitBump } from '../engine/textures.js';
 import { loadStore } from '../game/settings.js';
 import { models } from './glbrig.js';
+import { paintCostume } from './costume.js';
 
 let accMat = null;
 const acc = (build) => { const p = new Prop(); build(p); const m = new THREE.Mesh(p.build(), accMat); m.castShadow = true; return m; };
 
 export function chooseOutfit() {
   const sel = new URLSearchParams(location.search).get('outfit') || G.settings.garyOutfit;
-  const unlocked = loadStore('unlockedOutfits', ['mankini', 'sumo', 'santa', 'turkey', 'xmastree', 'mrsclaus', 'elf', 'trex', 'donkey', 'speedo']);
   if (sel && sel !== 'random') { const o = OUTFITS.find(o => o.id === sel); if (o) return o; }
-  return pick(OUTFITS.filter(o => unlocked.includes(o.id)));
+  return pick(OUTFITS); // a different one each game
 }
 
 export function createPeople() {
@@ -95,17 +95,7 @@ function dressScanned(p, c, outfit) {
     case 'Hollie': p.attach(phone(true), 'lArmR', handR, new THREE.Euler(0, 0, 0.2)); p.phoneGlow = true; break;
     case 'Sophie': p.attach(acc(P => P.box(0.04, 0.3, 0.24, '#f4c0d0').box(0.045, 0.31, 0.02, '#ffffff', 0, 0, 0.11)), 'lArmL', handL.clone().add(new THREE.Vector3(0.03, 0.03, 0.04))); break;
     case 'Gary': {
-      const hat = (build) => p.attach(acc(build), 'head', headTop.clone().add(new THREE.Vector3(0, -0.02, 0)));
-      if (outfit.top?.hat === 'santa') hat(P => P.cyl(hd.rx * 1.05, hd.rx * 1.1, 0.05, '#ffffff', 0, 0, 0).cone(hd.rx * 1.0, 0.25, '#c41e1e', 0.03, 0.14, -0.03, -0.3, 0, -0.25).sph(0.03, '#ffffff', 0.09, 0.24, -0.08));
-      if (outfit.id === 'elf') hat(P => P.cyl(hd.rx * 1.05, hd.rx * 1.1, 0.05, '#ffffff', 0, 0, 0).cone(hd.rx, 0.3, '#1f8a3a', 0, 0.17, -0.05, -0.35).sph(0.025, '#ffffff', 0, 0.3, -0.15));
-      if (outfit.top?.hat === 'swimcap') hat(P => P.sph(hd.rx * 1.08, '#f4f4f4', 0, -0.03, 0, 1, 0.75, 1.12, 16));
-      if (outfit.wig) hat(P => P.sph(hd.rx * 1.18, '#d8d8d8', 0, -0.03, -0.01, 1, 0.9, 1.15, 12));
-      if (outfit.id === 'trex') p.attach(acc(P => P.sph(0.14, '#4a9a42', 0, 0, 0.06, 1, 0.9, 1.4, 12).box(0.18, 0.03, 0.14, '#f4f4f4', 0, -0.05, 0.2).sph(0.025, '#ffffff', 0.07, 0.07, 0.13).sph(0.025, '#ffffff', -0.07, 0.07, 0.13)), 'head', headTop.clone().add(new THREE.Vector3(0, 0.05, 0)));
-      if (outfit.id === 'turkey') p.attach(acc(P => { for (let k = 0; k < 9; k++) { const a = -1.1 + k * 0.275; P.sph(1, k % 2 ? '#8a5a2a' : '#c08040', Math.sin(a) * 0.25, 0.1 + Math.cos(a) * 0.25, -0.18, 0.06, 0.22, 0.015); } }), 'spine', new THREE.Vector3(0, 0.1, 0));
-      if (outfit.lights || outfit.id === 'xmastree') { const L = acc(P => { for (let i = 0; i < 30; i++) { const a = i * 2.4, y = -0.25 + i * 0.016; P.sph(0.014, ['#ff2020', '#ffd700', '#40ff60', '#40a0ff'][i % 4], Math.sin(a) * 0.17, y + 0.2, Math.cos(a) * 0.14, 1, 1, 1, 5); } }); L.material = new THREE.MeshBasicMaterial({ vertexColors: true }); p.attach(L, 'spine', new THREE.Vector3(0, 0, 0)); }
-      if (outfit.id === 'mankini') p.attach(acc(P => { P.box(0.02, 0.5, 0.012, '#2b8a2b', 0.07, 0.0, 0.13, 0, 0, -0.18).box(0.02, 0.5, 0.012, '#2b8a2b', -0.07, 0.0, 0.13, 0, 0, 0.18); }), 'spine', new THREE.Vector3(0, 0.05, 0));
-      if (outfit.id === 'donkey') p.attach(acc(P => P.sph(1, '#7a6e62', 0, 0, -0.3, 0.16, 0.14, 0.26, 10).box(0.03, 0.18, 0.03, '#3a302a', 0, -0.05, -0.56, 0.5)), 'hips', new THREE.Vector3(0, 0, 0));
-      if (outfit.id === 'sumo') p.attach(acc(P => P.sph(1, '#f0c8a8', 0, 0.02, 0.02, 0.3, 0.32, 0.27, 16).torus(0.27, 0.05, '#1d1d6b', 0, -0.18, 0.02, Math.PI / 2)), 'spine', new THREE.Vector3(0, 0, 0));
+      paintCostume(p, outfit); // costume painted onto the scan below the neck + hats/wings/wand; his face is untouched
       break;
     }
   }

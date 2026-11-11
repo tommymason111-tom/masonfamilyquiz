@@ -96,7 +96,7 @@ export class Quiz {
     setTimeout(() => {
       sfx('cheer', null, 0.6); this.mSay('Gary! Come on out!');
       const gary = G.charByName.Gary; const gb = gary?.brain;
-      if (gary && gb) { gb.state = 'idle'; gary.teleport(-3.7, 0, 0.25, Math.PI / 2); G.ai.goHome(gb); setTimeout(() => { gary.say(G.garyOutfit.id === 'mrsclaus' ? 'Call me Gail.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
+      if (gary && gb) { gb.state = 'idle'; gary.teleport(-3.7, 0, 0.25, Math.PI / 2); G.ai.goHome(gb); setTimeout(() => { gary.say(G.garyOutfit.id === 'fairy' ? 'Wish granted. You\'re all losing.' : G.garyOutfit.id === 'smurf' ? 'La la la-la-la-la.' : pick(['Fair enough.', 'Evening all.', 'Not a word, Paul.'])); for (const n of ['Debbie', 'Kirsty', 'Jodie', 'Hollie']) { const o = G.charByName[n]; if (o) { o.gesture = 'laughDouble'; setTimeout(() => o.gesture = null, 4000); } } G.charByName.Mason?.say('GARY BUM!'); if (G.garyOutfit.id === 'mankini') G.charByName.Julie?.say('Mason, close your eyes!'); }, 3500);
         if (G.garyOutfit.onShelf) setTimeout(() => { gary.teleport(-5.45, 0, -1.1, Math.PI / 2); gb.state = 'scripted'; gb.timer = 9999; gary.base = 'sit'; gary.seatY = 1.42; G.ui?.toast('Martin has put Gary on the bookshelf. (Elf on the Shelf.) Grab him down!', 6); }, 6000);
       }
       emit('outfitRevealed', G.garyOutfit);
