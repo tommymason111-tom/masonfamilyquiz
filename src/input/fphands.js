@@ -51,11 +51,12 @@ export class FPHands {
     const h = player.holders.D; const item = h && h.kind === 'item' && h.attach;
     const heavy = h && !item; // people, doors, heavy furniture: both hands reach forward
     const moving = (player.speedXZ || 0) > 0.2; this.bob += dt * (moving ? 9 : 2);
+    const narrow = innerWidth < innerHeight ? 0.5 : 1; // phone held upright: bring the hands in so held things stay on screen
     for (const k of ['R', 'L']) {
-      const a = this.arms[k]; const target = a.rest.clone();
+      const a = this.arms[k]; const target = a.rest.clone(); target.x *= narrow;
       let rx = 0.12, ry = -a.s * 0.12, rz = 0;
-      if (k === 'R' && item) { target.set(0.17, -0.22, -0.02); rx = 0.25; ry = -0.18; }
-      if (heavy) { target.set(a.s * 0.14, -0.15, -0.12); rx = 0.05; ry = -a.s * 0.25; }
+      if (k === 'R' && item) { target.set(0.17 * narrow, narrow < 1 ? -0.2 : -0.22, -0.02); rx = 0.25; ry = -0.18; }
+      if (heavy) { target.set(a.s * 0.14 * narrow, -0.15, -0.12); rx = 0.05; ry = -a.s * 0.25; }
       if (!h && !moving) target.y -= 0.03;
       target.y += Math.sin(this.bob) * (moving ? 0.012 : 0.004); target.x += Math.cos(this.bob * 0.5) * (moving ? 0.008 : 0.002);
       // throw wind-up while charging

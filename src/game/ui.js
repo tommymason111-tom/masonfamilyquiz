@@ -12,14 +12,13 @@ const $ = (id) => document.getElementById(id);
 const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top in % / px), action
   // no grab button on phones: tap a person to knock them over, tap a thing to pick it up, tap again to throw
   { id: 'throw', icon: '🏈', label: 'THROW', pos: { right: 24, bottom: 28 }, big: true },
-  { id: 'punch', icon: '👊', label: 'PUNCH', pos: { right: 132, bottom: 70 } },
-  { id: 'kick', icon: '🥾', label: 'KICK', pos: { right: 132, bottom: 0 } },
+  { id: 'punch', icon: '👊', label: 'PUNCH', pos: { right: 128, bottom: 26 } },
   { id: 'use', icon: '🖊️', label: 'USE', pos: { right: 104, top: 12 } },
   { id: 'handUp', icon: '🙋', label: 'HAND UP', pos: { right: 20, top: 12 } },
-  { id: 'drink', icon: '🍺', label: 'DRINK', pos: { left: '50%', top: 10 } },
+  { id: 'drink', icon: '🍺', label: 'DRINK', pos: { right: 188, top: 12 } },
   { id: 'menu', icon: '☰', label: 'MENU', pos: { left: 10, top: 10 } },
-  { id: 'crouch', icon: '⬇️', label: 'CROUCH', pos: { left: 'calc(50% - 80px)', bottom: 10 } },
-  { id: 'jump', icon: '⬆️', label: 'JUMP', pos: { left: 'calc(50% + 8px)', bottom: 10 } },
+  { id: 'crouch', icon: '⬇️', label: 'CROUCH', pos: { right: 128, bottom: 116 } },
+  { id: 'jump', icon: '⬆️', label: 'JUMP', pos: { right: 34, bottom: 136 } },
 ];
 export function initUI() { new UI(); new Ceremony(); }
 
@@ -148,7 +147,7 @@ class UI {
       <label class="row"><span>Touch button transparency</span><input type="range" min="0.2" max="1" step="0.05" data-n="touchOpacity" value="${S.touchOpacity}"></label>
       <div><button class="btn alt small" id="mLayout">Edit touch layout</button><button class="btn alt small" id="mLayoutReset">Reset layout</button><button class="btn alt small" id="mRestart">Restart game</button><button class="btn alt small" id="mWipe">Clear saved history</button></div>
       <h2 style="margin-top:14px">Controls</h2>
-      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick, R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, J joker, T torch, Space jump, C crouch, V third person, Tab scores, Enter next</div>
+      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick (PC only), R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, J joker, T torch, Space jump, C crouch, V third person, Tab scores, Enter next</div>
       <div><b>Gamepad</b>: LS move, RS look, RT grab (release with an RS flick to throw, or RB throw), X punch, B kick, A use, Y hand up, LB drink, Start menu, D-pad answers</div>
       <div><b>Quest 3 hands</b>: fist = grab (both fists on Dad/Martin/Gary to lift), swing & open = throw, fist punch, pinch = use/write, pinch-drag left hand = walk, right = turn, palm up = wrist menu, hand above head = challenge, point 1s = accuse, thumbs up/down, clap, cover ears = mute, facepalm = eye-roll, food to mouth = eat, palm-down sweep or stamp = kick</div>
       <div><b>Touch</b>: left thumb = joystick, drag right side = look, big buttons as labelled. Tap answers at the bottom of the screen.</div></div>`, (el) => {

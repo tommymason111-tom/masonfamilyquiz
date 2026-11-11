@@ -59,10 +59,10 @@ export class FX {
     const word = pick(WORDS[kind] || WORDS.punch); const col = pick(COLORS);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.wordTex(word, col), transparent: true, depthTest: false }));
     sp.renderOrder = 50; sp.position.copy(pos).add(new THREE.Vector3(rand(-0.1, 0.1), 0.25, rand(-0.1, 0.1))); G.scene.add(sp);
-    this.pops.push({ sp, t: 0, life: 0.6, base: 0.26 * power, rot: rand(-0.2, 0.2) });
+    this.pops.push({ sp, t: 0, life: 0.5, base: 0.15 * power, rot: rand(-0.12, 0.12) });
     while (this.pops.length > 2) { const o = this.pops.shift(); G.scene.remove(o.sp); o.sp.material.dispose(); }
     // stars burst
-    for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(this.starGeo, pick(this.starMats)); m.renderOrder = 49; m.scale.setScalar(0.02 + Math.random() * 0.015); m.position.copy(pos); G.scene.add(m);
+    for (let i = 0; i < 2; i++) { const m = new THREE.Mesh(this.starGeo, pick(this.starMats)); m.renderOrder = 49; m.scale.setScalar(0.014 + Math.random() * 0.01); m.position.copy(pos); G.scene.add(m);
       this.stars.push({ m, v: new THREE.Vector3(rand(-1.2, 1.2), rand(0.8, 2), rand(-1.2, 1.2)).multiplyScalar(power), t: 0, spin: rand(-12, 12) }); }
     // cartoon sound stack
     if (!quiet || kind !== 'thud') { if (kind === 'punch' || kind === 'shove') { sfx('slap', pos, 0.5); sfx('boff', pos, 0.6); } else if (kind === 'kick') { sfx('boff', pos, 0.6); sfx('boing', pos, 0.35); } else if (kind === 'bonk') sfx('bauble', pos, 0.8); else if (kind === 'splat' || kind === 'glass') sfx('splat', pos, 1); else if (kind === 'pile') { sfx('bigthud', pos, 1); sfx('star', pos, 0.6); } }
@@ -70,13 +70,13 @@ export class FX {
     sfx('star', pos, 0.15);
     // feel: tiny hit-stop + camera shake if it's near you
     const d = G.player ? G.player.headPos(new THREE.Vector3()).distanceTo(pos) : 9;
-    if (d < 4) { this.shake = Math.max(this.shake, 0.02 * power * (1 - d / 4)); this.hitStop = Math.max(this.hitStop, kind === 'punch' || kind === 'kick' ? 0.03 : 0); }
+    if (d < 4) this.shake = Math.max(this.shake, 0.006 * power * (1 - d / 4)); // just a nudge, no freeze-frame
     if (G.xr) try { for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(0.6, 60); } catch (e) {}
-    else navigator.vibrate?.(25);
+    else navigator.vibrate?.(12);
   }
   update(dt) {
     for (let i = this.pops.length - 1; i >= 0; i--) { const o = this.pops[i]; o.t += dt; const k = o.t / o.life;
-      const s = o.base * (k < 0.15 ? 0.5 + (k / 0.15) * 0.6 : k < 0.3 ? 1.1 - (k - 0.15) * 0.67 : 1); o.sp.scale.set(s * 1.6, s, 1); o.sp.material.rotation = o.rot; o.sp.position.y += dt * 0.25; o.sp.material.opacity = 0.9 * (k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
+      const s = o.base * (k < 0.15 ? 0.7 + (k / 0.15) * 0.3 : 1); o.sp.scale.set(s * 1.6, s, 1); o.sp.material.rotation = o.rot; o.sp.position.y += dt * 0.25; o.sp.material.opacity = 0.75 * (k > 0.5 ? 1 - (k - 0.5) / 0.5 : 1);
       if (k >= 1) { G.scene.remove(o.sp); o.sp.material.dispose(); this.pops.splice(i, 1); } }
     for (let i = this.stars.length - 1; i >= 0; i--) { const s = this.stars[i]; s.t += dt; s.v.y -= 6 * dt; s.m.position.addScaledVector(s.v, dt); s.m.rotation.z += s.spin * dt; if (G.camera) s.m.quaternion.copy(G.camera.getWorldQuaternion(new THREE.Quaternion())); s.m.material.opacity = 1;
       if (s.t > 0.45) { G.scene.remove(s.m); this.stars.splice(i, 1); } }

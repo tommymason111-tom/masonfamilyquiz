@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '11 Nov 2026 · Gary outfits v3';
+export const BUILD = '11 Nov 2026 · wider view v4';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -51,6 +51,9 @@ async function boot() {
   scene.background = new THREE.Color('#0d1530');
   scene.fog = new THREE.Fog('#0b1022', 28, 110);
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 600); G.camera = camera;
+  // field of view: keep at least ~78° across the screen, so a phone held upright isn't zoomed in and held things aren't cut off
+  const fitFov = () => { const a = innerWidth / innerHeight; const hf = THREE.MathUtils.degToRad(a < 1 ? 80 : 90); const vf = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(hf / 2) / a)); camera.fov = Math.min(a < 1 ? 98 : 80, Math.max(70, vf)); camera.aspect = a; camera.updateProjectionMatrix(); };
+  fitFov();
   G.clock = new THREE.Clock();
   status('Building Martin\'s house…', 0.12);
   buildHouse();
@@ -67,7 +70,7 @@ async function boot() {
   new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX(); new Modes();
   initUI();
   setDaylight(1);
-  addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+  addEventListener('resize', () => { fitFov(); renderer.setSize(innerWidth, innerHeight); });
   const unlock = () => { initAudio(); resumeAudio(); };
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
   status('Taking the family photo…', 0.95);
