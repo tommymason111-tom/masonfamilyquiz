@@ -74,11 +74,12 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 
 ## Starting a game
 
-1. **Title** → press PLAY. Gary's outfit of the year is picked on a spinning wheel.
+1. **Title** → press PLAY.
 2. **Pick who you are**, grouped by family (Martin's family *The Masons* — Martin, Julie, Chip and the kids; Paul's family *The Masons*; Debbie's family *The Hoopers*) → DONE.
    - Play as **Martin** and Julie becomes quizmaster. Play as **Chip** (dog height, "Paw punch", "Pounce", "Sniff"), **Mason** or **Harrison** (their own heights) and you just roam and cause trouble — no game mode.
 3. **Pick a game mode** (and keep the default teams or randomise them) → NEXT.
-4. A summary of the teams, the mode and who you are shows for 3 seconds, then you're in.
+4. Gary's outfit wheel spins (skipped for Mini Games and Fling the Relative, where Gary wears his own clothes).
+5. A summary of the teams, the mode and who you are shows for 3 seconds, then you're in.
 
 ## Game modes
 

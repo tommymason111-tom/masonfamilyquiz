@@ -7,6 +7,7 @@ import { saveSettings, loadStore, saveStore } from './settings.js';
 import { OUTFITS, TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { Ceremony } from './ceremony.js';
 import { startFlow } from './flow.js';
+import { dressGaryFor } from '../chars/people.js';
 import { setAvatar } from './avatar.js';
 import './popup.js';
 import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../engine/audio.js';
@@ -50,7 +51,7 @@ class UI {
     const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else { $('touch').classList.add('on'); document.body.classList.add('touch'); } };
     this.go = go;
     const qs = new URLSearchParams(location.search);
-    const quick = () => { setAvatar(qs.get('as') || 'Tommy'); const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; go(); };
+    const quick = () => { const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; dressGaryFor(G.modes.id); setAvatar(qs.get('as') || 'Tommy'); go(); };
     $('btnPlay').onclick = () => { initAudio(); resumeAudio(); unlockSpeech(); if (qs.get('skip')) return quick(); startFlow(go); };
     if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { initAudio(); resumeAudio(); startFlow(() => { go(); this.enterVR(); }, { vr: true }); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });

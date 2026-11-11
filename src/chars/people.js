@@ -18,15 +18,36 @@ export function chooseOutfit() {
   return pick(OUTFITS); // a different one each game
 }
 
+// Gary in his own clothes (Mini Games and Fling the Relative)
+export const NORMAL = { id: 'normal', label: 'His own clothes (for once)' };
+function makeSpec(c, i, outfit) {
+  let spec = { ...c, seed: hashStr(c.name) + 7, skin: SKIN[i % SKIN.length], _knitTex: null };
+  if (c.name === 'Gary' && outfit && outfit.id !== 'normal') spec = { ...spec, ...outfit, top: { ...outfit.top }, name: 'Gary', team: 'debbie', build: 'bigger', voice: c.voice, lines: c.lines, hair: outfit.wig ? { style: 'wig', color: '#d8d8d8', length: 0.3 } : c.hair };
+  if (models[c.name] && G.settings.scannedModels !== false) spec._model = models[c.name];
+  return spec;
+}
+// Put Gary in the right outfit for the chosen mode, before the game starts: the outfit of the year for the quiz and the
+// rest, his own clothes for Mini Games and Fling. Rebuilds Gary (the elf costume changes his size).
+export function dressGaryFor(mode) {
+  const outfit = mode === 'games' || mode === 'fling' ? NORMAL : (G.garyOutfit?.id === 'normal' ? chooseOutfit() : G.garyOutfit);
+  const old = G.charByName.Gary; const i = CAST.findIndex(c => c.name === 'Gary'); if (!old || i < 0) { G.garyOutfit = outfit; return; }
+  if (outfit.id === 'normal' && old.outfitId == null) { G.garyOutfit = outfit; return; } // already in his own clothes
+  const c = CAST[i];
+  if (old.bodies) old.setPlayer(true); G.scene.remove(old.root); // tear down the old Gary (physics + mesh)
+  const p = new Person(makeSpec(c, i, outfit)); p.team = old.team; p.outfitId = outfit.id === 'normal' ? null : outfit.id;
+  G.chars[G.chars.indexOf(old)] = p; G.charByName.Gary = p;
+  dress(p, c, outfit); G.garyOutfit = outfit;
+  const ai = G.ai, b = ai?.brains.get(old); if (b) { ai.brains.delete(old); b.p = p; b.state = 'idle'; b.path = null; p.brain = b; ai.brains.set(p, b); ai.sitAtHome(b, true); }
+  const r = G.replay; if (r) { r.track = []; r.buildTracks(); r.buf = new Float32Array(r.buf.length / Math.max(1, r.live.length / 7) * r.track.length); r.live = new Float32Array(r.track.length * 7); r.count = 0; r.head = 0; }
+}
+
 export function createPeople() {
   accMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5 });
   const knit = knitBump(); knit.repeat.set(40, 40);
-  const outfit = chooseOutfit(); G.garyOutfit = outfit;
+  // Gary starts in his normal clothes; this year's outfit is planned now and put on once the game mode is known (dressGaryFor)
+  G.garyOutfit = chooseOutfit(); const outfit = NORMAL;
   CAST.forEach((c, i) => {
-    let spec = { ...c, seed: hashStr(c.name) + 7, skin: SKIN[i % SKIN.length], _knitTex: null };
-    if (c.name === 'Gary') spec = { ...spec, ...outfit, top: { ...outfit.top }, name: 'Gary', team: 'debbie', build: 'bigger', voice: c.voice, lines: c.lines, hair: outfit.wig ? { style: 'wig', color: '#d8d8d8', length: 0.3 } : c.hair };
-    if (G.settings.softDrinks && c.lines) {/* lines stay; drinks are swapped in items */}
-    if (models[c.name] && G.settings.scannedModels !== false) spec._model = models[c.name];
+    const spec = makeSpec(c, i, outfit);
     const p = new Person(spec);
     G.chars.push(p); G.charByName[c.name] = p;
     if (p.isPlayer) G.tommy = p;

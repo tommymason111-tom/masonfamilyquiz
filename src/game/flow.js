@@ -4,6 +4,7 @@
 // Chip, Mason and Harrison skip the mode screen: they just roam the house.
 import { G, shuffle } from '../core.js';
 import { CAST, TEAMS, TEAM_IDS, OUTFITS } from '../chars/cast.js';
+import { dressGaryFor } from '../chars/people.js';
 import { MODES, modeById } from './modes.js';
 import { FAMILIES, ROAMERS, setAvatar } from './avatar.js';
 import { saveStore, loadStore } from './settings.js';
@@ -48,10 +49,12 @@ const face = (n) => P()[n] ? `<img src="${P()[n]}" alt="">` : `<div class="ph">$
 // entry point from the Play button. launch() starts the game (and VR when asked)
 export async function startFlow(launch, opts = {}) {
   ensure(); el.classList.add('on'); document.getElementById('loading').style.display = 'none';
-  await wheelStep();
   const who = await characterStep();
   let mode = 'roam', random = false;
   if (!ROAMERS.includes(who)) ({ mode, random } = await modeStep());
+  // Gary's outfit wheel comes last; Mini Games and Fling the Relative get plain Gary
+  if (mode !== 'games' && mode !== 'fling') await wheelStep();
+  dressGaryFor(mode);
   setAvatar(who); if (random) randomTeams();
   G.modes.id = mode; G.modes.def = modeById(mode); if (mode !== 'roam') saveStore('mode', mode); saveStore('lastAs', who);
   if (opts.vr) { el.classList.remove('on'); launch(); return; }
@@ -63,7 +66,7 @@ export async function startFlow(launch, opts = {}) {
 function wheelStep() {
   return new Promise(res => {
     const list = OUTFITS; const target = Math.max(0, list.findIndex(o => o.id === G.garyOutfit?.id)); const n = list.length;
-    el.innerHTML = `<h2>Gary's Outfit Wheel</h2><p class="lead">What's Gary wearing this year?</p><canvas class="wheel" width="600" height="600"></canvas><h2 id="wRes" style="min-height:1.3em;color:#ffd700"></h2><button class="go" id="wGo" disabled>Choose your player →</button>`;
+    el.innerHTML = `<h2>Gary's Outfit Wheel</h2><p class="lead">What's Gary wearing this year?</p><canvas class="wheel" width="600" height="600"></canvas><h2 id="wRes" style="min-height:1.3em;color:#ffd700"></h2><button class="go" id="wGo" disabled>Let's play →</button>`;
     const c = el.querySelector('canvas'), g = c.getContext('2d'); const cols = ['#c1121f', '#2d6a4f', '#d4af37', '#1d6fd8', '#7b2cbf', '#e76f51'];
     const final = Math.PI * 2 * 6 - ((target + 0.5) / n) * Math.PI * 2; const t0 = performance.now(), dur = 4200; let tickA = 0;
     const draw = (a) => { g.clearRect(0, 0, 600, 600); g.save(); g.translate(300, 300);

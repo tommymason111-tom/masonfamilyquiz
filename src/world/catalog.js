@@ -262,7 +262,7 @@ export const PLACEMENTS = [
   ['milk', 5.2, 0.58, 0.15], ['juice', 5.35, 0.58, 0.15], ['foil', 5.5, 1.03, 0.12], ['squash', 5.25, 1.43, 0.12], ['baileys', 5.45, 1.43, 0.12],
   // ---- dining room ----
   ['dining_table', 4.99, 0, -3.9], ['chair_stack', 5.05, 0, -5.3, Math.PI / 2], ['chair_stack', 4.45, 0, -5.35, Math.PI / 2 + 0.1],
-  ['office_chair', 4.62, 0, -1.3, Math.PI / 2], ['highchair', 2.6, 0, -2.6, 0.4], ['bouncer', 4.0, 0, -0.95, 1.2],
+  ['office_chair', 4.62, 0, -1.3, Math.PI / 2],
   // table against the east wall (x 4.52..5.47, z -4.75..-3.05, top 0.77)
   ['pong_cup', 4.79, 0.77, -4.55, 0, 3, 0.11, 0], ['pong_cup', 4.84, 0.77, -4.45, 0, 2, 0.11, 0], ['pong_cup', 4.89, 0.77, -4.35, 0, 1],
   ['parcel', 5.25, 0.77, -3.55], ['board_game', 4.99, 0.77, -3.35, 0.2], ['buzzer', 4.64, 0.77, -4.3, 0, 3, 0, 0.16],
