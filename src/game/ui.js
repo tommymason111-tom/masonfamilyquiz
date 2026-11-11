@@ -10,8 +10,8 @@ import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../en
 
 const $ = (id) => document.getElementById(id);
 const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top in % / px), action
-  { id: 'grab', icon: '✋', label: 'GRAB', pos: { right: 24, bottom: 28 }, big: true },
-  { id: 'throw', icon: '🏈', label: 'THROW', pos: { right: 34, bottom: 140 } },
+  // no grab button on phones: tap a person to knock them over, tap a thing to pick it up, tap again to throw
+  { id: 'throw', icon: '🏈', label: 'THROW', pos: { right: 24, bottom: 28 }, big: true },
   { id: 'punch', icon: '👊', label: 'PUNCH', pos: { right: 132, bottom: 70 } },
   { id: 'kick', icon: '🥾', label: 'KICK', pos: { right: 132, bottom: 0 } },
   { id: 'use', icon: '🖊️', label: 'USE', pos: { right: 104, top: 12 } },
@@ -86,9 +86,10 @@ class UI {
     const f = G.player.focus; const held = G.player.heldItem('D'); let txt = '';
     if (!G.xr) {
       if (held && f && (f.kind === 'char' || f.kind === 'dog') && f.dist < 2.2) txt = `R: give ${held.type.name} to ${f.ref.name}`;
+      else if (held && this.touchMode) txt = `${held.type.name} — tap to throw${held.type.food || held.type.drink ? ' · DRINK' : ''}`;
       else if (held) txt = `${held.type.name} — RMB throw · R use${held.type.food || held.type.drink ? ' · G eat/drink' : ''} · LMB drop`;
       else if (G.player.holders.D) txt = `Holding ${G.player.holders.D.ref.name || 'it'} — hold RMB to throw`;
-      else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `LMB grab ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
+      else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `${this.touchMode ? 'Tap to pick up' : 'LMB grab'} ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
       if (!txt && !held && !G.player.seated && G.player.freeSeat()) txt = 'R: sit down';
       if (!txt && G.player.seated) txt = 'Move to stand up';
       const who = f && (f.kind === 'char' || f.kind === 'dog') ? f.ref : null;
@@ -172,7 +173,7 @@ class UI {
     const T = $('touch'); T.querySelectorAll('.tbtn').forEach(b => b.remove()); const S = G.settings; this.tbtn = {};
     const layout = S.touchLayout || {};
     for (const d of BUTTONS) {
-      const b = document.createElement('div'); b.className = 'tbtn' + (d.big ? ' big' : ''); b.innerHTML = `<span>${d.icon}</span>${d.label}` + (d.id === 'grab' ? '<div id="grabThumb"></div>' : '');
+      const b = document.createElement('div'); b.className = 'tbtn' + (d.big ? ' big' : ''); b.innerHTML = `<span>${d.icon}</span>${d.label}` + (d.id === 'throw' ? '<div id="grabThumb"></div>' : '');
       b.style.opacity = S.touchOpacity; b.style.transform = `scale(${S.touchScale})`;
       const p = layout[d.id] || d.pos; for (const k of ['left', 'right', 'top', 'bottom']) if (p[k] !== undefined) b.style[k] = typeof p[k] === 'number' ? p[k] + 'px' : p[k];
       if (S.leftHanded && !layout[d.id]) { if (p.right !== undefined) { b.style.left = p.right + 'px'; b.style.right = ''; } else if (typeof p.left === 'number') { b.style.right = p.left + 'px'; b.style.left = ''; } }
@@ -183,12 +184,12 @@ class UI {
     }
     if (rebuild) return;
     // joystick on the left half, look on the right half
-    const stick = $('stick'); let sid = null, sx = 0, sy = 0; let lid = null, lx = 0, ly = 0;
+    const stick = $('stick'); let sid = null, sx = 0, sy = 0; let lid = null, lx = 0, ly = 0, l0x = 0, l0y = 0, l0t = 0;
     T.style.pointerEvents = 'none';
     const area = G.renderer.domElement;
-    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; if (e.clientX < innerWidth * 0.45 && sid === null) { sid = e.pointerId; sx = e.clientX; sy = e.clientY; stick.style.display = 'block'; stick.style.left = (sx - 60) + 'px'; stick.style.top = (sy - 60) + 'px'; } else if (lid === null) { lid = e.pointerId; lx = e.clientX; ly = e.clientY; } };
+    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; if (e.clientX < innerWidth * 0.45 && sid === null) { sid = e.pointerId; sx = e.clientX; sy = e.clientY; stick.style.display = 'block'; stick.style.left = (sx - 60) + 'px'; stick.style.top = (sy - 60) + 'px'; } else if (lid === null) { lid = e.pointerId; lx = l0x = e.clientX; ly = l0y = e.clientY; l0t = performance.now(); } };
     const move = (e) => { if (e.pointerId === sid) { const dx = clamp((e.clientX - sx) / 50, -1, 1), dy = clamp((e.clientY - sy) / 50, -1, 1); G.player.controls.touchMove.x = dx; G.player.controls.touchMove.z = -dy; stick.firstChild.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; } if (e.pointerId === lid) { const s = 0.006 * (G.settings.mouseSens || 1); G.player.controls.touchLook.x += (e.clientX - lx) * s; G.player.controls.touchLook.y += (e.clientY - ly) * s; lx = e.clientX; ly = e.clientY; } };
-    const up = (e) => { if (e.pointerId === sid) { sid = null; stick.style.display = 'none'; G.player.controls.touchMove.x = G.player.controls.touchMove.z = 0; } if (e.pointerId === lid) lid = null; };
+    const up = (e) => { if (e.pointerId === sid) { sid = null; stick.style.display = 'none'; G.player.controls.touchMove.x = G.player.controls.touchMove.z = 0; } if (e.pointerId === lid) { lid = null; if (Math.hypot(e.clientX - l0x, e.clientY - l0y) < 14 && performance.now() - l0t < 350) G.player.tapAt(e.clientX, e.clientY); } };
     area.addEventListener('pointerdown', down); addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   }
   press(id, v) {
@@ -201,7 +202,7 @@ class UI {
     if (!this.touchMode || !this.tbtn) return; const r = (id, on) => this.tbtn[id]?.classList.toggle('ready', !!on);
     r('grab', f && !held && f.kind !== 'spot' && f.kind !== 'tv' && f.kind !== 'tree' && !(f.kind === 'item' && f.ref.type.fixed)); r('throw', !!G.player.holders.D); r('use', held || G.player.freeSeat() || (f && (f.kind === 'spot' || f.kind === 'item' && f.ref.type.use || f.kind === 'hinged')));
     r('drink', held && (held.type.food || held.type.drink)); r('handUp', G.quiz?.phase === 'marking'); r('punch', f && f.kind === 'char' && !f.ref.protected);
-    const th = $('grabThumb'); if (th) th.textContent = held ? 'DROP' : f && f.ref ? (f.ref.type?.name || f.ref.name || '') : '';
+    const th = $('grabThumb'); if (th) th.textContent = held ? held.type.name : '';
   }
   editLayout() {
     this.editing = true; $('touch').classList.add('on'); this.toast('Drag buttons where your thumbs like them. Tap MENU to finish.', 5);

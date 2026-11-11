@@ -30,12 +30,13 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 - **Active ragdolls (Gang Beasts style):** each adult is 11 Rapier rigid bodies with joints and PD "muscles". Grab a
   collar, wrist or ankle and they go floppy; they wobble, try to get up, stagger with cartoon stars, then carry on.
   Heavy class (Paul, Martin, Gary) needs a two-hand lift in VR. Flying relatives knock others over (pile-ups).
-  Mason (3), Harrison (1) and Chip can't be grabbed or hit — things bounce off them.
+  Mason (3), Harrison (1) and Chip can't be grabbed or hit — things bounce off them. People only fall over (and
+  comic WHACK pop-ups only appear) when YOU hit, throw or grab them — bumping into furniture on their own never floors them.
 - **Martin's ground floor:** hallway + front door and doorbell, downstairs toilet (left), stairs with Mason's stair gate,
   under-stairs cupboard → dark garage (car, chest freezer, garage fridge, broken light switch), kitchen (sink on the
   front wall, American fridge on the back wall, island), living room (TV in the far corner, sofas left and right,
   Martin's armchair, fireplace + mantelpiece with the Mason Cup, tree in the bay window), dining/games room (table against
-  the right wall, PC in the far corner), conservatory (glass roof), garden + patio. Hinged doors, fridge doors with lights,
+  the right wall, PC in the far corner), conservatory (glass roof), garden + patio. Open doorways between every room (no doors to fight with), fridge doors with lights,
   freezer lid, toilet lid, stair gate — all physical.
 - **~170 item types / ~260 physical objects.** Small things are grabbable; heavy furniture (sofas, the tree, tables,
   Martin's armchair, appliances, the hoover, wheelbarrow…) stays put. The house is useful: sit on any free seat
@@ -79,7 +80,7 @@ Pick one on the home screen (or Menu → Change game mode). Personal bests are s
 
 ## Real family models
 
-The 14 family members and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
+The 15 family members and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
 with the colour re-baked from the originals so they still look the same; 256 MB -> 15 MB). They're auto-rigged at
 load time onto the ragdoll skeleton (`src/chars/glbrig.js`), so they fall, get thrown and get up exactly like
 everyone else. Mason and Harrison (no scans yet) use the procedural models. Chip runs on his own dog skeleton
@@ -93,7 +94,7 @@ everyone else. Mason and Harrison (no scans yet) use the procedural models. Chip
 | **Quest controllers** | grip = grab, trigger = use, left stick move, right stick snap/smooth turn, A = hand up, B = drink, X = kick, Y = menu |
 | **PC** | WASD, mouse look, LMB grab/drop, hold RMB + release = throw (power bar), F punch, E kick, R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, J joker, T torch, Space jump, C crouch, V third person, Tab scores, Enter next, Esc menu |
 | **Gamepad** | LS move, RS look, RT grab (release with an RS flick, or RB, to throw), X punch, B kick, A use, Y hand up, LB drink, Start menu, D-pad answers |
-| **Touch** | floating joystick on the left, drag the right side to look, big buttons per the doc's layout (layout editor, size, transparency, left-handed swap in the menu) |
+| **Touch** | floating joystick on the left, drag the right side to look, **tap a person to knock them over**, tap a thing to pick it up, tap again (or THROW) to throw it where you tapped; no grab button — people can only be grabbed in VR. Buttons (layout editor, size, transparency, left-handed swap in the menu) |
 
 ## Edit the quiz
 
@@ -124,7 +125,7 @@ index.html            HUD, touch controls, menus
 questions.txt         editable question bank
 src/main.js           boot + game loop
 src/engine/           physics (Rapier), procedural textures, audio + voices, geometry helpers
-src/world/            house, item manager, item catalogue (+hinged doors/fridges), Christmas tree
+src/world/            house, item manager, item catalogue (+fridge doors, stair gate), Christmas tree
 src/chars/            character builder, ragdoll rig + animation, cast data, people/accessories, AI, Chip
 src/input/            desktop/gamepad/touch controls, player (grab/throw/punch/kick), Quest XR hands & gestures
 src/game/             quiz, picture round, screens (TV/PC), systems (banter/havoc/chaos), interactions, replay,

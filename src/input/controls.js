@@ -18,7 +18,9 @@ export class Controls {
     addEventListener('keyup', (e) => { this.keys.delete(e.code); const b = keymap[e.code]; if (b) this.set(b, false); });
     canvas.addEventListener('mousedown', (e) => {
       if (G.xr) return;
-      if (!this.locked && !G.ui?.touchMode) { canvas.requestPointerLock?.(); }
+      if (G.ui?.touchMode) return; // phones: taps are handled by the UI (tap a person to knock them over)
+      // the click that captures the mouse only captures it — it never grabs whatever you happen to be looking at
+      if (!this.locked) { canvas.requestPointerLock?.(); return; }
       if (e.button === 0) this.set('grab', true); if (e.button === 2) this.set('throw', true);
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) this.set('grab', false); if (e.button === 2) this.set('throw', false); });

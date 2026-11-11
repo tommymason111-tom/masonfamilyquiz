@@ -137,7 +137,7 @@ export class Dog {
         this.vel += (goal - this.vel) * Math.min(1, dt * 3);
         const fwd = _v2.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); this.pos.addScaledVector(fwd, Math.min(d, this.vel * dt)); moving = true;
         if (this.vel > 3 && Math.abs(dy) > 0.8 && G.frame % 18 === 0) sfx('tap', this.pos, 0.3); // claws skid on the oak
-        if (this.vel > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.02) { c.knock(new THREE.Vector3(fwd.x * 40, 30, fwd.z * 40), 8); emit('chipBowled', c); } }
+        if (this.vel > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.01) c.setMood?.('shock', 1); }
       }
     }
     if (!moving) { this.vel *= Math.exp(-dt * 6); if (this.vel < 0.05) this.vel = 0; if (!this.path) this.path = null; }

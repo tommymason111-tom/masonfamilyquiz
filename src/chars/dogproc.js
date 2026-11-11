@@ -131,7 +131,7 @@ export class DogProc {
         // skid on the oak
         if (this.speed > 3 && Math.abs(dy) > 0.8 && G.frame % 20 === 0) sfx('tap', this.pos, 0.3);
         // crash into legs: light knock-back on people
-        if (this.speed > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.02) { c.knock(new THREE.Vector3(_v.x * 40, 30, _v.z * 40), 8); emit('chipBowled', c); } }
+        if (this.speed > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.01) c.setMood?.('shock', 1); }
       }
     } else { this.moving = false; this.path = null; }
     const sp = this.moving ? this.speed : 0;

@@ -108,6 +108,8 @@ export class Person {
     for (const b of this.bodies) b.setBodyType(kin ? R.RigidBodyType.KinematicPositionBased : R.RigidBodyType.Dynamic, true);
   }
 
+  // was this person hit/thrown/grabbed by the player in the last few seconds? (comic FX only fire then)
+  byPlayer(s = 4) { return G.time - (this.playerHitT ?? -99) < s; }
   // Knock into ragdoll. impulse applied to part (or chest)
   knock(impulse, part = 1, opts = {}) {
     if (this.protected || this.isPlayer) return false;

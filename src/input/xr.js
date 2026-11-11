@@ -141,7 +141,7 @@ export class XRInput {
     if (rec.fist && speed > 2.2 && rec.punchCD <= 0 && !p.holders[rec.key]) {
       const hits = overlapSphere(rec.palm, 0.09, GRAB_GROUPS);
       const ch = hits.find(h => h.entry.kind === 'char' && !h.entry.ref.isPlayer);
-      if (ch) { rec.punchCD = 0.45; const pp = ch.entry.ref; if (pp.protected) emit('protectedTouch', pp); else { pp.knock(rec.vel.clone().normalize().setY(0.35).normalize().multiplyScalar(pp.mass * Math.min(4, speed) * 0.9), ch.entry.part); sfx('boff', rec.palm, 1); p.knockCrown(pp, rec.vel.clone().normalize()); emit('punched', pp, rec.vel); p.stats.punches++; this.haptic(rec, 0.8, 80); } }
+      if (ch) { rec.punchCD = 0.45; const pp = ch.entry.ref; if (pp.protected) emit('protectedTouch', pp); else { pp.playerHitT = G.time; pp.knock(rec.vel.clone().normalize().setY(0.35).normalize().multiplyScalar(pp.mass * Math.min(4, speed) * 0.9), ch.entry.part); sfx('boff', rec.palm, 1); p.knockCrown(pp, rec.vel.clone().normalize()); emit('punched', pp, rec.vel); p.stats.punches++; this.haptic(rec, 0.8, 80); } }
       const it = hits.find(h => h.entry.kind === 'item' && !h.entry.ref.held && !h.entry.ref.type.fixed);
       if (!ch && it) { rec.punchCD = 0.2; it.entry.ref.body.applyImpulse(rec.vel.clone().multiplyScalar(it.entry.ref.type.mass * 0.8), true); }
     }
@@ -245,7 +245,7 @@ export class XRInput {
     // two-palm shove
     if (L.open && R.open && L.vel.length() > 1.6 && R.vel.length() > 1.6 && d < 0.5 && !this.shoveCD) {
       const mid = L.palm.clone().add(R.palm).multiplyScalar(0.5); const hits = overlapSphere(mid, 0.25, GRAB_GROUPS); const ch = hits.find(h => h.entry.kind === 'char' && !h.entry.ref.isPlayer && !h.entry.ref.protected);
-      if (ch) { this.shoveCD = true; setTimeout(() => this.shoveCD = false, 600); const p = ch.entry.ref; p.knock(L.vel.clone().add(R.vel).multiplyScalar(0.5 * p.mass * 0.9).setY(p.mass * 0.6), 1); sfx('boff', mid, 1); emit('shoved', p); }
+      if (ch) { this.shoveCD = true; setTimeout(() => this.shoveCD = false, 600); const p = ch.entry.ref; p.playerHitT = G.time; p.knock(L.vel.clone().add(R.vel).multiplyScalar(0.5 * p.mass * 0.9).setY(p.mass * 0.6), 1); sfx('boff', mid, 1); emit('shoved', p); }
     }
   }
   stampDetect(vy, dt) {

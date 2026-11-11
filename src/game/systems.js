@@ -50,9 +50,9 @@ export class Systems {
     on('collision', (a, b) => {
       if (!a || !b || a.kind !== 'char' || b.kind !== 'char' || a.ref === b.ref) return;
       for (const [x, y] of [[a, b], [b, a]]) {
-        const p = x.ref, q = y.ref; if (p.state !== 'ragdoll' || q.state !== 'anim' || q.protected || q.isPlayer) continue;
-        const v = p.bodies[x.part].linvel(); const sp = Math.hypot(v.x, v.y, v.z); if (sp < 2.6) continue;
-        q.knock(new THREE.Vector3(v.x, Math.abs(v.y) + 1, v.z).multiplyScalar(q.mass * 0.5), y.part ?? 1); sfx('oof', q.world[1].p, 0.8); emit('pileUp', p, q);
+        const p = x.ref, q = y.ref; if (p.state !== 'ragdoll' || q.state !== 'anim' || q.protected || q.isPlayer || !p.byPlayer?.(4)) continue;
+        const v = p.bodies[x.part].linvel(); const sp = Math.hypot(v.x, v.y, v.z); if (sp < 3.2) continue;
+        q.playerHitT = p.playerHitT; q.knock(new THREE.Vector3(v.x, Math.abs(v.y) + 1, v.z).multiplyScalar(q.mass * 0.5), y.part ?? 1); sfx('oof', q.world[1].p, 0.8); emit('pileUp', p, q);
         if (Math.random() < 0.5) setTimeout(() => q.bark('thrown', { prio: 0 }), 400);
       }
     });
@@ -108,7 +108,7 @@ export class Systems {
     on('roundStart', (r) => this.onRoundStart(r));
     on('roundEnd', (r) => this.onRoundEnd(r));
     on('grabPerson', (p) => { if (p.name === 'Martin' && G.quiz?.questionLive) G.ui?.toast('You\'ve picked up the quizmaster mid-question. Bold.', 2); if (p.name === 'Gary') this.garyThrownCheck(p); });
-    on('thrown', (h) => { if (h.kind === 'char') { if (h.ref.name === 'Gary') this.garyThrownCheck(h.ref, true); if (h.ref.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; } if (h.kind === 'item' && h.ref.id === 'cushion') h.ref.thrownByPlayer = G.time; });
+    on('thrown', (h) => { if (h.kind === 'char') { if (h.ref.name === 'Gary') this.garyThrownCheck(h.ref, true); if (h.ref.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; } if (h.kind === 'item' && h.ref.id === 'cushion') h.ref.thrownByPlayer = G.time; if (h.kind === 'item') h.ref.playerT = G.time; if (h.kind === 'char') h.ref.playerHitT = G.time; });
     on('punched', (p) => { if (p.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; });
     on('shoved', (p) => { if (p.name === 'Paul' && G.quiz) G.quiz.paulStopped = true; });
     on('outfitRevealed', (o) => { if (o.id === 'speedo') G.ai.say('Gary', 'Boxing Day dip, Martin. I\'m going in the garden later.', 1); if (o.id === 'trex') G.ui?.toast('Gary can\'t hold a pen in the T-Rex. Team Debbie loses a writer.', 4); });
@@ -123,7 +123,8 @@ export class Systems {
       const m = inst.type.mass; const energy = m * sp * sp;
       if (other.part === 2) { sfx('boff', p.headPos(_v), 0.5); p.setMood('shock', 1.5); }
       if (inst.id === 'cushion' || inst.id === 'paper_ball') { if (p.name === 'Paul') { this.banter(-10); if (G.quiz) G.quiz.paulStopped = true; if (G.time < this.roastUntil) G.ui?.toast('Cushion to the face mid-roast! The room laughs.', 3); this.laughWave(p); } if (this.paulAsleep && p.name === 'Paul') this.wakePaul(); }
-      if (energy > 25 && p.state === 'anim') { p.knock(new THREE.Vector3().copy(inst.body.linvel()).multiplyScalar(m * 0.8), other.part ?? 1); }
+      const yours = inst.held || G.time - (inst.playerT ?? -99) < 4;
+      if (yours && energy > 25 && p.state === 'anim') { p.playerHitT = G.time; p.knock(new THREE.Vector3().copy(inst.body.linvel()).multiplyScalar(m * 0.8), other.part ?? 1); }
       else if (energy > 3 && Math.random() < 0.5) p.bark('thrown', { prio: 0 });
       if (inst.isCork) { emit('corkHit', p); p.say('OW! Who did that?!'); }
       if (inst.thrownBy === 'Mason' && p.name === 'Paul') { G.ui?.toast('Mason hits Paul. Again.', 2); p.say(pick(['Mason!', 'VAR! That\'s the fourth time!'])); }
@@ -242,7 +243,7 @@ export class Systems {
       case 'channelChange': this.cbeebiesEvent(); break;
       case 'volume100': playMusic('jingle', false, 0.2); sfx('bark', G.dog?.pos); T('Mason sat on the remote: the TV is at volume 100. Chip howls along.', 4); break;
       case 'doorbell': sfx('ding', new THREE.Vector3(0.65, 1.3, 5.95), 1); this.doorbell(); break;
-      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 3.2 && t.x < 4.4 && t.z < 0.9; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (under-stairs door). Phone torch: T.', 6); break;
+      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 3.2 && t.x < 4.4 && t.z < 0.9; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (through the under-stairs cupboard). Phone torch: T.', 6); break;
       case 'puddingFire': { const pu = G.items.byType.pudding?.[0]; if (pu) this.puddingFire(pu); break; }
       case 'siriBetrayal': say(null, 'Here\'s what I found on the web for: ' + (G.quiz?.cur?.q || 'Grand National winner'), { prio: 2 }); T('A phone just shouted the question out loud. Who was that?!', 3); this.cheater = pick([G.charByName.Kirsty, G.charByName.Hollie]); break;
       case 'toiletTrip': { const c = pick([G.charByName.James, G.charByName.Hollie, G.charByName.Kirsty]); if (c) { this.cheater = c; G.ai.sendTo(c.name, G.house.spots.toilet.pos, () => { c.brain.state = 'scripted'; c.brain.timer = 25; c.gesture = 'phone'; }); T(`${c.name} has gone to the loo for "five minutes" during the hard round. Follow them in?`, 5); } break; }

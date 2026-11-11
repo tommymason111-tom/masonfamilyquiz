@@ -307,14 +307,7 @@ export function buildHinged() {
   const doorGeo = (w, h, d, color, handleSide = 1, glassPanel = false) => { const p = new Prop().box(w, h, d, color); const along = w > d; for (const s of [-1, 1]) { if (along) p.box(0.1, 0.02, 0.04, '#c0a050', handleSide * (w / 2 - 0.08), -0.03, s * (d / 2 + 0.03)); else p.box(0.04, 0.02, 0.1, '#c0a050', s * (w / 2 + 0.03), -0.03, handleSide * (d / 2 - 0.08)); }
     if (!glassPanel) for (const s of [-1, 1]) for (const yy of [0.45, -0.35]) { if (along) p.box(w * 0.7, h * 0.32, 0.005, new THREE.Color(color).multiplyScalar(0.92).getStyle(), 0, yy * h / 2 * 1.1, s * (d / 2 + 0.002)); else p.box(0.005, h * 0.32, d * 0.7, new THREE.Color(color).multiplyScalar(0.92).getStyle(), s * (w / 2 + 0.002), yy * h / 2 * 1.1, 0); }
     return p.build(); };
-  // room doors (swing into the smaller rooms)
-  hinge({ name: 'Toilet door', size: [0.04, 2.0, 0.78], center: V(-1.1, 1.0, 5.05), hinge: V(-1.1, 1.0, 4.67), axis: { x: 0, y: 1, z: 0 }, limits: [-1.7, 0.02], geo: doorGeo(0.04, 2.0, 0.78, '#f4f1ea') });
-  hinge({ name: 'Under-stairs door', size: [0.04, 2.0, 0.78], center: V(-1.1, 1.0, 1.15), hinge: V(-1.1, 1.0, 0.77), axis: { x: 0, y: 1, z: 0 }, limits: [-1.7, 0.02], geo: doorGeo(0.04, 2.0, 0.78, '#f4f1ea') });
-  const gd = hinge({ name: 'Garage door', size: [0.05, 2.0, 0.83], center: V(-3.0, 1.0, 1.03), hinge: V(-3.0, 1.0, 0.62), axis: { x: 0, y: 1, z: 0 }, limits: [-1.7, 0.02], geo: doorGeo(0.05, 2.0, 0.83, '#d8d0c0'), closeSpring: 8 });
-  gd.isGarage = true;
-  const glassDoorGeo = (w, h, d) => new Prop().box(w, 0.08, d, '#f6f6f6', 0, h / 2 - 0.04, 0).box(w, 0.08, d, '#f6f6f6', 0, -h / 2 + 0.04, 0).box(w > d ? 0.06 : w, h, w > d ? d : 0.06, '#f6f6f6', w > d ? -w / 2 + 0.03 : 0, 0, w > d ? 0 : -d / 2 + 0.03).box(w > d ? 0.06 : w, h, w > d ? d : 0.06, '#f6f6f6', w > d ? w / 2 - 0.03 : 0, 0, w > d ? 0 : d / 2 - 0.03).box(w > d ? w - 0.1 : 0.01, h - 0.15, w > d ? 0.01 : d - 0.1, '#bcd8e4').build();
-  hinge({ name: 'Conservatory door', size: [1.16, 2.05, 0.05], center: V(5.0, 1.03, -7.0), hinge: V(4.42, 1.03, -7.0), axis: { x: 0, y: 1, z: 0 }, limits: [-0.02, 1.7], geo: glassDoorGeo(1.16, 2.05, 0.05), glass: true });
-  hinge({ name: 'Patio door', size: [0.05, 2.05, 1.26], center: V(3.2, 1.03, -8.95), hinge: V(3.2, 1.03, -9.58), axis: { x: 0, y: 1, z: 0 }, limits: [-1.7, 0.02], geo: glassDoorGeo(0.05, 2.05, 1.26), glass: true });
+  // room doorways are open walkways (no doors) so you can wander freely
   // stair gate (Mason's)
   const gateGeo = (() => { const p = new Prop().box(0.86, 0.04, 0.03, '#f4f4f4', 0, 0.38, 0).box(0.86, 0.04, 0.03, '#f4f4f4', 0, -0.38, 0); for (let i = 0; i < 10; i++) p.box(0.02, 0.76, 0.02, '#f4f4f4', -0.4 + i * 0.089, 0, 0); return p.build(); })();
   hinge({ name: 'Stair gate', size: [0.86, 0.8, 0.03], center: V(-1.55, 0.42, 4.36), hinge: V(-1.98, 0.42, 4.36), axis: { x: 0, y: 1, z: 0 }, limits: [-1.5, 0.02], mass: 3, geo: gateGeo, kind: 'gate', closeSpring: 3 });

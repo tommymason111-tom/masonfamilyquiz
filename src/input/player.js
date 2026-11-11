@@ -127,9 +127,9 @@ export class Player {
     // dog/kids within view
     if (!this.focus) { const near = this.personInView(o, d, 2.5, true); if (near) this.focus = { kind: near.isDog ? 'dog' : 'char', ref: near, dist: near._d, protected: true }; }
   }
-  personInView(o, d, maxD, includeProtected) {
+  personInView(o, d, maxD, includeProtected, rad = 0.35) {
     let best = null, bd = 1e9; const list = includeProtected ? [...G.chars, ...(G.dog ? [G.dog] : [])] : G.chars;
-    for (const p of list) { if (p.isPlayer) continue; const pp = p.chestPos ? p.chestPos(_v2) : p.pos.clone().setY(0.3); _v.copy(pp).sub(o); const t = _v.dot(d); if (t < 0.2 || t > maxD) continue; const perp = _v.addScaledVector(d, -t).length(); if (perp < 0.35 && t < bd) { bd = t; best = p; best._d = t; } }
+    for (const p of list) { if (p.isPlayer) continue; const pp = p.chestPos ? p.chestPos(_v2) : p.pos.clone().setY(0.3); _v.copy(pp).sub(o); const t = _v.dot(d); if (t < 0.2 || t > maxD) continue; const perp = _v.addScaledVector(d, -t).length(); if (perp < rad && t < bd) { bd = t; best = p; best._d = t; } }
     return best;
   }
 
@@ -177,7 +177,7 @@ export class Player {
     let body;
     if (f.kind === 'item') { body = f.ref.body; if (f.ref.inMouth && G.dog) { G.dog.mouth = null; f.ref.inMouth = false; G.dog.wag = 3; } if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; if (f.ref.type.mass < 5) { holder.attach = true; holder.radius = itemRadius(f.ref.type.shape); body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); } sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
     else if (f.kind === 'char') {
-      const p = f.ref; if (p.state === 'recover') p.state = 'anim';
+      const p = f.ref; if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
       p.knock(null, f.part ?? 1, { muscle: 0.12 }); body = p.bodies[f.part ?? 1]; p.heldBy.add(holder);
       holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; holder.part = f.part ?? 1; holder.person = p;
       sfx('oof', f.point, 0.8); p.setMood('shock', 2);
@@ -263,11 +263,35 @@ export class Player {
     if (tgt.kind === 'dog' || tgt.ref?.protected) { emit('protectedTouch', tgt.ref); return; }
     const imp = dir.clone().setY(Math.max(0.25, dir.y)).normalize();
     if (tgt.kind === 'char') {
-      const p = tgt.ref; const m = p.mass;
+      const p = tgt.ref; const m = p.mass; p.playerHitT = G.time;
       p.knock(imp.clone().multiplyScalar(m * 2.4 * power), tgt.part ?? 1);
       sfx('boff', hit ? hit.point : p.chestPos(), 1); emit('punched', p, imp);
       this.knockCrown(p, imp);
-    } else if (tgt.kind === 'item') { const b = tgt.ref.body; b.applyImpulse(imp.multiplyScalar(Math.min(8, b.mass() * 6) * power), true); sfx('boff', hit.point, 0.6); }
+    } else if (tgt.kind === 'item') { tgt.ref.playerT = G.time; const b = tgt.ref.body; b.applyImpulse(imp.multiplyScalar(Math.min(8, b.mass() * 6) * power), true); sfx('boff', hit.point, 0.6); }
+  }
+  // Phones: tap the screen. Tap a person = knock them flying, tap a thing = pick it up,
+  // tap while holding something = throw it where you tapped.
+  tapAt(sx, sy) {
+    if (G.ui?.modalOpen) return;
+    const ndc = new THREE.Vector2(sx / innerWidth * 2 - 1, -(sy / innerHeight) * 2 + 1);
+    const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, G.camera);
+    const o = rc.ray.origin.clone(), d = rc.ray.direction.clone();
+    const held = this.holders.D;
+    if (held) { const dir = d.clone(); dir.y += 0.12; dir.normalize(); this.release('D', dir.multiplyScalar(held.kind === 'char' ? 7 : 10)); return; }
+    const hit = raycast(o, d, 4.5, RAY_GROUPS, this.body);
+    let e = hit?.entry;
+    if (!e || (e.kind !== 'char' && e.kind !== 'item')) { const p = this.personInView(o, d, 4.5, true, 0.5); if (p) e = { kind: p.isDog ? 'dog' : 'char', ref: p, part: 1 }; }
+    if (!e) { if (hit?.entry?.kind === 'static' && hit.entry.tag === 'tv') emit('tvTouched'); return; }
+    if (e.kind === 'dog') { emit('pet', e.ref); return; }
+    if (e.kind === 'char') {
+      const p = e.ref; if (p.protected) { emit('protectedTouch', p); return; }
+      p.playerHitT = G.time; this.fp.punch('R'); this.stats.punches++;
+      const imp = d.clone().setY(Math.max(0.3, d.y)).normalize();
+      p.knock(imp.clone().multiplyScalar(p.mass * 2.6), e.part ?? 1);
+      sfx('boff', hit ? hit.point : p.chestPos(), 0.8); emit('punched', p, imp); this.knockCrown(p, imp);
+      return;
+    }
+    if (e.kind === 'item') { if (e.ref.type.fixed) { if (e.ref.type.use) G.interact.useItem(e.ref, this); return; } this.tryGrab('D', { ...e, point: hit.point, dist: hit.dist }); }
   }
   knockCrown(p, dir) {
     if (!p.crown || !p.crown.parent) return;
@@ -284,9 +308,9 @@ export class Player {
     // people first (legs/pelvis), then items on the floor
     let best = null, bd = 1.4;
     for (const p of G.chars) { if (p.isPlayer || p.protected || !p.bodies) continue; const pp = p.world[0].p; _v.copy(pp).sub(o); _v.y = 0; const t = _v.dot(dir); if (t < 0 || t > 1.4) continue; const perp = _v.addScaledVector(dir, -t).length(); if (perp < 0.45 && t < bd) { bd = t; best = p; } }
-    if (best) { const imp = dir.clone().multiplyScalar(best.mass * 2.2).setY(best.mass * 2.6); best.knock(imp, 8); best.bodies[10].applyImpulse({ x: imp.x * 0.3, y: 0, z: imp.z * 0.3 }, true); sfx('boff', best.world[0].p, 1); emit('kicked', best); if (best.state === 'ragdoll' && best.ragdollT > 0.5) emit('rolled', best); return; }
+    if (best) { best.playerHitT = G.time; const imp = dir.clone().multiplyScalar(best.mass * 2.2).setY(best.mass * 2.6); best.knock(imp, 8); best.bodies[10].applyImpulse({ x: imp.x * 0.3, y: 0, z: imp.z * 0.3 }, true); sfx('boff', best.world[0].p, 1); emit('kicked', best); if (best.state === 'ragdoll' && best.ragdollT > 0.5) emit('rolled', best); return; }
     const hits = overlapSphere(o.clone().addScaledVector(dir, 0.6).setY(this.pos.y + 0.25), 0.45, RAY_GROUPS);
-    for (const h of hits) if (h.entry.kind === 'item' && !h.entry.ref.type.fixed) { const b = h.entry.ref.body; const k = h.entry.ref.type.kickable ? 3.5 : 1.2; b.applyImpulse({ x: dir.x * b.mass() * 7 * k, y: b.mass() * 3 * k, z: dir.z * b.mass() * 7 * k }, true); sfx(h.entry.ref.type.kickable ? 'boing' : 'thud', b.translation(), 0.8); emit('kickedItem', h.entry.ref); break; }
+    for (const h of hits) if (h.entry.kind === 'item' && !h.entry.ref.type.fixed) { h.entry.ref.playerT = G.time; const b = h.entry.ref.body; const k = h.entry.ref.type.kickable ? 3.5 : 1.2; b.applyImpulse({ x: dir.x * b.mass() * 7 * k, y: b.mass() * 3 * k, z: dir.z * b.mass() * 7 * k }, true); sfx(h.entry.ref.type.kickable ? 'boing' : 'thud', b.translation(), 0.8); emit('kickedItem', h.entry.ref); break; }
   }
 
   // ---------------- sitting ----------------
