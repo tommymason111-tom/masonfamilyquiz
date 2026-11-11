@@ -57,7 +57,8 @@ export class Quiz {
     G.updaters.push((dt) => this.update(dt));
     this.drawSheet();
     this.autoStart = Infinity;
-    on('started', () => setTimeout(() => this.welcome(), 1200));
+    this.lastRound = 4; this.disabled = false;
+    on('started', () => setTimeout(() => { if (!this.disabled) this.welcome(); }, 1200));
   }
   teamName(t) { return TEAMS[t].name; } teamColor(t) { return TEAMS[t].color; }
   total(t) { return this.scores[t] + this.bonus[t]; }
@@ -76,6 +77,7 @@ export class Quiz {
     this.autoStart = G.time + 75;
   }
   next() {
+    if (this.disabled) return;
     if (this.phase === 'arrival') return this.outfitWheel();
     if (this.phase === 'question' && this.myAnswer() !== null) { this.t = Math.max(this.t, this.qTime - 2); return; }
     if (this.phase === 'roundEnd') return this.afterRound();
@@ -101,7 +103,7 @@ export class Quiz {
     }, 6500);
   }
   startRound(r) {
-    this.round = r; this.qi = -1; this.phase = 'roundIntro'; this.t = 0;
+    if (this.roundOrder && r < this.roundOrder.length) r = r; this.round = r; this.qi = -1; this.phase = 'roundIntro'; this.t = 0;
     const R = ROUNDS[r]; const qs = r === 3 ? shuffle([...PICTURES]).slice(0, this.qPer) : shuffle(this.bank.filter(q => q.round === R.id)).slice(0, this.qPer);
     this.questions = qs.map(q => { const opts = shuffle([q.answer, ...q.wrong]); return { ...q, opts, correct: opts.indexOf(q.answer), answers: { paul: null, martin: null, debbie: null }, charli: null, paulPush: null }; });
     sfx('whistle', this.martin()?.headPos(new THREE.Vector3()), 1); this.stats.whistles++;
@@ -288,13 +290,14 @@ export class Quiz {
     const lead = ['paul', 'martin', 'debbie'].sort((a, b) => this.total(b) - this.total(a))[0];
     this.mSay(`End of round. Team Paul ${gained.paul}, Team Martin ${gained.martin}, Team Debbie ${gained.debbie}.${lead === 'martin' ? ' Team Martin leading, as is right and proper.' : ''}`, 2);
     if (this.jokers.paul === null && this.round >= 1 && Math.random() < 0.7) setTimeout(() => G.charByName.Paul?.say('JOKER! We were playing the joker on that! ...Weren\'t we?'), 3000);
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < 4 ? 'Next: mini-game in the games room (or press NEXT)' : 'Final scores are in...', 60, 520); });
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < this.lastRound ? 'Next: mini-game in the games room (or press NEXT)' : 'Final scores are in...', 60, 520); });
     emit('roundEnd', this.round);
     this.roundEndTimer = setTimeout(() => this.afterRound(), 12000);
   }
   afterRound() {
     if (this.phase !== 'roundEnd') return; clearTimeout(this.roundEndTimer);
-    if (this.round >= 4) return this.final();
+    if (this.round >= this.lastRound) return this.final();
+    if (this.noMiniGames) return this.startRound(this.round + 1);
     this.phase = 'minigame';
     G.minigames.start(this.round, () => this.startRound(this.round + 1));
   }

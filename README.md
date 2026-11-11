@@ -62,6 +62,21 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   Martin's TV from the corner camera — slow-mo, second angle, score out of 10, VAR, and the Replay of the Night.
 - **Mini-games:** Sprout Pong, Cracker Pull Duel, Pass the Parcel, Stack the Celebrations, Gift Grab.
 
+## Game modes
+
+Pick one on the home screen (or Menu → Change game mode). Personal bests are saved on each device.
+
+| Mode | What it is |
+|---|---|
+| 🏆 The Boxing Day Quiz | The full night: 5 rounds, marking, disputes, mini-games, the Mason Cup |
+| ⚡ Quick Quiz | Two rounds, no mini-games, straight to the cup (~10 min) |
+| 💥 Family Chaos | 3 minutes to punch, kick, throw and pile up the relatives; chained hits build a combo (up to x5); a chaos event every ~15 s |
+| 🚀 Fling the Family | 10 throws, each scored for distance/height (out of 10) plus bonuses for pile-ups, window splats and TV hits |
+| 🍺 Beer Run | 3 minutes of drink orders; right drink to the right person before they give up; the fridges restock |
+| 🔍 Mason's Hide & Seek | Find 6 things Mason hid around the house and garden in 4 minutes (sparkle hints after a minute) |
+| 🎲 Games Room Marathon | All five mini-games back to back |
+| 🎄 Free Roam | No quiz, no timer |
+
 ## Real family models
 
 The 14 family members and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,

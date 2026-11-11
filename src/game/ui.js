@@ -113,7 +113,7 @@ class UI {
     const S = G.settings; const unlocked = loadStore('unlockedOutfits', OUTFITS.map(o => o.id));
     const chk = (k, l) => `<label class="row"><span>${l}</span><input type="checkbox" data-k="${k}" ${S[k] ? 'checked' : ''}></label>`;
     this.modal('menu', `<h2>Menu</h2>
-      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mJoker">Play joker</button><button class="btn alt" id="mKaren">Ask Karen ("Paul.")</button><button class="btn alt" id="mScore">Scoreboard</button></div>
+      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mJoker">Play joker</button><button class="btn alt" id="mKaren">Ask Karen ("Paul.")</button><button class="btn alt" id="mScore">Scoreboard</button><button class="btn alt" id="mMode">Change game mode</button></div>
       <h2 style="margin-top:14px">Settings</h2>
       ${chk('voices', 'Character voices (speech)')}${chk('subtitles', 'Subtitles')}${chk('softDrinks', 'Soft drinks mode (all alcohol → squash)')}${chk('drunkSway', 'Wobbly-after-drinks effect')}${chk('thirdPerson', 'Start in third person (V toggles)')}${chk('shadows', 'Shadows (reload)')}${chk('smoothTurn', 'VR smooth turn (instead of snap)')}${chk('leftHanded', 'Left-handed (swap VR pinch walk/turn, touch buttons)')}${chk('invertY', 'Invert look Y')}
       <label class="row"><span>Mouse / look sensitivity</span><input type="range" min="0.3" max="2.5" step="0.1" data-n="mouseSens" value="${S.mouseSens}"></label>
@@ -132,6 +132,8 @@ class UI {
       el.querySelector('#mJoker').onclick = () => { this.closeModal('menu'); emit('joker'); };
       el.querySelector('#mKaren').onclick = () => { this.closeModal('menu'); G.systems.askKaren(); };
       el.querySelector('#mScore').onclick = () => { this.closeModal('menu'); this.scoreboard(true); };
+      el.querySelector('#mMode').onclick = () => { location.href = '?'; };
+      if (G.modes?.running) { const b = el.querySelector('#mNext'); b.textContent = 'End this game now'; b.onclick = () => { this.closeModal('menu'); G.modes.end(); }; }
       el.querySelector('#mRestart').onclick = () => location.reload();
       el.querySelector('#mWipe').onclick = () => { try { Object.keys(localStorage).filter(k => k.startsWith('masonQuiz.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} this.toast('Saved history cleared.'); };
       el.querySelector('#mLayout').onclick = () => { this.closeModal('menu'); this.editLayout(); };

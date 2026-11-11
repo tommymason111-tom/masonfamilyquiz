@@ -65,7 +65,7 @@ export class Replay {
     const b = h.body; const start = b.translation(); const rec = { start: new THREE.Vector3(start.x, start.y, start.z), maxY: start.y, t0: G.time, h };
     const watch = () => { const t = b.translation(); rec.maxY = Math.max(rec.maxY, t.y); const v = b.linvel(); if (G.time - rec.t0 > 0.6 && Math.hypot(v.x, v.y, v.z) < 1 || G.time - rec.t0 > 4) {
       const dist = Math.hypot(t.x - rec.start.x, t.z - rec.start.z); const height = rec.maxY - rec.start.y; const score = clamp(Math.round((dist * 1.1 + height * 2 + (h.kind === 'char' ? 2 : 0)) * 10) / 10, 0, 10);
-      this.lastRating = { dist, height, score }; G.systems && (G.systems.bestThrow = Math.max(G.systems.bestThrow || 0, score));
+      this.lastRating = { dist, height, score }; G.systems && (G.systems.bestThrow = Math.max(G.systems.bestThrow || 0, score)); emit('throwRated', h, this.lastRating);
       if (h.kind === 'char' && dist > 2.2) this.trigger((h.ref.name || 'SOMEONE').toUpperCase() + ' GOES FLYING', new THREE.Vector3(t.x, t.y, t.z), score);
       return; } requestAnimationFrame(watch); };
     requestAnimationFrame(watch);

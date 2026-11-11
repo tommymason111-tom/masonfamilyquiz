@@ -3,13 +3,13 @@
 import * as THREE from 'three';
 import { G, clamp, lerp } from '../core.js';
 import { Prop } from '../engine/geo.js';
+import { HandModel } from './handmodel.js';
 
 const SKIN = '#e9c2a6', KNIT = '#20406a', BAND = '#f2f2f2', RED = '#c0282d';
 function armGeo(side) {
   const p = new Prop(); const s = side; // built along -z (forward), origin at the elbow
   p.cyl(0.05, 0.045, 0.32, KNIT, 0, 0, -0.16, Math.PI / 2, 0, 0, 14).cyl(0.051, 0.051, 0.03, BAND, 0, 0, -0.24, Math.PI / 2, 0, 0, 14).cyl(0.052, 0.052, 0.015, RED, 0, 0, -0.27, Math.PI / 2, 0, 0, 14)
-    .cyl(0.047, 0.047, 0.04, KNIT, 0, 0, -0.31, Math.PI / 2, 0, 0, 14).cyl(0.032, 0.03, 0.06, SKIN, 0, 0, -0.35, Math.PI / 2, 0, 0, 12);
-  if (s < 0) p.cyl(0.022, 0.022, 0.012, '#222', 0, 0.03, -0.345, 0, 0, 0, 16).cyl(0.018, 0.018, 0.013, '#c8d8e0', 0, 0.031, -0.345, 0, 0, 0, 16);
+    .cyl(0.047, 0.047, 0.04, KNIT, 0, 0, -0.31, Math.PI / 2, 0, 0, 14);
   return p.build();
 }
 function handGeo(side, curl) { // palm faces inward (+x for the right hand), fingers curl around a grip point
@@ -28,12 +28,12 @@ export class FPHands {
     this.arms = {};
     for (const [k, s] of [['R', 1], ['L', -1]]) {
       const arm = new THREE.Group(); const fore = new THREE.Mesh(armGeo(s), mat); arm.add(fore);
-      const open = new THREE.Mesh(handGeo(s, 0.15), mat), grip = new THREE.Mesh(handGeo(s, 0.9), mat), fist = new THREE.Mesh(handGeo(s, 1.4), mat);
-      const hand = new THREE.Group(); hand.position.set(0, 0, -0.38); hand.add(open, grip, fist); arm.add(hand);
+      const model = new HandModel(k, { cuff: false, watch: k === 'L' });
+      const hand = model.root; hand.position.set(0, 0, -0.31); hand.rotation.set(0, 0, -s * Math.PI / 2 * 0.85); arm.add(hand);
       fore.castShadow = false; this.group.add(arm);
-      this.arms[k] = { arm, hand, open, grip, fist, s, rest: new THREE.Vector3(s * 0.25, -0.34, -0.02), pose: new THREE.Vector3(), rot: new THREE.Euler(), punch: 0, mouth: 0 };
+      this.arms[k] = { arm, hand, model, s, rest: new THREE.Vector3(s * 0.25, -0.34, -0.02), pose: new THREE.Vector3(), rot: new THREE.Euler(), punch: 0, mouth: 0 };
     }
-    this.gripPoint = new THREE.Object3D(); this.arms.R.hand.add(this.gripPoint); this.gripPoint.position.set(0.035, -0.005, -0.075);
+    this.gripPoint = this.arms.R.model.gripPoint;
     this.bob = 0;
   }
   setVisible(v) { this.group.visible = v; }
@@ -43,7 +43,7 @@ export class FPHands {
   gripWorld(outP, outQ, radius = 0.04) {
     this.group.updateWorldMatrix(true, true);
     this.gripPoint.getWorldPosition(outP); this.gripPoint.getWorldQuaternion(outQ);
-    const fwd = new THREE.Vector3(0.4, 0, -1).normalize().applyQuaternion(outQ); outP.addScaledVector(fwd, radius * 0.6);
+    const down = new THREE.Vector3(0, -1, 0).applyQuaternion(outQ); outP.addScaledVector(down, Math.max(0, radius - 0.02));
     return outP;
   }
   update(dt, player) {
@@ -67,7 +67,7 @@ export class FPHands {
       a.pose.lerp(target, 1 - Math.exp(-dt * 16)); a.arm.position.copy(a.pose);
       a.rot.x = lerp(a.rot.x, rx, 1 - Math.exp(-dt * 14)); a.rot.y = lerp(a.rot.y, ry, 1 - Math.exp(-dt * 14)); a.rot.z = rz; a.arm.rotation.copy(a.rot);
       const fist = a.punch > 0, grip = (k === 'R' && item) || heavy;
-      a.fist.visible = fist; a.grip.visible = grip && !fist; a.open.visible = !grip && !fist;
+      a.model.pose(fist ? 'fist' : (grip || a.mouth > 0) ? 'grip' : 'relaxed', dt, fist ? 25 : 12);
     }
   }
 }

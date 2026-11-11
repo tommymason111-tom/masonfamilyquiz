@@ -22,6 +22,7 @@ import { MiniGames } from './game/minigames.js';
 import { loadSettings } from './game/settings.js';
 import { loadModels } from './chars/glbrig.js';
 import { FX } from './game/fx.js';
+import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 import { CAST } from './chars/cast.js';
 
@@ -30,6 +31,7 @@ const status = (t, f) => { const el = document.getElementById('loadStatus'); if 
 async function boot() {
   G.settings = loadSettings();
   initHome();
+  buildModePicker((id) => { const l = document.getElementById('playLbl'); if (l) l.textContent = 'Play: ' + modeById(id).name; if (G.modes) { G.modes.id = id; } });
   status('Starting physics…', 0.05);
   await initPhysics();
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -58,7 +60,7 @@ async function boot() {
   if (models.Chip) new Dog(); else new DogProc();
   new AI();
   G.player = new Player();
-  new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX();
+  new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX(); new Modes();
   initUI();
   setDaylight(1);
   addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });

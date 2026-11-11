@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#3a3440}</style>
+<script type="importmap">{"imports":{"three":"../lib/three.module.js"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { HandModel } from '../src/input/handmodel.js';
+const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace;
+const s = new THREE.Scene(); s.add(new THREE.HemisphereLight('#fff','#664',1.2)); const d=new THREE.DirectionalLight('#fff',2.2); d.position.set(0.5,1,0.6); s.add(d);
+const poses = ['open','relaxed','grip','fist','point','pinch'];
+poses.forEach((p,i) => { const h = new HandModel(i%2?'L':'R', { cuff: true }); h.pose(p, 10); h.root.position.set((i-2.5)*0.22, 0, 0); h.root.rotation.set(0.9, 0, 0); s.add(h.root);
+  const h2 = new HandModel('R', { cuff: true }); h2.pose(p, 10); h2.root.position.set((i-2.5)*0.22, -0.25, 0); h2.root.rotation.set(-0.6, Math.PI/2, 0); s.add(h2.root); });
+const cam = new THREE.PerspectiveCamera(30, innerWidth/innerHeight, 0.01, 10); cam.position.set(0, 0.25, 1.4); cam.lookAt(0,-0.12,0);
+r.render(s, cam); document.title='done';
+</script></body></html>
