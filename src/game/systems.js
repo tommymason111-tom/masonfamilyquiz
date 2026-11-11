@@ -1,6 +1,6 @@
 // The living-room weather system: Sibling Banter Meter (fairy lights on the ceiling), Havoc Meter (kids + Chip),
 // the Chaos Director (2–4 random family-quiz rows per round), TV damage, the buffet running out, drink orders,
-// coasters, power cuts, the light cycle from 2pm to fairy-light o'clock, and everything else that goes wrong.
+// coasters, power cuts, 8pm fairy-light o'clock, and everything else that goes wrong.
 import * as THREE from 'three';
 import { G, on, emit, rand, pick, clamp, shuffle } from '../core.js';
 import { sfx, say, playMusic, stopMusic, stopSpeech } from '../engine/audio.js';
@@ -212,7 +212,6 @@ export class Systems {
   }
   // ---------------- rounds & the Chaos Director ----------------
   onRoundStart(r) {
-    setDaylight([1, 0.85, 0.45, 0.15, 0.05][r] ?? 0.05);
     this.havoc = Math.min(100, this.havoc + 12);
     const pool = ['corkPop', 'phoneCheat', 'pcBlue', 'paulOverRoast', 'weddingTakeover', 'jamesTest', 'wineSpill', 'deadPens', 'remoteMissing', 'masonSheets', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'channelChange', 'volume100', 'doorbell', 'beerRun', 'puddingFire', 'siriBetrayal', 'toiletTrip', 'harrisonCries', 'fuse', 'chipOnSheets'];
     const n = 2 + Math.floor(Math.random() * 3);

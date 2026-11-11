@@ -57,7 +57,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   and sippy cups; Baby Ceasefire), Chip (zoomies, steals food, drops his squeaky toy in your lap, jumps at the TV,
   barks at Gary, lies on the answer sheets), Gary's Outfit Wheel (10 outfits with physics quirks), the Chaos Director
   (24 events: fuse trips, PC blue-screens, dead pens, beer run, pudding fire + smoke alarm, Siri betrayal…),
-  drink orders, coaster warnings, light cycle from 2pm to fairy-light o'clock, TV damage (crack, wobble, unplugged).
+  drink orders, coaster warnings, 8pm night-time lighting (moon, street lamps, the neighbours' lights), TV damage (crack, wobble, unplugged).
 - **MASON TV REPLAY:** the last 15 seconds of every moving thing are recorded (positions, not video) and replayed on
   Martin's TV from the corner camera — slow-mo, second angle, score out of 10, VAR, and the Replay of the Night.
 - **Mini-games:** Sprout Pong, Cracker Pull Duel, Pass the Parcel, Stack the Celebrations, Gift Grab.

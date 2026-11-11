@@ -69,9 +69,9 @@ export class Quiz {
 
   // ---------------- flow ----------------
   welcome() {
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'THE MASON FAMILY BOXING DAY QUIZ'); g.fillStyle = '#fff'; g.font = '34px sans-serif'; g.fillText('Boxing Day · 2pm · Uncle Martin\'s', 60, 160); g.font = '28px sans-serif'; wrapText(g, 'Find Team Paul\'s answer sheet on the coffee table. Have a nose around. Grab some food. Throw a cushion at your dad.', 60, 230, 900, 40);
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'THE MASON FAMILY BOXING DAY QUIZ'); g.fillStyle = '#fff'; g.font = '34px sans-serif'; g.fillText('Boxing Day · 8pm · Uncle Martin\'s', 60, 160); g.font = '28px sans-serif'; wrapText(g, 'Find Team Paul\'s answer sheet on the coffee table. Have a nose around. Grab some food. Throw a cushion at your dad.', 60, 230, 900, 40);
       g.fillStyle = '#ffd700'; g.font = 'bold 34px sans-serif'; g.fillText(G.xr ? 'Palm up for the menu → START QUIZ' : 'Press ENTER (or NEXT) to start the quiz', 60, 470); this.drawScoresMini(g, W, H); });
-    G.ui?.toast('You\'ve arrived at Uncle Martin\'s. Boxing Day, 2pm. Everyone else is already here.', 6);
+    G.ui?.toast('You\'ve arrived at Uncle Martin\'s. Boxing Day, 8pm — back from the meal out. Everyone\'s already here.', 6);
     setTimeout(() => G.charByName.Paul?.say('Tommy! Get in! Grab the answer sheet, we\'re winning this year.'), 2500);
     setTimeout(() => this.mSay('Right, everyone, settle down. Quiz in a minute. First: the Outfit Wheel!', 1), 9000);
     this.autoStart = G.time + 75;

@@ -38,15 +38,15 @@ async function boot() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, G.settings.quality === 'low' ? 1 : 2));
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = !!G.settings.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
   renderer.xr.setFoveation?.(0.5);
   document.getElementById('app').appendChild(renderer.domElement);
   G.renderer = renderer;
   const scene = new THREE.Scene(); G.scene = scene;
-  scene.background = new THREE.Color('#aebfd0');
-  scene.fog = new THREE.Fog('#aebfd0', 30, 70);
+  scene.background = new THREE.Color('#070a16');
+  scene.fog = new THREE.Fog('#0b1022', 28, 110);
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 120); G.camera = camera;
   G.clock = new THREE.Clock();
   status('Building Martin\'s house…', 0.12);

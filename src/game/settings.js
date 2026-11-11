@@ -9,7 +9,7 @@ export function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
   const out = { ...DEFAULTS, ...s };
-  if (/OculusBrowser|Quest/i.test(navigator.userAgent) && s.shadows === undefined) out.shadows = false;
+  if (s.shadows === undefined) out.shadows = !(/OculusBrowser|Quest|Android|iPhone|iPad/i.test(navigator.userAgent) || matchMedia('(pointer: coarse)').matches);
   return out;
 }
 export function saveSettings(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }

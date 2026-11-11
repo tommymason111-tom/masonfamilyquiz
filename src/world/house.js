@@ -7,6 +7,7 @@ import { uvBox, worldUV, mergeGeometries, Prop, RoundedBoxGeometry } from '../en
 import * as TX from '../engine/textures.js';
 import { staticBox, staticCyl } from '../engine/physics.js';
 import { buildDecor } from './decor.js';
+import { buildLights, buildNight, setNight } from './night.js';
 
 const WALL_H = 2.5, WT = 0.12;
 export const ROOMS = {
@@ -194,7 +195,8 @@ export function buildHouse() {
   props.cyl(0.04, 0.12, 2.2, '#8a8a8a', 2.6, 1.1, -10.6).cone(0.45, 0.25, '#9a9a9a', 2.6, 2.3, -10.6, Math.PI).cyl(0.25, 0.25, 0.05, '#6a6a6a', 2.6, 0.03, -10.6);
   staticCyl(2.6, 1.1, -10.6, 1.1, 0.12);
   // hedge/trees outside front + garden
-  for (let i = 0; i < 12; i++) props.sph(0.7 + rand(0, 0.3), '#2f5a2a', -9 + i * 1.8, 0.6, 11.5, 1.2, 0.9, 1);
+  for (let i = 0; i < 6; i++) props.sph(0.5 + rand(0, 0.15), '#2f5a2a', 1.8 + i * 1.5, 0.5, 11.35, 1.3, 0.9, 0.9);
+  for (let i = 0; i < 2; i++) props.sph(0.45, '#2f5a2a', -2.9 + i * 1.0, 0.45, 11.35, 1.2, 0.9, 0.9);
   for (const [x, z] of [[-7, -16.5], [-4, -17], [4, -17], [9.8, -12]]) { props.cyl(0.12, 0.16, 2.4, '#4a3420', x, 1.2, z).sph(1.3, '#2e5226', x, 3.0, z, 1, 1.1, 1, 10); staticCyl(x, 1.2, z, 1.2, 0.16); }
 
   // ---------- Hallway ----------
@@ -260,6 +262,7 @@ export function buildHouse() {
   const sw = (room, x, y, z, ry) => { props.box(0.08, 0.12, 0.015, '#f4f4f4', x, y, z, 0, ry).box(0.02, 0.04, 0.02, '#ddd', x, y, z, 0, ry); H.interact.push({ id: 'light', room, pos: new THREE.Vector3(x, y, z), r: 0.3, label: 'Light switch' }); };
   sw('living', 0.75, 1.3, -0.075, 0); sw('kitchen', 1.175, 1.3, 2.2, Math.PI / 2); sw('dining', 3.575, 1.3, -0.5, Math.PI / 2); sw('hall', 0.65, 1.3, 5.93, 0);
   buildDecor(props, add, M, solid, H);
+  buildNight(H);
   // ---------- merge statics ----------
   for (const [mat, geos] of statics) {
     const g = mergeGeometries(geos.map(x => x.index ? x.toNonIndexed() : x).map(x => { x.deleteAttribute && x.attributes.uv2 && x.deleteAttribute('uv2'); return x; }), false);
@@ -433,28 +436,7 @@ function dining(P, add, M, solid, H) {
   H.spots.hallway = new THREE.Vector3(0, 0, 3.0);
 }
 
-function buildLights(H) {
-  const s = G.scene;
-  const hemi = new THREE.HemisphereLight('#fff6e8', '#4a3a2a', 0.55); s.add(hemi); H.lights.hemi = hemi;
-  const sun = new THREE.DirectionalLight('#fff2dc', 1.4); sun.position.set(-6, 9, -14); sun.target.position.set(0, 0, -3); s.add(sun, sun.target); H.lights.sun = sun;
-  sun.castShadow = !!G.settings?.shadows; sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); sun.shadow.bias = -0.0005;
-  const mk = (name, color, I, x, y, z, dist = 8) => { const l = new THREE.PointLight(color, I, dist, 1.6); l.position.set(x, y, z); s.add(l); H.lights[name] = l; return l; };
-  mk('living', '#ffe2b8', 6, 0, 2.2, -3.5, 9);
-  mk('kitchen', '#fff0dc', 6, 4.2, 2.3, 3.0, 9);
-  mk('dining', '#ffe0b0', 4, 5.2, 2.2, -3.5, 7);
-  mk('hall', '#ffe8c8', 3, 0, 2.3, 3.0, 6);
-  mk('tree', '#ffb060', 2.5, 0, 1.4, -7.3, 4);
-  mk('tv', '#9ab8ff', 0.0, -2.4, 1.0, -5.9, 4);
-  mk('garage', '#c8d0ff', 0.25, -5.8, 2.3, 2.5, 7);
-  H.daylight = 1;
-}
-export function setDaylight(t) { // 1 = 2pm daylight, 0 = night
-  const H = G.house; if (!H) return; H.daylight = t;
-  H.lights.sun.intensity = 1.6 * t; H.lights.hemi.intensity = 0.25 + 0.4 * t;
-  const sky = new THREE.Color('#0b1020').lerp(new THREE.Color('#aebfd0'), t);
-  if (t < 0.6 && t > 0.2) sky.lerp(new THREE.Color('#d08050'), 0.35 * (1 - Math.abs(t - 0.4) / 0.2));
-  G.scene.background = sky; if (G.scene.fog) G.scene.fog.color.copy(sky);
-}
+export function setDaylight() { setNight(); }
 
 // Simple waypoint graph for NPC walking between rooms
 function buildNav(H) {

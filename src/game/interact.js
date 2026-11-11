@@ -152,7 +152,7 @@ function useSpot(id, player) {
     case 'heater': emit('heater'); return;
     case 'karaoke': emit('karaoke'); return;
     case 'tap': { sfx('fizz', s.pos, 0.5); const h = player.heldItem(); if (h && (h.type.kind === 'glass' || h.id === 'mug')) { h.drinkOverride = 'water'; h.state.open = true; h.uses = 4; G.ui?.toast(`Filled the ${h.type.name.toLowerCase()} with water.`, 2); } else G.ui?.toast('Tap on. Tap off. (Hold a glass or mug to fill it.)', 2); return; }
-    case 'light': { const L = G.house.lights[s.room]; if (!L) return; sfx('click', s.pos, 0.6); L.userData.on = L.userData.on === false; if (L.userData.on === false) { L.userData.saved = L.intensity; L.intensity = 0; } else L.intensity = L.userData.saved ?? 4; G.ui?.toast(`${s.room[0].toUpperCase() + s.room.slice(1)} light ${L.userData.on === false ? 'off' : 'on'}.`, 1.5); return; }
+    case 'light': { const L = G.house.lights[s.room]; if (!L) return; sfx('click', s.pos, 0.6); L.userData.on = L.userData.on === false; for (const l of [L, G.house.lights[s.room + 'Spot']].filter(Boolean)) { if (L.userData.on === false) { l.userData.saved = l.intensity; l.intensity = 0; } else l.intensity = l.userData.saved ?? 4; } G.ui?.toast(`${s.room[0].toUpperCase() + s.room.slice(1)} light ${L.userData.on === false ? 'off' : 'on'}.`, 1.5); return; }
     case 'smokeAlarm': emit('towelWave'); return;
     case 'pc': emit('pcTouched'); return;
   }
