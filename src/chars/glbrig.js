@@ -162,6 +162,7 @@ export function buildFromModel(spec, model) {
       if ((b >= 7) && p.y > 0.6 * H) v += 50;                             // legs stay below the waist
       if (b === 2 && p.y < neck.y - 0.03 * H) v += 50;                    // head stays above the neck
       if (b === 2 && Math.abs(p.x) > Math.max(0.13 * H, headHalfE * 2.2)) v += 20;      // far beside the head is never head
+      if (b <= 1 && !inArm && p.y > neck.y + 0.015 * H && Math.abs(p.x - hc.x) < headHalfE * 1.25) v += 50; // the whole face (nose, mouth, chin) moves with the head, never the chest
       if ((b === 3 || b === 5) && Math.abs(p.x) < sx * 0.55 && p.y < shoulderY) v += 3; // chest isn't arm
       if (b <= 1 && (Math.abs(p.x) > sx * 1.6 && p.y > 0.55 * H)) v += 1.5; // far-out arm isn't torso
       if (inArm && b <= 2) v += upZone(p) ? 4 : Math.min(4, tt.t / (0.025 * H));

@@ -208,7 +208,7 @@ export const CATALOG = {
 const CF = [-1.5, -3.6];                         // round coffee table, top 0.42
 export const PLACEMENTS = [
   // ---- living room ----
-  ['coffee_table', CF[0], 0, CF[1], 0], ['armchair', -0.62, 0, CF[1], -Math.PI / 2], ['pouffe', -3.6, 0, -3.9],
+  ['coffee_table', CF[0], 0, CF[1], 0], ['armchair', -4.15, 0, -5.2, 0.69], ['pouffe', -3.6, 0, -3.9],
   ['cushion', -3.7, 0.57, -0.9, Math.PI], ['cushion', -2.0, 0.57, -0.9, Math.PI], ['cushion', 0.35, 0.57, -2.45, -Math.PI / 2], ['cushion', -0.75, 0.57, -5.35, 0],
   ['answer_sheet', CF[0] - 0.2, 0.42, CF[1] - 0.15, 0], ['answer_sheet', CF[0] + 0.15, 0.42, CF[1] + 0.12, 0.3], ['answer_sheet', -0.3, 0.6, CF[1] + 0.3, 0],
   ['pen', CF[0] + 0.1, 0.42, CF[1] - 0.12, 0, 2, 0.05, 0.02], ['pen', CF[0] + 0.25, 0.42, CF[1] - 0.05, 1],

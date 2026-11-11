@@ -169,6 +169,9 @@ export function unlockSpeech() {
 export function voiceAvailable() { return !!window.speechSynthesis; }
 export function say(char, text, opts = {}) {
   const prio = opts.prio ?? 1;
+  // don't repeat the same line from the same person while they're still saying it (e.g. three laughs in a row)
+  if (char && char._lastLine === text && G.time - (char._lastLineT ?? -99) < 6) return 0;
+  if (char) { char._lastLine = text; char._lastLineT = G.time; }
   emit('say', char, text);
   const dur = Math.min(6, 0.8 + text.length * 0.055);
   if (char) char.talkUntil = G.time + dur;

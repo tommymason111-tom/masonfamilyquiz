@@ -22,7 +22,7 @@ export class AI {
       Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Charli: { ...seat(H.sofaArmL) },
       Martin: { ...seat(H.armchair), armchair: true },
       Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]),
-      Gary: { pos: V(-3.9, -5.1), yaw: 1.0, stand: true },
+      Gary: { pos: V(-3.2, -5.25), yaw: 0.8, stand: true },
       Mason: { ...seat(H.floor[2]), floor: true },
       // Kitchen: Julie at the hob, Jodie by the kettle, Hollie & Dan leaning on the island by the drinks
       Julie: { pos: V(5.25, 2.85), yaw: Math.PI / 2, stand: true, room: 'kitchen' },

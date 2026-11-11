@@ -413,8 +413,8 @@ function living(P, add, M, solid, H, BAY) {
   const tvc = staticBox(H.tv.center.x, H.tv.center.y, H.tv.center.z, 0.72, 0.42, 0.04, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tvYaw, 0)), { tag: 'tv' });
   G.colliderMap.get(tvc.collider.handle).tag = 'tv';
   H.spots.tvFront = new THREE.Vector3(tvX + 1.2, 0, tvZ + 1.2);
-  // Martin's armchair (the curved chair beside the coffee table) — a heavy dynamic item; this is its spot
-  H.spots.armchair = { pos: new THREE.Vector3(PX(640), 0, PZ(1023)), yaw: -Math.PI / 2, seatY: 0.55 };
+  // Martin's armchair: next to the TV, angled to face the rest of the room (the quizmaster's seat)
+  H.spots.armchair = { pos: new THREE.Vector3(-4.15, 0, -5.2), yaw: 0.69, seatY: 0.55 };
   // the fireplace on the west wall: stone chimney breast, hearth, fire opening facing into the room
   const fx = PX(216), fz = (PZ(955) + PZ(1190)) / 2, fl = PZ(1190) - PZ(955);
   P.box(PX(247) - PX(185) - 0.09, WALL_H, fl, '#8e8e8a', (PX(247) + PX(194)) / 2 + 0.04, WALL_H / 2, fz);
@@ -520,7 +520,7 @@ export function setDaylight() { setNight(); }
 // Simple waypoint graph for NPC walking between rooms
 function buildNav(H) {
   const N = {
-    hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], hallLiv: [-0.3, 0.25], livingDoor: [-0.3, -1.0], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.3, -4.5], livingFire: [-4.4, -2.6],
+    hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], hallLiv: [-0.3, 0.25], livingDoor: [-0.3, -1.0], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.4, -4.25], livingFire: [-4.4, -2.6],
     kitchenDoor: [1.85, 2.06], kitchen: [2.8, 2.0], kitchenE: [5.1, 2.1], kitchenNE: [5.0, 4.4], kitchenN: [3.8, 4.4], kitchenW: [2.2, 4.4],
     diningDoorH: [1.45, 0.25], diningDoor: [1.45, -0.9], dining: [1.5, -2.6], diningE: [4.15, -2.0], diningN: [4.4, -5.2], diningBack: [2.0, -5.35], consDoor: [2.9, -6.6], cons: [2.0, -7.0], consW: [1.5, -8.05], patioCons: [0.2, -8.05], patio: [-0.4, -7.2], patioE: [-0.6, -9.7], patioW: [-4.6, -9.6], garden: [-2.5, -11.6], gardenFar: [1.5, -12.5], bayOut: [-0.9, -6.9], patioSide: [-6.7, -3.0], bbq: [-6.2, -8.2], hallK: [0.9, 2.06],
     toiletDoor: [-0.7, 4.7], toilet: [-1.9, 4.7], cupDoor: [-0.7, 0.25], cupboard: [-2.1, 0.25], garageDoor: [-3.6, 0.25], garage: [-5.2, 2.6], garageFridge: [-4.6, 1.1], stairFoot: [-0.75, 2.9], sideDoorOut: [-6.78, -1.2], sideDoorIn: [-6.6, 0.6],
