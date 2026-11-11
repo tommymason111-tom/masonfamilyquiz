@@ -394,8 +394,8 @@ function living(P, add, M, solid, H, BAY) {
   H.spots.coffee = new THREE.Vector3(PX(587), 0, PZ(1023));
   // L-shaped sofa: long run down the dining-room wall (facing west) + the short return along the back wall (facing the room)
   const lx = (PX(715) + PX(790)) / 2 + 0.05;
-  sofa(P, lx, (PZ(895) + PZ(1155)) / 2, -Math.PI / 2, '#ece6da', solid, PZ(1155) - PZ(895), 3, 0.84);
-  sofa(P, (PX(628) + PX(790)) / 2, (PZ(820) + PZ(895)) / 2 + 0.1, 0, '#ece6da', solid, PX(790) - PX(628), 2, 0.84, true);
+  sofa(P, lx, (PZ(895) + PZ(1155)) / 2, -Math.PI / 2, '#ece6da', solid, PZ(1155) - PZ(895), 3, 0.84, 'left'); // no arm where it meets the corner
+  sofa(P, (PX(628) + PX(790)) / 2, (PZ(820) + PZ(895)) / 2 + 0.1, 0, '#ece6da', solid, PX(790) - PX(628), 2, 0.84, 'right');
   // the sofa along the bottom wall, facing the fireplace end of the room
   const bx = (PX(350) + PX(572)) / 2, bz = (PZ(1230) + PZ(1300)) / 2 - 0.08;
   sofa(P, bx, bz, Math.PI, '#ece6da', solid, PX(572) - PX(350), 3, 0.84);
@@ -456,23 +456,25 @@ function living(P, add, M, solid, H, BAY) {
   H.spots.ceremony = new THREE.Vector3(-3.3, 0, -3.0);
 }
 
-// sofa(len along local x, facing local +z rotated by yaw); 'corner' leaves the right arm off (joins the L)
-function sofa(P, x, z, yaw, color, solid, len = 2.4, seats = 3, depth = 0.9, corner = false) {
+// sofa(len along local x, facing local +z rotated by yaw); noArm = 'left' | 'right' leaves that arm off where it joins the L
+function sofa(P, x, z, yaw, color, solid, len = 2.4, seats = 3, depth = 0.9, noArm = null) {
+  if (noArm === true) noArm = 'right';
   const c = Math.cos(yaw), s = Math.sin(yaw);
   const L = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
   const add = (w, h, d, lx, y, lz, col, r = 0.06) => { const [px, pz] = L(lx, lz); P.rbox(w, h, d, r, col, px, y, pz, 0, yaw); };
   const dark = new THREE.Color(color).multiplyScalar(0.82).getStyle(), cush = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), 0.35).getStyle();
   const hl = len / 2, hd = depth / 2;
+  const arms = [noArm === 'left' ? null : -hl + 0.1, noArm === 'right' ? null : hl - 0.1].filter(v => v !== null);
   add(len, 0.42, depth, 0, 0.21, 0, dark, 0.04);
   add(len, 0.5, 0.24, 0, 0.62, -hd + 0.12, color, 0.1);
-  add(0.2, 0.62, depth, -hl + 0.1, 0.42, 0, color, 0.1); if (!corner) add(0.2, 0.62, depth, hl - 0.1, 0.42, 0, color, 0.1);
-  const inner = len - (corner ? 0.2 : 0.4), sw = inner / seats, off = corner ? 0.1 : 0;
-  for (let i = 0; i < seats; i++) { const lx = -inner / 2 + sw * (i + 0.5) - off * -1 * 0; add(sw - 0.04, 0.16, depth - 0.28, lx + (corner ? -0.0 : 0) + (corner ? 0.1 : 0) * 0, 0.49, 0.08, cush, 0.07); add(sw - 0.06, 0.4, 0.14, lx, 0.72, -hd + 0.27, cush, 0.07); }
+  for (const ax of arms) add(0.2, 0.62, depth, ax, 0.42, 0, color, 0.1);
+  const s0 = noArm === 'left' ? -hl : -hl + 0.2, s1 = noArm === 'right' ? hl : hl - 0.2, sw = (s1 - s0) / seats;
+  for (let i = 0; i < seats; i++) { const lx = s0 + sw * (i + 0.5); add(sw - 0.04, 0.16, depth - 0.28, lx, 0.49, 0.08, cush, 0.07); add(sw - 0.06, 0.4, 0.14, lx, 0.72, -hd + 0.27, cush, 0.07); }
   for (const lx of [-hl + 0.1, hl - 0.1]) for (const lz of [-hd + 0.08, hd - 0.08]) { const [px, pz] = L(lx, lz); P.cyl(0.025, 0.02, 0.06, '#2a1a10', px, 0.03, pz); }
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0));
   const [bx, bz] = L(0, 0); staticBox(bx, 0.28, bz, hl, 0.28, hd, q);
   const [kx, kz] = L(0, -hd + 0.12); staticBox(kx, 0.62, kz, hl, 0.3, 0.12, q);
-  for (const lx of corner ? [-hl + 0.1] : [-hl + 0.1, hl - 0.1]) { const [ax, az] = L(lx, 0); staticBox(ax, 0.4, az, 0.1, 0.31, hd, q); }
+  for (const lx of arms) { const [ax, az] = L(lx, 0); staticBox(ax, 0.4, az, 0.1, 0.31, hd, q); }
 }
 
 function dining(P, add, M, solid, H) {
