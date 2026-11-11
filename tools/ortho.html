@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#fff}</style>
+<script type="importmap">{"imports":{"three":"../lib/three.module.js"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from '../lib/addons/loaders/GLTFLoader.js';
+const q = new URLSearchParams(location.search); const name = q.get('m');
+const top = q.get('top'); const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color('#fff'); s.add(new THREE.HemisphereLight('#fff','#888',2.5));
+new GLTFLoader().load('../assets/models/'+name+'.glb', (g) => {
+  const o = g.scene; const bb = new THREE.Box3().setFromObject(o); const h = bb.max.y - bb.min.y; o.position.y = -bb.min.y; o.scale.setScalar(1/h); o.position.y = -bb.min.y/h; o.rotation.y = +(q.get('rot')||0); s.add(o);
+  // grid every 0.05 (normalised to height 1)
+  const mat = new THREE.LineBasicMaterial({ color: '#f00' }), mat2 = new THREE.LineBasicMaterial({ color: '#fbb' });
+  for (let v = -0.6; v <= 1.001; v += 0.05) { const major = Math.abs(v*10 - Math.round(v*10)) < 1e-6; const ys = [new THREE.Vector3(-0.6, v, 0.5), new THREE.Vector3(0.6, v, 0.5)]; if (v >= 0) s.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ys), major ? mat : mat2)); const xs=[new THREE.Vector3(v,0,0.5),new THREE.Vector3(v,1.0,0.5)]; if (v<=0.6) s.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(xs), major?mat:mat2)); }
+  const cam = new THREE.OrthographicCamera(-0.6, 0.6, 1.05, -0.05, 0.01, 10); cam.position.set(0,0,3); if (top) { cam.position.set(0, 3, 0); cam.up.set(0,0,-1); cam.lookAt(0,0,0); cam.top=0.6; cam.bottom=-0.6; cam.left=-0.6; cam.right=0.6; cam.updateProjectionMatrix(); } r.render(s, cam); document.title='done';
+});
+</script></body></html>

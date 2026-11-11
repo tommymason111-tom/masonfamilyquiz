@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { G, GR, groups, ALL, clamp, lerp, smooth, rand, pick, noise3, emit } from '../core.js';
 import { buildCharacter, PARENT, PART_COUNT, B } from './body.js';
+import { buildFromModel } from './glbrig.js';
 import { sfx, say } from '../engine/audio.js';
 
 const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion();
@@ -16,8 +17,9 @@ export const MAX_RAGDOLLS = 8;
 export class Person {
   constructor(spec) {
     this.spec = spec; this.name = spec.name; this.team = spec.team;
-    const ch = buildCharacter(spec);
+    const ch = spec._model ? buildFromModel(spec, spec._model) : buildCharacter(spec);
     Object.assign(this, { root: ch.root, mesh: ch.mesh, bones: ch.bones, dims: ch.dims, O: ch.origins, mats: ch.mats, tris: ch.tris });
+    this.corr = ch.corrections || null; this.scanned = !!ch.scanned;
     this.root.userData.person = this;
     G.scene.add(this.root);
     this.H = this.dims.H;
@@ -348,7 +350,8 @@ export class Person {
     }
   }
   applyBones() {
-    for (let i = 0; i < PART_COUNT; i++) { this.bones[i].position.copy(this.world[i].p); this.bones[i].quaternion.copy(this.world[i].q); }
+    const C = this.corr;
+    for (let i = 0; i < PART_COUNT; i++) { this.bones[i].position.copy(this.world[i].p); this.bones[i].quaternion.copy(this.world[i].q); if (C) this.bones[i].quaternion.multiply(C[i]); }
   }
   // ---------- face ----------
   updateFace(dt) {

@@ -6,6 +6,7 @@ import { Person } from './rig.js';
 import { Prop } from '../engine/geo.js';
 import { knitBump } from '../engine/textures.js';
 import { loadStore } from '../game/settings.js';
+import { models } from './glbrig.js';
 
 let accMat = null;
 const acc = (build) => { const p = new Prop(); build(p); const m = new THREE.Mesh(p.build(), accMat); m.castShadow = true; return m; };
@@ -25,6 +26,7 @@ export function createPeople() {
     let spec = { ...c, seed: hashStr(c.name) + 7, skin: SKIN[i % SKIN.length], _knitTex: null };
     if (c.name === 'Gary') spec = { ...spec, ...outfit, top: { ...outfit.top }, name: 'Gary', team: 'debbie', build: 'bigger', voice: c.voice, lines: c.lines, hair: outfit.wig ? { style: 'wig', color: '#d8d8d8', length: 0.3 } : c.hair };
     if (G.settings.softDrinks && c.lines) {/* lines stay; drinks are swapped in items */}
+    if (models[c.name] && G.settings.scannedModels !== false) spec._model = models[c.name];
     const p = new Person(spec);
     G.chars.push(p); G.charByName[c.name] = p;
     if (p.isPlayer) G.tommy = p;
@@ -33,6 +35,7 @@ export function createPeople() {
 }
 
 function dress(p, c, outfit) {
+  if (p.scanned) return dressScanned(p, c, outfit);
   const H = p.H, O = p.O, d = p.dims, hd = d.head;
   const headTop = new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.85, hd.cz);
   const handR = new THREE.Vector3(0, -(O[6].y - (d.wristY - 0.065 * H)), 0.025);
@@ -78,3 +81,33 @@ const phone = (glow) => { const m = acc(P => P.rbox(0.072, 0.15, 0.009, 0.006, '
 const clipboard = () => acc(P => P.box(0.24, 0.33, 0.012, '#8a6a3a').box(0.21, 0.28, 0.003, '#ffffff', 0, -0.01, 0.007).box(0.08, 0.03, 0.012, '#c0c0c0', 0, 0.15, 0.008));
 const wineGlass = () => { const p = new Prop().lathe([[0, -0.1], [0.035, -0.1], [0.005, -0.09], [0.005, -0.02], [0.03, 0], [0.04, 0.05], [0.038, 0.1], [0, 0.0]], '#e8f0f4', 0, 0, 0, 14).cyl(0.034, 0.025, 0.04, '#6a0a1a', 0, 0.025, 0); const m = new THREE.Mesh(p.build(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.7, roughness: 0.05 })); return m; };
 const pint = () => { const p = new Prop().cyl(0.045, 0.036, 0.16, '#d8a020', 0, 0, 0, 0, 0, 0, 14).cyl(0.046, 0.045, 0.025, '#f8f4e8', 0, 0.075, 0, 0, 0, 0, 14); return new THREE.Mesh(p.build(), new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.85, roughness: 0.1 })); };
+
+// Scanned family members: only hand-held props, crowns and Gary's costume pieces (their clothes are in the scan)
+function dressScanned(p, c, outfit) {
+  const H = p.H, O = p.O, d = p.dims, hd = d.head;
+  const headTop = new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.92, hd.cz * 0.5);
+  const handR = new THREE.Vector3(0, -(O[6].y - (d.wristY - 0.065 * H)), 0.025);
+  const handL = new THREE.Vector3(0, -(O[4].y - (d.wristY - 0.065 * H)), 0.025);
+  switch (c.name) {
+    case 'Charli': p.crown = p.attach(crown(c.crown), 'head', headTop.clone(), new THREE.Euler(-0.15, 0, 0)); break;
+    case 'Martin': p.attach(clipboard(), 'lArmL', handL.clone().add(new THREE.Vector3(0.02, 0.05, 0.05)), new THREE.Euler(-0.3, 0, 1.5)); break;
+    case 'Karen': p.attach(wineGlass(), 'lArmR', handR.clone().add(new THREE.Vector3(-0.02, 0.06, 0.03))); break;
+    case 'Hollie': p.attach(phone(true), 'lArmR', handR, new THREE.Euler(0, 0, 0.2)); p.phoneGlow = true; break;
+    case 'Sophie': p.attach(acc(P => P.box(0.04, 0.3, 0.24, '#f4c0d0').box(0.045, 0.31, 0.02, '#ffffff', 0, 0, 0.11)), 'lArmL', handL.clone().add(new THREE.Vector3(0.03, 0.03, 0.04))); break;
+    case 'Gary': {
+      const hat = (build) => p.attach(acc(build), 'head', headTop.clone().add(new THREE.Vector3(0, -0.02, 0)));
+      if (outfit.top?.hat === 'santa') hat(P => P.cyl(hd.rx * 1.05, hd.rx * 1.1, 0.05, '#ffffff', 0, 0, 0).cone(hd.rx * 1.0, 0.25, '#c41e1e', 0.03, 0.14, -0.03, -0.3, 0, -0.25).sph(0.03, '#ffffff', 0.09, 0.24, -0.08));
+      if (outfit.id === 'elf') hat(P => P.cyl(hd.rx * 1.05, hd.rx * 1.1, 0.05, '#ffffff', 0, 0, 0).cone(hd.rx, 0.3, '#1f8a3a', 0, 0.17, -0.05, -0.35).sph(0.025, '#ffffff', 0, 0.3, -0.15));
+      if (outfit.top?.hat === 'swimcap') hat(P => P.sph(hd.rx * 1.08, '#f4f4f4', 0, -0.03, 0, 1, 0.75, 1.12, 16));
+      if (outfit.wig) hat(P => P.sph(hd.rx * 1.18, '#d8d8d8', 0, -0.03, -0.01, 1, 0.9, 1.15, 12));
+      if (outfit.id === 'trex') p.attach(acc(P => P.sph(0.14, '#4a9a42', 0, 0, 0.06, 1, 0.9, 1.4, 12).box(0.18, 0.03, 0.14, '#f4f4f4', 0, -0.05, 0.2).sph(0.025, '#ffffff', 0.07, 0.07, 0.13).sph(0.025, '#ffffff', -0.07, 0.07, 0.13)), 'head', headTop.clone().add(new THREE.Vector3(0, 0.05, 0)));
+      if (outfit.id === 'turkey') p.attach(acc(P => { for (let k = 0; k < 9; k++) { const a = -1.1 + k * 0.275; P.sph(1, k % 2 ? '#8a5a2a' : '#c08040', Math.sin(a) * 0.25, 0.1 + Math.cos(a) * 0.25, -0.18, 0.06, 0.22, 0.015); } }), 'spine', new THREE.Vector3(0, 0.1, 0));
+      if (outfit.lights || outfit.id === 'xmastree') { const L = acc(P => { for (let i = 0; i < 30; i++) { const a = i * 2.4, y = -0.25 + i * 0.016; P.sph(0.014, ['#ff2020', '#ffd700', '#40ff60', '#40a0ff'][i % 4], Math.sin(a) * 0.17, y + 0.2, Math.cos(a) * 0.14, 1, 1, 1, 5); } }); L.material = new THREE.MeshBasicMaterial({ vertexColors: true }); p.attach(L, 'spine', new THREE.Vector3(0, 0, 0)); }
+      if (outfit.id === 'mankini') p.attach(acc(P => { P.box(0.02, 0.5, 0.012, '#2b8a2b', 0.07, 0.0, 0.13, 0, 0, -0.18).box(0.02, 0.5, 0.012, '#2b8a2b', -0.07, 0.0, 0.13, 0, 0, 0.18); }), 'spine', new THREE.Vector3(0, 0.05, 0));
+      if (outfit.id === 'donkey') p.attach(acc(P => P.sph(1, '#7a6e62', 0, 0, -0.3, 0.16, 0.14, 0.26, 10).box(0.03, 0.18, 0.03, '#3a302a', 0, -0.05, -0.56, 0.5)), 'hips', new THREE.Vector3(0, 0, 0));
+      if (outfit.id === 'sumo') p.attach(acc(P => P.sph(1, '#f0c8a8', 0, 0.02, 0.02, 0.3, 0.32, 0.27, 16).torus(0.27, 0.05, '#1d1d6b', 0, -0.18, 0.02, Math.PI / 2)), 'spine', new THREE.Vector3(0, 0, 0));
+      break;
+    }
+  }
+  if (!p.crown && c.name !== 'Gary' && Math.random() < 0.35) p.crown = p.attach(crown(pick(['#f2c20f', '#e63946', '#2a9d8f', '#3a86ff', '#ff006e'])), 'head', headTop.clone(), new THREE.Euler(-0.12, 0, 0.05));
+}

@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#556}</style>
+<script type="importmap">{"imports":{"three":"../lib/three.module.js"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { loadModels, buildFromModel, MODEL_FILES } from '../src/chars/glbrig.js';
+import { CAST } from '../src/chars/cast.js';
+import { PARENT, PART_COUNT } from '../src/chars/body.js';
+const q = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement); r.toneMapping = THREE.ACESFilmicToneMapping;
+const s = new THREE.Scene(); s.add(new THREE.HemisphereLight('#fff','#666',1.6)); const d=new THREE.DirectionalLight('#fff',2); d.position.set(1,2,3); s.add(d);
+const models = await loadModels(null, '../');
+const names = (q.get('only')||Object.keys(MODEL_FILES).join(',')).split(',');
+const pose = q.get('pose')||'rest';
+names.forEach((n,i) => {
+  const spec = { ...CAST.find(c=>c.name===n) };
+  const ch = buildFromModel(spec, models[n]); const O = ch.origins;
+  // FK with optional pose
+  const E = Array.from({length:PART_COUNT}, ()=>new THREE.Euler());
+  if (pose==='wave') { E[3].set(-1.2,0,0.3); E[4].set(-1.0,0,0); E[5].set(0,0,-2.4); E[6].set(-0.5,0,0); E[7].set(-0.6,0,0); E[8].set(0.9,0,0); }
+  const W=[]; for (let k=0;k<PART_COUNT;k++){ const p=PARENT[k]; const lq=new THREE.Quaternion().setFromEuler(E[k]); if(p<0) W[k]={p:O[k].clone(),q:lq}; else { const off=O[k].clone().sub(O[p]); W[k]={p:off.applyQuaternion(W[p].q).add(W[p].p), q:W[p].q.clone().multiply(lq)}; } }
+  for (let k=0;k<PART_COUNT;k++){ ch.bones[k].position.copy(W[k].p); ch.bones[k].quaternion.copy(W[k].q).multiply(ch.corrections[k]); }
+  ch.root.position.x = (i-(names.length-1)/2)*0.75; ch.root.rotation.y = +(q.get('rot')||0); s.add(ch.root);
+});
+const cam = new THREE.PerspectiveCamera(+(q.get('fov')||35), innerWidth/innerHeight, 0.01, 100);
+const cy=+(q.get('cy')||0.9), cz=+(q.get('cz')||names.length*0.7+1); cam.position.set(0,cy,cz); cam.lookAt(0,cy,0); r.render(s,cam); document.title='done';
+</script></body></html>

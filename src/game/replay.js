@@ -32,7 +32,7 @@ export class Replay {
     for (const inst of G.items.instances) { const mesh = inst.type.mesh; T.push({ kind: 'item', inst, mesh, idx: inst.index }); }
     for (const p of G.chars) for (let i = 0; i < PART_COUNT; i++) T.push({ kind: 'bone', bone: p.bones[i] });
     if (G.tree) T.push({ kind: 'obj', obj: G.tree.group });
-    if (G.dog) T.push({ kind: 'obj', obj: G.dog.root }, { kind: 'obj', obj: G.dog.body });
+    if (G.dog?.rig) for (const b of G.dog.rig.bones) T.push({ kind: 'obj', obj: b }); else if (G.dog) T.push({ kind: 'obj', obj: G.dog.root }, { kind: 'obj', obj: G.dog.body });
     for (const h of G.items.hinged) T.push({ kind: 'obj', obj: h.mesh });
   }
   // write current state into arr

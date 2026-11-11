@@ -1,161 +1,217 @@
-// Chip: beige cocker spaniel. Fur-carded body, jiggle ears and tail, big wet brown eyes.
-// Can't be grabbed or thrown. Steals food, zoomies, drops his squeaky toy in your lap, barks at Gary.
+// Chip — the family's cocker spaniel, from his 3D scan, on a dog skeleton with real gaits.
+//  • walk (4-beat lateral sequence), trot (diagonal pairs), rotary gallop for zoomies, with body bob/pitch
+//  • turns lead with the chest, head counter-bobs, nose drops to sniff, ears & tail on springs
+//  • holds things crosswise in his jaws; picks up (head down, jaw open, bite, lift), drops (lower, open, release)
+//    and does the head-shake fling. Can't be grabbed or thrown; things bounce off him.
 import * as THREE from 'three';
-import { G, GR, groups, ALL, rand, pick, clamp, noise3, on, emit } from '../core.js';
+import { G, GR, groups, ALL, rand, pick, clamp, on, emit } from '../core.js';
 import { Prop } from '../engine/geo.js';
 import { sfx } from '../engine/audio.js';
-import { roomAt } from '../world/house.js';
+import { models } from './glbrig.js';
+import { buildDog, poseDog, DB } from './dogrig.js';
 
-const BEIGE = '#d8b685', DARK = '#b8925e', CREAM = '#ecd3a8';
-const _v = new THREE.Vector3();
-
-function furGeo(build) { const p = new Prop(); build(p); const g = p.build();
-  // shaggy displacement + colour variation
-  const pos = g.attributes.position, col = g.attributes.color;
-  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i); const n = noise3(x * 60, y * 60, z * 60); const k = 1 + (n - 0.5) * 0.08; pos.setXYZ(i, x * k, y * k, z * k); col.setXYZ(i, col.getX(i) * (0.85 + n * 0.3), col.getY(i) * (0.85 + n * 0.3), col.getZ(i) * (0.85 + n * 0.3)); }
-  g.computeVertexNormals(); return g; }
-function fringe(p, x0, y0, z0, x1, y1, z1, n, len, color) { for (let i = 0; i < n; i++) { const t = i / (n - 1); const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, z = z0 + (z1 - z0) * t; p.box(0.012, len * (0.8 + Math.random() * 0.4), 0.004, color, x, y - len / 2, z, rand(-0.2, 0.2), rand(0, 3), rand(-0.15, 0.15)); } }
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
+const NB = 17;
+const LEGS = { FL: [DB.FLu, DB.FLl, true, 1], FR: [DB.FRu, DB.FRl, true, -1], BL: [DB.BLu, DB.BLl, false, 1], BR: [DB.BRu, DB.BRl, false, -1] };
+// footfall phase offsets (fraction of a stride) per gait
+const GAITS = { walk: { BL: 0, FL: 0.25, BR: 0.5, FR: 0.75, swing: 0.3 }, trot: { FL: 0, BR: 0, FR: 0.5, BL: 0.5, swing: 0.45 }, gallop: { BL: 0, BR: 0.08, FR: 0.42, FL: 0.52, swing: 0.55 } };
 
 export class Dog {
   constructor() {
     G.dog = this; this.isDog = true; this.name = 'Chip'; this.protected = true;
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
-    const furMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, side: THREE.DoubleSide });
-    const eyeMat = new THREE.MeshStandardMaterial({ color: '#2a1608', roughness: 0.05, metalness: 0.1 });
-    const root = new THREE.Group(); this.root = root; G.scene.add(root);
-    const body = new THREE.Group(); body.position.y = 0.36; root.add(body); this.body = body;
-    body.add(new THREE.Mesh(furGeo(p => p.sph(0.13, BEIGE, 0, 0, 0, 1, 0.95, 1.9, 16).sph(0.1, CREAM, 0, -0.04, 0.17, 1, 1.1, 0.9, 12).sph(0.11, BEIGE, 0, 0.0, -0.17, 1, 1, 1.1, 12)), mat));
-    const fr = new Prop(); fringe(fr, -0.07, -0.08, 0.2, 0.07, -0.08, 0.2, 10, 0.1, CREAM); fringe(fr, -0.1, -0.1, -0.1, -0.1, -0.1, 0.12, 8, 0.07, BEIGE); fringe(fr, 0.1, -0.1, -0.1, 0.1, -0.1, 0.12, 8, 0.07, BEIGE);
-    body.add(new THREE.Mesh(fr.build(), furMat));
-    // head
-    const head = new THREE.Group(); head.position.set(0, 0.11, 0.27); body.add(head); this.head = head;
-    head.add(new THREE.Mesh(furGeo(p => p.sph(0.085, BEIGE, 0, 0.03, 0, 1, 1, 1.05, 14).sph(0.05, CREAM, 0, -0.01, 0.1, 0.9, 0.8, 1.2, 12).sph(0.022, '#2a1a12', 0, 0.0, 0.16, 1.2, 0.9, 0.9, 8).sph(0.03, CREAM, 0, -0.045, 0.08, 1.2, 0.6, 1.4, 8)), mat));
-    for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 10), eyeMat); e.position.set(s * 0.04, 0.05, 0.075); head.add(e); const hl = new THREE.Mesh(new THREE.SphereGeometry(0.004, 6, 4), new THREE.MeshBasicMaterial({ color: '#ffffff' })); hl.position.set(s * 0.04 + 0.005, 0.057, 0.09); head.add(hl); }
-    // long wavy ears with jiggle
-    this.ears = [];
-    for (const s of [-1, 1]) {
-      const ear = new THREE.Group(); ear.position.set(s * 0.075, 0.06, -0.01); head.add(ear);
-      const ep = new Prop(); for (let i = 0; i < 7; i++) ep.sph(0.035, i > 3 ? DARK : '#c8a06c', 0, -0.02 - i * 0.022, Math.sin(i * 1.3) * 0.008, 0.45, 1, 1.1, 8);
-      fringe(ep, 0, -0.16, -0.02, 0, -0.16, 0.03, 6, 0.04, DARK);
-      ear.add(new THREE.Mesh(furGeo(p => p.geo(ep.build(), '#ffffff')), mat)); ear.rotation.z = s * 0.15; this.ears.push({ g: ear, s, a: 0, v: 0 });
-    }
-    // tail (stubby, fast wag)
-    const tail = new THREE.Group(); tail.position.set(0, 0.06, -0.33); body.add(tail); this.tail = tail;
-    tail.add(new THREE.Mesh(furGeo(p => p.sph(0.03, BEIGE, 0, 0.03, -0.04, 0.9, 0.9, 1.6, 8)), mat));
-    // legs
-    this.legs = [];
-    for (const [x, z] of [[-0.07, 0.17], [0.07, 0.17], [-0.07, -0.18], [0.07, -0.18]]) {
-      const leg = new THREE.Group(); leg.position.set(x, -0.05, z); body.add(leg);
-      const lp = new Prop().cyl(0.032, 0.025, 0.26, BEIGE, 0, -0.13, 0, 0, 0, 0, 10).sph(0.032, CREAM, 0, -0.28, 0.015, 1, 0.6, 1.3, 8);
-      fringe(lp, 0, -0.04, -0.03, 0, -0.2, -0.03, 5, 0.05, CREAM);
-      leg.add(new THREE.Mesh(furGeo(p => p.geo(lp.build(), '#ffffff')), mat)); this.legs.push(leg);
-    }
-    // collar + tag
-    head.add(new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.01, 6, 20), new THREE.MeshStandardMaterial({ color: '#c1121f' }))).rotation.set(1.2, 0, 0);
-    this.crownMesh = null;
-    // physics: protected kinematic capsule (things bounce off Chip)
+    this.rig = buildDog(models.Chip, 0.4);
+    G.scene.add(this.rig.root);
+    this.local = Array.from({ length: NB }, () => new THREE.Quaternion());
+    this.target = Array.from({ length: NB }, () => new THREE.Quaternion());
+    this.centerZ = (this.rig.O[0].z + this.rig.O[1].z) / 2;
     const R = G.R;
     this.kbody = G.world.createRigidBody(R.RigidBodyDesc.kinematicPositionBased().setTranslation(0, 0.3, 0));
-    const col = G.world.createCollider(R.ColliderDesc.capsule(0.18, 0.13).setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))).setRestitution(0.9).setCollisionGroups(groups(GR.PROTECTED, GR.ITEM | GR.CHAR | GR.HELD | GR.SENSOR)), this.kbody);
+    const col = G.world.createCollider(R.ColliderDesc.capsule(0.2, 0.13).setRotation(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))).setRestitution(0.9).setCollisionGroups(groups(GR.PROTECTED, GR.ITEM | GR.CHAR | GR.HELD | GR.SENSOR)), this.kbody);
     G.colliderMap.set(col.handle, { kind: 'dog', ref: this });
-    this.pos = new THREE.Vector3(-0.9, 0, -0.5); this.yaw = 0; this.speed = 0; this.phase = 0; this.state = 'sleep'; this.timer = 20; this.path = null; this.wag = 0.3; this.mouth = null; this.followT = 0;
-    this.headPos = (out = new THREE.Vector3()) => this.head.getWorldPosition(out);
-    this.chestPos = (out = new THREE.Vector3()) => out.set(this.pos.x, 0.4, this.pos.z);
+    this.pos = new THREE.Vector3(-0.9, 0, -0.5); this.yaw = 0; this.speed = 0; this.vel = 0; this.phase = 0; this.state = 'sleep'; this.timer = 20; this.path = null;
+    this.wag = 0.4; this.mouth = null; this.followT = 0; this.jaw = 0; this.headDown = 0; this.sniff = 0; this.turn = 0; this.shake = 0;
+    this.ears = [{ a: 0, v: 0 }, { a: 0, v: 0 }]; this.tailA = 0; this.prevYaw = 0; this.prevPos = this.pos.clone(); this.panting = 0;
+    this.root = this.rig.root; this.body = new THREE.Object3D(); // (kept for replay tracking compatibility)
+    this.headPos = (out = new THREE.Vector3()) => out.copy(this.rig.bones[DB.head].position);
+    this.chestPos = (out = new THREE.Vector3()) => out.set(this.pos.x, this.rig.dims.shoulder * 0.8, this.pos.z);
     on('pet', () => this.petted()); on('doorbell', () => this.bark(4, 'hallway')); on('dogToy', (i) => this.fetch(i)); on('dogFed', () => { this.wag = 2.5; this.state = 'sit'; this.timer = 4; });
-    on('dogCrown', () => { if (!this.crownMesh) { const p = new Prop(); p.cyl(0.07, 0.07, 0.03, '#f2c20f', 0, 0, 0, 0, 0, 0, 16, true); for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; p.cone(0.016, 0.022, '#f2c20f', Math.sin(a) * 0.065, 0.025, Math.cos(a) * 0.065, 0, a, 0, 4); } this.crownMesh = new THREE.Mesh(p.build(), mat); this.crownMesh.position.set(0, 0.11, 0); this.head.add(this.crownMesh); } });
+    on('dogCrown', () => { if (this.crownMesh) return; const p = new Prop(); p.cyl(0.06, 0.06, 0.03, '#f2c20f', 0, 0, 0, 0, 0, 0, 16, true); for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; p.cone(0.016, 0.022, '#f2c20f', Math.sin(a) * 0.056, 0.025, Math.cos(a) * 0.056, 0, a, 0, 4); } this.crownMesh = new THREE.Mesh(p.build(), new THREE.MeshStandardMaterial({ vertexColors: true })); G.scene.add(this.crownMesh); });
     on('ragdoll', (p) => { if (p.pos.distanceTo(this.pos) < 3 && Math.random() < 0.5) setTimeout(() => this.jumpOn(p), 900); });
     G.updaters.push((dt) => this.think(dt));
   }
+  // ---------------- mouth ----------------
+  mouthWorld(outP, outQ) {
+    const hb = this.rig.bones[DB.head]; const hq = _q.copy(hb.quaternion).multiply(this.rig.C[DB.head].clone().invert());
+    outP.copy(this.rig.mouthLocal).applyQuaternion(hq).add(hb.position);
+    if (outQ) outQ.copy(hq).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)); // crosswise in the jaws
+    return outP;
+  }
+  carry(item) {
+    this.mouth = item; item.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); item.inMouth = true;
+    item.attached = (outP, outQ) => this.mouthWorld(outP, outQ);
+    this.jawHold = clamp((item.type.shape[1] || 0.04) * 3.5, 0.15, 0.6);
+  }
+  // lower the head, open, bite, lift — then call done
+  pickUp(item, done) {
+    this.state = 'pickup'; this.seq = { t: 0, item, done }; this.speed = 0;
+  }
+  drop(opts = {}) {
+    const it = this.mouth; if (!it) return; this.state = 'dropping'; this.seq = { t: 0, item: it, fling: opts.fling, done: opts.done };
+  }
+  release(it, vel) {
+    it.attached = null; it.inMouth = false; it.body.setBodyType(G.R.RigidBodyType.Dynamic, true);
+    it.body.setLinvel(vel || { x: 0, y: -0.2, z: 0 }, true); it.body.setAngvel({ x: rand(-3, 3), y: rand(-3, 3), z: rand(-3, 3) }, true); it.dirty = true;
+    if (this.mouth === it) this.mouth = null;
+  }
   // ---------------- behaviour ----------------
-  goTo(target, speed = 1.6, then) { this.path = G.house.path(this.pos, target); this.speed = speed; this.then = then; }
+  goTo(target, speed = 1.4, then) { this.path = G.house.path(this.pos, target); this.speed = speed; this.then = then; }
   think(dt) {
     this.timer -= dt; this.followT -= dt;
-    if (this.path) return;
+    if (this.path || this.state === 'pickup' || this.state === 'dropping') return;
     if (this.followTarget && this.followT > 0) { const t = this.followTarget.pos; if (t.distanceTo(this.pos) > 1.2) this.goTo(t.clone(), 2.6); return; }
-    if (this.mouth) { // run off with stolen food then scoff it
-      if (this.timer < 0) { G.items.remove(this.mouth); this.mouth = null; this.wag = 2; sfx('crunch', this.pos); emit('chipAte'); } return; }
-    if (this.state === 'jumpTV' || this.state === 'sit' || this.state === 'beg' || this.state === 'lie') { if (this.timer > 0) return; }
+    if (this.mouth && this.mouth.type.food) { if (this.timer < 0) { const f = this.mouth; this.release(f); G.items.remove(f); this.wag = 2; sfx('crunch', this.pos); emit('chipAte'); this.state = 'sit'; this.timer = 3; } return; }
+    if (['jumpTV', 'sit', 'beg', 'lie', 'sniffAround'].includes(this.state) && this.timer > 0) return;
     if (this.timer > 0 && this.state === 'sleep') return;
     const havoc = G.systems?.havocLevel?.() ?? 0; const r = Math.random();
-    if (r < 0.15 + havoc * 0.05) return this.zoomies();
-    if (r < 0.35) return this.stealFood();
-    if (r < 0.48) return this.dropToy();
-    if (r < 0.58) { this.state = 'beg'; this.goTo(new THREE.Vector3(3.6, 0, 4.9), 1.4, () => { this.state = 'beg'; this.timer = 10; this.yaw = 0; sfx('whine', this.pos); }); return; }
-    if (r < 0.66 && G.house.tv) { this.goTo(G.house.tv.center.clone().setY(0).add(G.house.tv.normal.clone().multiplyScalar(0.5)), 1.8, () => { this.state = 'jumpTV'; this.timer = 3; this.yaw = Math.atan2(-G.house.tv.normal.x, -G.house.tv.normal.z); this.bark(2); emit('chipTV'); }); return; }
-    if (r < 0.74) { const sheets = G.items.byType.answer_sheet; const s = pick(sheets); if (s) { const t = s.body.translation(); this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.4, () => { this.state = 'lie'; this.timer = 15; emit('chipOnSheets'); }); return; } }
-    if (r < 0.8 && G.charByName.Gary && !G.charByName.Gary.brain?.state?.startsWith('hidden')) { const g = G.charByName.Gary; this.goTo(g.pos.clone().add(new THREE.Vector3(0.8, 0, 0.6)), 2, () => { this.yaw = Math.atan2(g.pos.x - this.pos.x, g.pos.z - this.pos.z); this.bark(4); this.state = 'sit'; this.timer = 3; emit('chipVsGary'); }); return; }
-    this.state = 'sleep'; this.goTo(G.house.spots.chipBed.clone(), 1.2, () => { this.state = 'sleep'; this.timer = rand(15, 35); });
+    if (r < 0.12 + havoc * 0.05) return this.zoomies();
+    if (r < 0.3) return this.stealFood();
+    if (r < 0.43) return this.dropToy();
+    if (r < 0.52) { this.goTo(new THREE.Vector3(3.6, 0, 4.9), 1.0, () => { this.state = 'beg'; this.timer = 10; this.yaw = 0; sfx('whine', this.pos); }); return; }
+    if (r < 0.6 && G.house.tv) { this.goTo(G.house.tv.center.clone().setY(0).add(G.house.tv.normal.clone().multiplyScalar(0.5)), 1.8, () => { this.state = 'jumpTV'; this.timer = 3; this.yaw = Math.atan2(-G.house.tv.normal.x, -G.house.tv.normal.z); this.bark(2); emit('chipTV'); }); return; }
+    if (r < 0.67) { const s = pick(G.items.byType.answer_sheet || []); if (s) { const t = s.body.translation(); this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.0, () => { this.state = 'lie'; this.timer = 15; emit('chipOnSheets'); }); return; } }
+    if (r < 0.73 && G.charByName.Gary && G.charByName.Gary.brain?.state !== 'hidden') { const g = G.charByName.Gary; this.goTo(g.pos.clone().add(new THREE.Vector3(0.8, 0, 0.6)), 2, () => { this.yaw = Math.atan2(g.pos.x - this.pos.x, g.pos.z - this.pos.z); this.bark(4); this.state = 'sit'; this.timer = 3; emit('chipVsGary'); }); return; }
+    if (r < 0.85) { this.state = 'sniffAround'; this.timer = rand(5, 9); this.goTo(this.pos.clone().add(new THREE.Vector3(rand(-2, 2), 0, rand(-2, 2))), 0.5, () => { this.state = 'sniffAround'; }); return; }
+    this.state = 'walkBed'; this.goTo(G.house.spots.chipBed.clone(), 0.9, () => { this.state = 'sleep'; this.timer = rand(15, 35); });
   }
   follow(p, secs) { this.followTarget = p; this.followT = secs; }
   zoomies() {
     this.state = 'zoom'; emit('zoomies');
     const pts = [new THREE.Vector3(0, 0, -3), new THREE.Vector3(0, 0, 2), new THREE.Vector3(3.5, 0, 1.6), new THREE.Vector3(5.6, 0, 3.8), new THREE.Vector3(5.85, 0, 0.6), new THREE.Vector3(5, 0, -3.5), new THREE.Vector3(0, 0, -4)];
-    let i = 0; const next = () => { if (i >= pts.length) { this.state = 'sit'; this.timer = 3; return; } this.goTo(pts[i++], 4.2, next); }; next();
+    let i = 0; const next = () => { if (i >= pts.length) { this.state = 'sit'; this.timer = 3; this.panting = 8; return; } this.goTo(pts[i++], 4.4, next); }; next();
   }
   stealFood() {
     const food = G.items.nearest(new THREE.Vector3(4, 0.9, 4.5), 6, (it) => it.type.food && !it.held && !it.attached && it.type.mass < 0.6 && it.id !== 'sprout');
     if (!food) { this.timer = 5; return; }
     const t = food.body.translation();
-    this.goTo(new THREE.Vector3(t.x, 0, t.z), 2.2, () => {
+    this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.6, () => {
       if (!food.alive || food.held) return;
-      // jump up and snatch it
-      this.mouth = food; food.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true);
-      food.attached = (outP, outQ) => { this.head.localToWorld(outP.set(0, -0.03, 0.17)); outQ.identity(); return outP; };
-      sfx('yap', this.pos); emit('chipStole', food); G.ai?.say('Julie', pick(['CHIP! Drop it!', 'Who gave the dog a sausage roll?!', 'Chip, NO!']), 1);
-      const julie = G.charByName.Julie; if (julie && Math.random() < 0.6) G.ai.sendTo('Julie', this.pos.clone(), () => G.ai.release('Julie'), 2.4);
-      this.timer = 6; this.goTo(pick([new THREE.Vector3(0, 0, -12), new THREE.Vector3(0, 0, 4), new THREE.Vector3(5.2, 0, -9)]), 3.5);
+      // up on the hind legs to the worktop, snatch it
+      this.state = 'jumpUp'; this.timer = 0.8;
+      setTimeout(() => {
+        if (!food.alive || food.held) { this.state = 'sit'; return; }
+        this.carry(food); sfx('yap', this.pos); emit('chipStole', food); G.ai?.say('Julie', pick(['CHIP! Drop it!', 'Who gave the dog a sausage roll?!', 'Chip, NO!']), 1);
+        if (G.charByName.Julie && Math.random() < 0.6) G.ai.sendTo('Julie', this.pos.clone(), () => G.ai.release('Julie'), 2.4);
+        this.state = 'run'; this.timer = 6; this.goTo(pick([new THREE.Vector3(0, 0, -12), new THREE.Vector3(0, 0, 4), new THREE.Vector3(5.2, 0, -9)]), 3.4);
+      }, 700);
     });
   }
   dropToy() {
     const toy = G.items.byType.dog_toy?.[0]; if (!toy || toy.held) { this.timer = 5; return; }
     const t = toy.body.translation();
-    this.goTo(new THREE.Vector3(t.x, 0, t.z), 2, () => {
+    this.goTo(new THREE.Vector3(t.x, 0, t.z), 1.6, () => {
       if (toy.held) return;
-      this.mouth = null; toy.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true);
-      toy.attached = (outP, outQ) => { this.head.localToWorld(outP.set(0, -0.03, 0.17)); outQ.identity(); return outP; };
-      const pp = G.player.pos.clone();
-      this.goTo(pp, 2, () => { toy.attached = null; toy.body.setBodyType(G.R.RigidBodyType.Dynamic, true); toy.body.setLinvel({ x: 0, y: 1, z: 0 }, true); sfx('squeak', this.pos); this.state = 'sit'; this.timer = 6; this.wag = 2.5; G.ui?.toast('Chip drops a slobbery squeaky toy at your feet. Throw it! (grab + throw)'); });
+      this.pickUp(toy, () => {
+        // trot over proudly with it, shake it, then drop it at your feet
+        this.goTo(G.player.pos.clone(), 1.8, () => { this.yaw = Math.atan2(G.player.pos.x - this.pos.x, G.player.pos.z - this.pos.z); this.shake = 0.8; sfx('squeak', this.pos);
+          setTimeout(() => this.drop({ done: () => { this.state = 'sit'; this.timer = 6; this.wag = 2.8; G.ui?.toast('Chip drops a slobbery squeaky toy at your feet. Throw it! (grab + throw)'); } }), 900); });
+      });
     });
   }
   fetch(toy) { this.goTo(G.player.pos.clone(), 3); this.wag = 3; }
-  petted() { this.state = 'sit'; this.timer = 4; this.wag = 3.5; this.yaw = Math.atan2(G.player.pos.x - this.pos.x, G.player.pos.z - this.pos.z); sfx('whine', this.pos, 0.4); G.ui?.toast('Chip leans into your hand. Tail at maximum speed.'); emit('chipPetted'); }
-  bark(n = 2, room) { for (let i = 0; i < n; i++) setTimeout(() => sfx('bark', this.pos), i * 260); if (room === 'hallway') this.goTo(new THREE.Vector3(0, 0, 4.8), 3.2, () => { this.state = 'sit'; this.timer = 4; }); }
-  jumpOn(p) { const t = p.world[0].p; this.goTo(new THREE.Vector3(t.x, 0, t.z), 3, () => { this.state = 'jump'; this.timer = 2; this.wag = 3; sfx('yap', this.pos); emit('chipJumpedOn', p); }); }
-  // ---------------- animation ----------------
+  petted() { this.state = 'sit'; this.timer = 4; this.wag = 3.5; this.yaw = Math.atan2(G.player.pos.x - this.pos.x, G.player.pos.z - this.pos.z); this.headTilt = 1; sfx('whine', this.pos, 0.4); G.ui?.toast('Chip leans into your hand. Tail at maximum speed.'); emit('chipPetted'); }
+  bark(n = 2, room) { for (let i = 0; i < n; i++) setTimeout(() => { sfx('bark', this.pos); this.barkT = G.time + 0.18; }, i * 260); if (room === 'hallway') this.goTo(new THREE.Vector3(0, 0, 4.8), 3.2, () => { this.state = 'sit'; this.timer = 4; }); }
+  jumpOn(p) { const t = p.world[0].p; this.goTo(new THREE.Vector3(t.x, 0, t.z), 3, () => { this.state = 'jumpUp'; this.timer = 2; this.wag = 3; sfx('yap', this.pos); emit('chipJumpedOn', p); }); }
+
+  // ---------------- locomotion + animation ----------------
   update(dt) {
-    // follow path
-    if (this.path && this.path.length) {
+    let moving = false;
+    if (this.path && this.path.length && this.state !== 'pickup' && this.state !== 'dropping') {
       const tgt = this.path[0]; _v.copy(tgt).sub(this.pos); _v.y = 0; const d = _v.length();
-      if (d < 0.2) { this.path.shift(); if (!this.path.length) { this.path = null; const f = this.then; this.then = null; f && f(); } }
-      else { _v.normalize(); this.pos.addScaledVector(_v, Math.min(d, this.speed * dt)); const want = Math.atan2(_v.x, _v.z); let dy = want - this.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.yaw += dy * Math.min(1, dt * 10); this.moving = true;
-        // skid on the oak
-        if (this.speed > 3 && Math.abs(dy) > 0.8 && G.frame % 20 === 0) sfx('tap', this.pos, 0.3);
-        // crash into legs: light knock-back on people
-        if (this.speed > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.02) { c.knock(new THREE.Vector3(_v.x * 40, 30, _v.z * 40), 8); emit('chipBowled', c); } }
+      const stopping = this.path.length === 1 && d < 0.6;
+      if (d < 0.18) { this.path.shift(); if (!this.path.length) { this.path = null; const f = this.then; this.then = null; f && f(); } }
+      else {
+        _v.normalize(); const want = Math.atan2(_v.x, _v.z); let dy = want - this.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        const turnRate = this.vel > 3 ? 4 : 7; this.yaw += clamp(dy, -turnRate * dt, turnRate * dt);
+        // slow down for sharp turns and arrival; accelerate smoothly
+        const goal = this.speed * (Math.abs(dy) > 1.2 ? 0.35 : 1) * (stopping ? 0.5 : 1);
+        this.vel += (goal - this.vel) * Math.min(1, dt * 3);
+        const fwd = _v2.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); this.pos.addScaledVector(fwd, Math.min(d, this.vel * dt)); moving = true;
+        if (this.vel > 3 && Math.abs(dy) > 0.8 && G.frame % 18 === 0) sfx('tap', this.pos, 0.3); // claws skid on the oak
+        if (this.vel > 3) for (const c of G.chars) { if (c.protected || c.isPlayer || c.state !== 'anim') continue; if (c.pos.distanceTo(this.pos) < 0.35 && Math.random() < 0.02) { c.knock(new THREE.Vector3(fwd.x * 40, 30, fwd.z * 40), 8); emit('chipBowled', c); } }
       }
-    } else { this.moving = false; this.path = null; }
-    const sp = this.moving ? this.speed : 0;
-    this.phase += dt * (sp > 0.1 ? 4 + sp * 3.5 : 0);
-    const R = this.root; R.position.copy(this.pos); R.rotation.y = this.yaw;
-    const b = this.body; const st = this.state;
-    // pose
-    let bodyY = 0.36, bodyPitch = 0, headPitch = 0;
-    if (!this.moving && st === 'sleep') { bodyY = 0.16; this.legs.forEach((l, i) => l.rotation.x = i < 2 ? -1.4 : 1.4); headPitch = 0.4; if (G.frame % 200 === 0) sfx('snore', this.pos, 0.3); }
-    else if (!this.moving && (st === 'sit' || st === 'beg')) { bodyPitch = -0.5; bodyY = 0.3; this.legs[2].rotation.x = this.legs[3].rotation.x = -1.2; this.legs[0].rotation.x = this.legs[1].rotation.x = 0.4; headPitch = -0.4 + (st === 'beg' ? Math.sin(G.time * 3) * 0.1 : 0); }
-    else if (!this.moving && st === 'jumpTV' || st === 'jump') { bodyPitch = -1.0; bodyY = 0.45; this.legs[0].rotation.x = this.legs[1].rotation.x = -0.8 + Math.sin(G.time * 12) * 0.3; this.legs[2].rotation.x = this.legs[3].rotation.x = 0.9; }
-    else if (!this.moving && st === 'lie') { bodyY = 0.5; this.legs.forEach((l, i) => l.rotation.x = i < 2 ? -1.4 : 1.4); }
-    else { const s = Math.sin(this.phase), c = Math.cos(this.phase); const amp = Math.min(1, sp / 2.5) * 0.7;
-      const gallop = sp > 3; this.legs[0].rotation.x = s * amp; this.legs[3].rotation.x = gallop ? s * amp : s * amp; this.legs[1].rotation.x = gallop ? s * amp * 0.9 : -s * amp; this.legs[2].rotation.x = gallop ? -s * amp : -s * amp;
-      bodyY = 0.36 + Math.abs(c) * 0.02 * amp * (gallop ? 3 : 1); bodyPitch = gallop ? s * 0.12 : 0; }
-    b.position.y += (bodyY - b.position.y) * Math.min(1, dt * 10); b.rotation.x += (bodyPitch - b.rotation.x) * Math.min(1, dt * 10);
-    this.head.rotation.x = headPitch + (this.mouth ? Math.sin(G.time * 18) * 0.3 : 0); // head-shake fling
-    // tail wag + ears jiggle (spring)
-    this.wag = Math.max(0.4, this.wag - dt * 0.3);
-    this.tail.rotation.y = Math.sin(G.time * (8 + this.wag * 6)) * 0.6 * Math.min(1, this.wag);
-    this.tail.rotation.x = -0.6;
-    for (const e of this.ears) { const target = sp * 0.12 + (this.mouth ? Math.sin(G.time * 18) * 0.5 : 0); e.v += ((target - e.a) * 60 - e.v * 6) * dt; e.a += e.v * dt; e.g.rotation.x = -e.a; e.g.rotation.z = e.s * (0.15 + Math.abs(e.a) * 0.3); }
-    // tail knocks drinks off the coffee table
-    if (this.wag > 1.5 && G.frame % 10 === 0) { const tp = this.tail.getWorldPosition(_v); for (const it of G.items.instances) { if (!it.type.drink && it.type.kind !== 'glass') continue; const p = it.body.translation(); if (Math.hypot(p.x - tp.x, p.z - tp.z) < 0.3 && Math.abs(p.y - tp.y) < 0.25) { it.body.wakeUp(); it.body.applyImpulse({ x: rand(-0.3, 0.3), y: 0.2, z: rand(-0.3, 0.3) }, true); emit('tailKnock', it); } } }
-    this.kbody.setNextKinematicTranslation({ x: this.pos.x, y: b.position.y, z: this.pos.z });
+    }
+    if (!moving) { this.vel *= Math.exp(-dt * 6); if (this.vel < 0.05) this.vel = 0; if (!this.path) this.path = null; }
+    // turn rate (for chest-leads-body bend)
+    let yr = this.yaw - this.prevYaw; yr = Math.atan2(Math.sin(yr), Math.cos(yr)); this.turn += ((yr / Math.max(dt, 1e-3)) - this.turn) * Math.min(1, dt * 6); this.prevYaw = this.yaw;
+    this.animate(dt);
+    this.kbody.setNextKinematicTranslation({ x: this.pos.x, y: 0.3, z: this.pos.z });
+    this.kbody.setNextKinematicRotation(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw));
+  }
+  animate(dt) {
+    const T = this.target; for (const q of T) q.identity();
+    const E = (i, x, y = 0, z = 0) => T[i].multiply(_q.setFromEuler(_e.set(x, y, z, 'YXZ')));
+    const sp = this.vel; const st = this.state; const t = G.time;
+    const gait = sp > 3.0 ? 'gallop' : sp > 1.3 ? 'trot' : 'walk';
+    const G0 = GAITS[gait];
+    const freq = gait === 'gallop' ? 2.6 : gait === 'trot' ? 2.2 : 0.9 + sp * 0.9;
+    if (sp > 0.05) this.phase = (this.phase + dt * freq) % 1;
+    const amp = clamp(sp / (gait === 'gallop' ? 4 : gait === 'trot' ? 2 : 1.1), 0, 1);
+    let rootY = 0, pitch = 0, roll = 0;
+    // legs
+    for (const k in LEGS) {
+      const [u, l, front] = LEGS[k]; const ph = (this.phase + G0[k]) % 1; const swing = G0.swing;
+      // stance: leg sweeps back linearly; swing: lifts and reaches forward
+      let a, lift;
+      if (ph < 1 - swing) { const s = ph / (1 - swing); a = 0.45 - s * 0.9; lift = 0; } else { const s = (ph - (1 - swing)) / swing; a = -0.45 + s * 0.9; lift = Math.sin(s * Math.PI); }
+      const reach = gait === 'gallop' ? 1.5 : 1;
+      E(u, -a * amp * reach * (front ? 0.85 : 1));                   // + x = leg swings back
+      E(l, lift * amp * (gait === 'gallop' ? 1.3 : 0.9) * (front ? 1 : 0.8)); // carpus / hock flex: paw tucks up and back
+    }
+    if (gait === 'gallop') { const g = Math.sin(this.phase * Math.PI * 2); pitch = g * 0.12 * amp; rootY = Math.abs(Math.cos(this.phase * Math.PI * 2)) * 0.035 * amp; E(DB.chest, -g * 0.15 * amp); }
+    else rootY = -Math.abs(Math.sin(this.phase * Math.PI * (gait === 'trot' ? 4 : 4))) * 0.012 * amp;
+    // chest leads into turns, tail follows
+    E(DB.chest, 0, clamp(this.turn * 0.12, -0.35, 0.35)); roll = clamp(-this.turn * 0.04 * amp, -0.15, 0.15);
+    // head & neck: counter-bob, sniff, carry, look
+    let neckX = -0.1 + Math.sin(this.phase * Math.PI * 4) * 0.04 * amp, headX = 0, headY = 0, headZ = 0;
+    const sniffing = (st === 'sniffAround' || (st === 'walkBed' && Math.sin(t * 0.7) > 0.3)) && !this.mouth;
+    this.sniff += ((sniffing ? 1 : 0) - this.sniff) * Math.min(1, dt * 3); neckX += this.sniff * 0.75; headX += this.sniff * 0.35;
+    if (sniffing && G.frame % 40 === 0) sfx('whine', this.pos, 0.05);
+    // look at the player or whoever's holding food
+    if (!sniffing && sp < 1.5) { const tp = G.player.pos; const d = Math.atan2(tp.x - this.pos.x, tp.z - this.pos.z) - this.yaw; headY = clamp(Math.atan2(Math.sin(d), Math.cos(d)), -0.7, 0.7) * 0.6; }
+    if (this.headTilt > 0) { headZ = Math.sin(t * 2) * 0.3 * this.headTilt; this.headTilt -= dt * 0.4; }
+    if (this.shake > 0) { headY += Math.sin(t * 38) * 0.6; headZ += Math.sin(t * 38 + 1) * 0.2; this.shake -= dt; }
+    // poses
+    if (st === 'sleep' && sp < 0.1) { rootY = -0.2; [DB.FLu, DB.FRu].forEach(i => E(i, -1.35)); [DB.FLl, DB.FRl].forEach(i => E(i, 0.2)); [DB.BLu, DB.BRu].forEach(i => E(i, -1.5)); [DB.BLl, DB.BRl].forEach(i => E(i, 2.2)); neckX = 0.5; headX = 0.2; roll = 0.12; this.jawT = 0; if (G.frame % 240 === 0) sfx('snore', this.pos, 0.3); }
+    else if ((st === 'sit' || st === 'beg') && sp < 0.1) { pitch = -0.45; rootY = -0.08; [DB.BLu, DB.BRu].forEach(i => E(i, -1.1)); [DB.BLl, DB.BRl].forEach(i => E(i, 2.0)); [DB.FLu, DB.FRu].forEach(i => E(i, 0.42)); neckX = -0.35; headX = st === 'beg' ? -0.25 + Math.sin(t * 3) * 0.05 : 0; if (st === 'beg') headZ += Math.sin(t * 1.3) * 0.25; }
+    else if (st === 'lie' && sp < 0.1) { rootY = -0.17; [DB.FLu, DB.FRu].forEach(i => E(i, -1.4)); [DB.BLu, DB.BRu].forEach(i => E(i, -1.4)); [DB.BLl, DB.BRl].forEach(i => E(i, 2.4)); neckX = 0.1; }
+    else if ((st === 'jumpTV' || st === 'jumpUp') && sp < 0.2) { pitch = -1.05; rootY = 0.05; [DB.BLu, DB.BRu].forEach(i => E(i, -0.6)); [DB.BLl, DB.BRl].forEach(i => E(i, 1.0)); const pd = Math.sin(t * 10) * 0.3; E(DB.FLu, 1.2 + pd); E(DB.FRu, 1.2 - pd); neckX = -0.5; }
+    // pick up / drop sequences
+    if (st === 'pickup' && this.seq) { const s = this.seq; s.t += dt; const k = s.t; this.headDownT = k < 0.45 ? k / 0.45 : k < 0.75 ? 1 : Math.max(0, 1 - (k - 0.75) / 0.4); this.jawT = k < 0.35 ? k / 0.35 * 0.7 : k < 0.6 ? 0.7 : this.jawHold || 0.3;
+      if (k > 0.55 && !s.bit) { s.bit = true; if (s.item.alive && !s.item.held) { this.carry(s.item); sfx('tap', this.pos, 0.6); } }
+      if (k > 1.2) { this.state = 'carry'; const d = s.done; this.seq = null; d && d(); } }
+    else if (st === 'dropping' && this.seq) { const s = this.seq; s.t += dt; const k = s.t; this.headDownT = k < 0.4 ? k / 0.4 : Math.max(0, 1 - (k - 0.6) / 0.4); this.jawT = k < 0.35 ? this.jawHold || 0.3 : 0.75;
+      if (s.fling) { headY += Math.sin(k * 30) * 0.8; }
+      if (k > 0.42 && !s.let) { s.let = true; const fwd = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)); this.release(s.item, s.fling ? { x: rand(-3, 3), y: 2.5, z: rand(-3, 3) } : { x: fwd.x * 0.5, y: -0.3, z: fwd.z * 0.5 }); sfx('squeak', this.pos, 0.5); }
+      if (k > 1.0) { this.state = 'sit'; this.timer = 3; const d = s.done; this.seq = null; d && d(); } }
+    else { this.headDownT = 0; this.jawT = this.mouth ? (this.jawHold || 0.3) : (this.panting > 0 || sp > 3 ? 0.35 + Math.sin(t * 9) * 0.12 : 0.04); }
+    if (this.barkT > t) this.jawT = 0.8;
+    this.panting = Math.max(0, this.panting - dt);
+    this.headDown = this.headDownT ?? 0; neckX += this.headDown * 0.9; headX += this.headDown * 0.5; rootY -= this.headDown * 0.03; pitch += this.headDown * 0.12;
+    E(DB.neck, neckX, headY * 0.4); E(DB.head, headX, headY * 0.6, headZ);
+    this.jaw += ((this.jawT ?? 0) - this.jaw) * Math.min(1, dt * 14); E(DB.jaw, this.jaw * 0.6);
+    // tail: wag speed/width by mood; up when trotting, level at a gallop, down when sniffing
+    this.wag = Math.max(0.4, this.wag - dt * 0.25);
+    const wagF = 6 + this.wag * 5, wagA = (st === 'sleep' ? 0.05 : 0.25 + 0.25 * Math.min(1, this.wag)) * (gait === 'gallop' ? 0.4 : 1);
+    E(DB.tail1, (sniffing ? 0.4 : gait === 'gallop' ? 0.1 : -0.35), Math.sin(t * wagF) * wagA); E(DB.tail2, -0.2, Math.sin(t * wagF - 0.8) * wagA * 0.8);
+    // ears: springs driven by head motion and speed (flop when running/shaking)
+    const hp = this.rig.bones[DB.head].position; const hv = this._hp ? _v.copy(hp).sub(this._hp).divideScalar(Math.max(dt, 1e-3)) : _v.set(0, 0, 0); this._hp = hp.clone();
+    this.ears.forEach((e, i) => { const drive = hv.y * 0.6 + sp * 0.1 + (this.shake > 0 ? Math.sin(t * 38 + i) * 2 : 0); e.v += ((drive - e.a) * 70 - e.v * 7) * dt; e.a += e.v * dt; E(DB.earL + i, clamp(-e.a, -0.9, 0.6), 0, (i ? -1 : 1) * clamp(Math.abs(e.a) * 0.4, 0, 0.5)); });
+    // smooth towards targets
+    const k = 1 - Math.exp(-dt * (gait === 'gallop' ? 22 : 14));
+    for (let i = 0; i < NB; i++) this.local[i].slerp(T[i], [DB.FLu, DB.FLl, DB.FRu, DB.FRl, DB.BLu, DB.BLl, DB.BRu, DB.BRl].includes(i) && sp > 0.1 ? 1 : k);
+    const rootQ = _q.setFromEuler(_e.set(pitch, this.yaw, roll, 'YXZ')).clone();
+    const O = this.rig.O; const off = new THREE.Vector3(0, O[0].y + rootY, O[0].z - this.centerZ).applyQuaternion(rootQ);
+    const W = poseDog(this.rig, off.add(this.pos), rootQ, this.local);
+    if (this.crownMesh) { const hq = W[DB.head].q; this.crownMesh.position.copy(W[DB.head].p).add(new THREE.Vector3(0, 0.1, 0.0).applyQuaternion(hq)); this.crownMesh.quaternion.copy(hq); }
   }
 }

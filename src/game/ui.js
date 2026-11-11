@@ -40,17 +40,18 @@ class UI {
   }
   // ---------------- start / VR ----------------
   startScreen() {
-    $('startBtns').style.display = 'block'; $('loadStatus').textContent = 'Ready. ' + G.chars.length + ' people, ' + G.items.count() + ' things to throw.';
-    const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else $('touch').classList.add('on'); };
+    $('startBtns').style.display = 'block';
+    const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else $('touch').classList.add('on'); };
     $('btnPlay').onclick = go;
     if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { go(); this.enterVR(); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) $('touch').classList.add('on'); } }, { once: true });
   }
   async enterVR() {
+    this.started = true;
     try {
       const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'] });
-      G.renderer.xr.setSession(s); $('hud').style.display = 'none'; $('touch').classList.remove('on');
-      s.addEventListener('end', () => { $('hud').style.display = ''; });
+      G.renderer.xr.setSession(s); $('hud').style.display = 'none'; $('loading').style.display = 'none'; $('touch').classList.remove('on');
+      s.addEventListener('end', () => { $('hud').style.display = ''; this.started = true; });
     } catch (e) { this.toast('Could not start VR: ' + e.message, 5); }
   }
   // ---------------- toasts / subtitles / bubbles ----------------

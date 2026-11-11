@@ -16,14 +16,21 @@ import { Quiz } from './game/quiz.js';
 import { Replay } from './game/replay.js';
 import { AI } from './chars/ai.js';
 import { Dog } from './chars/dog.js';
+import { DogProc } from './chars/dogproc.js';
+import { models } from './chars/glbrig.js';
 import { MiniGames } from './game/minigames.js';
 import { loadSettings } from './game/settings.js';
+import { loadModels } from './chars/glbrig.js';
+import { FX } from './game/fx.js';
+import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
+import { CAST } from './chars/cast.js';
 
-const status = (t) => { const el = document.getElementById('loadStatus'); if (el) el.textContent = t; };
+const status = (t, f) => { const el = document.getElementById('loadStatus'); if (el) el.textContent = t; if (f !== undefined) homeProgress(f); };
 
 async function boot() {
   G.settings = loadSettings();
-  status('Starting physics…');
+  initHome();
+  status('Starting physics…', 0.05);
   await initPhysics();
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, G.settings.quality === 'low' ? 1 : 2));
@@ -40,33 +47,40 @@ async function boot() {
   scene.fog = new THREE.Fog('#aebfd0', 30, 70);
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 120); G.camera = camera;
   G.clock = new THREE.Clock();
-  status('Building Martin\'s house…');
+  status('Building Martin\'s house…', 0.12);
   buildHouse();
-  status('Filling it with stuff…');
+  status('Filling it with stuff…', 0.2);
   new Items().build();
   buildTree(new THREE.Vector3(0, 0, -7.45));
   status('The family are arriving…');
+  await loadModels((f, n) => status(`The family are arriving… ${n} is here`, 0.25 + f * 0.65));
   createPeople();
-  new Dog();
+  if (models.Chip) new Dog(); else new DogProc();
   new AI();
   G.player = new Player();
-  new Systems(); new Replay(); new Quiz(); new MiniGames();
+  new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX();
   initUI();
   setDaylight(1);
   addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
   const unlock = () => { initAudio(); resumeAudio(); };
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
-  status('');
+  status('Taking the family photo…', 0.95);
+  renderer.compile(scene, camera);
+  try { teamCards(true, renderPortraits()); } catch (e) { console.warn(e); }
+  document.getElementById('loading').classList.add('live');
+  const facts = document.getElementById('facts'); if (facts) facts.innerHTML = [`${G.chars.length - 1} relatives`, '1 dog', `${G.items.count()} things to throw`, `${G.quiz.bank.length + 12} questions`, '5 rounds', '25 things that go wrong'].map(t => `<span>${t}</span>`).join('');
+  status('Ready! Everyone\'s here.', 1);
   emit('ready'); window.__G = G;
   renderer.setAnimationLoop(loop);
 }
 
 let acc = 0;
 function loop(t, xrFrame) {
-  const dt = Math.min(G.clock.getDelta(), 0.05);
+  let dt = Math.min(G.clock.getDelta(), 0.05);
+  if (G.fx && G.fx.hitStop > 0) { G.fx.hitStop -= dt; dt *= 0.15; }
   G.dt = dt; G.time += dt; G.frame++;
   G.xr = G.renderer.xr.isPresenting;
-  G.player.preUpdate(dt, xrFrame);
+  if (!G.ui?.started && !G.xr) { orbitCamera(dt); G.player.controls.poll(); G.player.controls.endFrame(); } else G.player.preUpdate(dt, xrFrame);
   for (const p of G.chars) p.update(dt);
   G.dog?.update(dt);
   G.physUpdaters.length || G.physUpdaters.push(ragdollPhysStep);
@@ -74,7 +88,7 @@ function loop(t, xrFrame) {
   G.items.update(dt);
   G.tree?.update(dt);
   for (const f of G.updaters) f(dt);
-  G.player.postUpdate(dt);
+  if (G.ui?.started || G.xr) G.player.postUpdate(dt); else G.player.fp.setVisible(false);
   updateListener(G.player.headObject());
   G.replay?.render();
   G.renderer.render(G.scene, G.camera);

@@ -6,6 +6,8 @@ import { raycast, overlapSphere, driveBodyTo, driveBodyRot, toV } from '../engin
 import { sfx } from '../engine/audio.js';
 import { Controls } from './controls.js';
 import { XRInput } from './xr.js';
+import { FPHands } from './fphands.js';
+import { halfHeight } from '../world/items.js';
 
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _f = new THREE.Vector3();
 const RAY_GROUPS = groups(GR.SENSOR, ALL & ~GR.PLAYER);
@@ -23,6 +25,7 @@ export class Player {
     this.cc.enableAutostep(0.3, 0.15, true); this.cc.enableSnapToGround(0.3); this.cc.setMaxSlopeClimbAngle(0.9);
     this.controls = new Controls();
     this.xrIn = new XRInput(this);
+    this.fp = new FPHands();
     this.holders = {};
     this.charge = 0; this.holdDist = 1.0;
     this.focus = null; this.stats = { throws: 0, punches: 0, kicks: 0, disputes: 0, changed: 0, drinks: 0, eaten: 0 };
@@ -53,6 +56,7 @@ export class Player {
     }
   }
   postUpdate(dt) {
+    this.fp.update(dt, this);
     this.controls.endFrame();
     if (this.torch) { this.torch.position.copy(this.headPos(_v)); this.forward(_f); this.torch.target.position.copy(_v).add(_f); }
     // drunk sway (optional)
@@ -171,7 +175,7 @@ export class Player {
     if (f.kind === 'tree' || (f.kind === 'item' && f.ref.type.fixed)) { G.ui?.toast(f.kind === 'tree' ? 'The tree is staying put. (Julie would kill you.)' : `${f.ref.type.name}: too heavy to pick up.`, 2); return false; }
     const holder = { key, kind: f.kind, ref: f.ref, local: new THREE.Vector3(), relQ: new THREE.Quaternion() };
     let body;
-    if (f.kind === 'item') { body = f.ref.body; if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
+    if (f.kind === 'item') { body = f.ref.body; if (f.ref.inMouth && G.dog) { G.dog.mouth = null; f.ref.inMouth = false; G.dog.wag = 3; } if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; if (f.ref.type.mass < 5) { holder.attach = true; holder.radius = itemRadius(f.ref.type.shape); body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); } sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
     else if (f.kind === 'char') {
       const p = f.ref; if (p.state === 'recover') p.state = 'anim';
       p.knock(null, f.part ?? 1, { muscle: 0.12 }); body = p.bodies[f.part ?? 1]; p.heldBy.add(holder);
@@ -201,6 +205,7 @@ export class Player {
   release(key, vel) {
     const h = this.holders[key]; if (!h) return; this.holders[key] = null;
     const other = this.holders[key === 'L' ? 'R' : 'L']; if (other && other.ref === h.ref) { other.twoHand = false; if (!vel) return; }
+    if (h.kind === 'item' && h.attach && h.ref.alive) { h.body.setBodyType(G.R.RigidBodyType.Dynamic, true); h.body.wakeUp(); if (!vel && h.lastVel) h.body.setLinvel(h.lastVel, true); }
     if (h.kind === 'item') { h.ref.held = false; h.ref.releasedRecently = true; setTimeout(() => (h.ref.releasedRecently = false), 4000); }
     if (h.kind === 'hinged') h.ref.held = false;
     if (h.kind === 'char') h.ref.heldBy.delete(h);
@@ -227,6 +232,13 @@ export class Player {
         if (h.kind === 'char') target.y -= 0.15;
         if (h.kind === 'item' && h.ref.type.mass > 10) target.y = Math.max(target.y, 0.3);
       } else { const hand = this.xrIn.hands[key]; if (!hand) continue; target = hand.palm; tvel = hand.vel; tq = hand.q; }
+      if (h.attach) { // small things sit in your hand
+        const tp = new THREE.Vector3(), tqq = new THREE.Quaternion();
+        if (key === 'D') this.fp.gripWorld(tp, tqq, h.radius); else { tp.copy(target).addScaledVector(this.xrIn.hands[key].normal, h.radius * 0.7); tqq.copy(tq); if (!h.relQ0) { const r = h.body.rotation(); h.relQ0 = tq.clone().invert().multiply(new THREE.Quaternion(r.x, r.y, r.z, r.w)); } tqq.multiply(h.relQ0); }
+        if (key === 'D') { if (!h.relQ0) { const r = h.body.rotation(); h.relQ0 = tqq.clone().invert().multiply(new THREE.Quaternion(r.x, r.y, r.z, r.w)); h.relQ0.slerp(new THREE.Quaternion(), 0.85); } tqq.multiply(h.relQ0); }
+        const prev = h.body.translation(); h.lastVel = { x: (tp.x - prev.x) / dt, y: (tp.y - prev.y) / dt, z: (tp.z - prev.z) / dt };
+        h.body.setNextKinematicTranslation(tp); h.body.setNextKinematicRotation(tqq); h.ref.dirty = true; continue;
+      }
       const twoHand = h.twoHand ? 2 : 1;
       const totalMass = h.kind === 'char' ? h.totalMass / twoHand : h.totalMass;
       const err = driveBodyTo(h.body, h.local, target, tvel, dt, h.maxF * (h.twoHand ? 1 : 1), totalMass, { k: h.kind === 'char' ? 10 : 22, angDamp: h.kind === 'char' ? 0.95 : 0.8 });
@@ -238,7 +250,7 @@ export class Player {
 
   // ---------------- punch / kick ----------------
   punch(origin, dir, power = 1, handKey) {
-    if (this.punchCD > 0 && !handKey) return; this.punchCD = 0.35; this.stats.punches++;
+    if (this.punchCD > 0 && !handKey) return; this.punchCD = 0.35; this.stats.punches++; if (!handKey) this.fp.punch(this.heldItem('D') ? 'L' : 'R');
     if (G.tommy && !G.xr) { G.tommy.gesture = 'point'; G.tommy.gestureT = 0; setTimeout(() => G.tommy.gesture === 'point' && (G.tommy.gesture = null), 300); }
     const hit = raycast(origin, dir, 1.7, RAY_GROUPS, this.body);
     let tgt = hit?.entry;
@@ -305,10 +317,12 @@ export class Player {
     if (f.kind === 'char' || f.kind === 'dog') return G.interact.talkTo(f.ref, this);
     if (f.kind === 'tv') return emit('tvTouched');
   }
-  consume(handKey) { const held = this.heldItem(handKey); if (held) G.interact.consume(held, this); }
+  consume(handKey) { const held = this.heldItem(handKey); if (held) { if (!handKey) this.fp.toMouth('R'); G.interact.consume(held, this); } }
   toggleTorch() {
     if (!this.torch) { this.torch = new THREE.SpotLight('#fff8e8', 0, 12, 0.5, 0.5, 1.2); G.scene.add(this.torch, this.torch.target); }
     this.torch.intensity = this.torch.intensity > 0 ? 0 : 18; sfx('click', null, 0.4);
     emit('torch', this.torch.intensity > 0);
   }
 }
+
+function itemRadius(sh) { switch (sh[0]) { case 'box': return Math.max(sh[1], sh[3]); case 'ball': return sh[1]; case 'cyl': return sh[2]; case 'cap': return sh[2]; } return 0.05; }
