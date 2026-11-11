@@ -415,7 +415,10 @@ export class Person {
   say(text, opts) { return say(this, text, opts); }
   bark(kind, opts) { const l = this.lines[kind]; if (l && l.length) return this.say(pick(l), opts); return 0; }
   attach(obj, boneName, pos, rot) {
-    const b = this.bones[B[boneName]]; obj.position.copy(pos || new THREE.Vector3()); if (rot) obj.rotation.copy(rot); b.add(obj); this.accessories.push(obj); return obj;
+    const bi = B[boneName]; let b = this.bones[bi];
+    // scanned models: bones carry a scan->rest correction; props are placed in the rest (logical) frame
+    if (this.corr && bi < this.corr.length && this.corr[bi]) { const h = new THREE.Object3D(); h.quaternion.copy(this.corr[bi]).invert(); b.add(h); b = h; }
+    obj.position.copy(pos || new THREE.Vector3()); if (rot) obj.rotation.copy(rot); b.add(obj); this.accessories.push(obj); return obj;
   }
   // world position of a hand (end of forearm)
   handPos(side = 'R', out = new THREE.Vector3()) {

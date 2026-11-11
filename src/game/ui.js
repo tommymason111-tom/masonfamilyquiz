@@ -34,6 +34,9 @@ class UI {
     on('question', () => this.showAnswers()); on('answered', () => this.showAnswers());
     on('pointerlock', (l) => { if (!l && !this.modalOpen && !this.touchMode && !G.xr && this.started) { /* paused by ESC */ } });
     G.updaters.push((dt) => this.update(dt));
+    // floating name tag over whoever you're looking at
+    this.tagTex = canvasTex(512, 160); this.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tagTex, depthTest: false, transparent: true }));
+    this.tag.renderOrder = 40; this.tag.visible = false; G.scene.add(this.tag); this.tagFor = null;
     this.wristTex = canvasTex(512, 336); this.wristTexture = this.wristTex; this.drawWrist();
     this.buildTouch();
     this.startScreen();
@@ -73,6 +76,7 @@ class UI {
   // ---------------- per-frame HUD ----------------
   update(dt) {
     for (const b of this.bubbles) { const show = b.who && G.time < b.until && !(b.who.isDown?.() && b.who.state === 'ragdoll' && false); b.s.visible = !!show; if (show) { b.who.headPos(b.s.position); b.s.position.y += 0.38; const d = b.s.position.distanceTo(G.player.headPos(new THREE.Vector3())); b.s.visible = d < 10; const k = clamp(d / 4, 0.7, 1.8); b.s.scale.set(0.9 * k, 0.225 * k, 1); } }
+    if (!G.xr) { const f = G.player.focus, held = G.player.heldItem('D'); const who = f && (f.kind === 'char' || f.kind === 'dog') ? f.ref : null; if (who && !(held && f.dist < 2.2)) this.showTag(who, f.protected || who.protected); else this.showTag(null); }
     if (G.frame % 6) return;
     const s = G.systems, q = G.quiz;
     if (s) { const bv = s.banterV; $('banterBar').style.width = bv + '%'; $('banterBar').style.background = bv < 45 ? '#2c2' : bv < 75 ? '#fa2' : '#f22'; $('banterLbl').textContent = s.banterLevel(); $('havocBar').style.width = s.havoc + '%'; $('havocBar').style.background = '#8c4'; $('havocLbl').textContent = ['Calm', 'Busy', 'Wild', 'CHAOS'][s.havocLevel()]; }
@@ -87,11 +91,31 @@ class UI {
       else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `LMB grab ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
       if (!txt && !held && !G.player.seated && G.player.freeSeat()) txt = 'R: sit down';
       if (!txt && G.player.seated) txt = 'Move to stand up';
+      const who = f && (f.kind === 'char' || f.kind === 'dog') ? f.ref : null;
+      if (who && !(held && f.dist < 2.2)) txt = '';
       $('prompt').textContent = txt;
       const ch = G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
       this.updateTouchReady(f, held);
     }
     if (G.xr && G.frame % 12 === 0) this.drawWrist();
+  }
+  showTag(p, prot) {
+    if (!p) { this.tag.visible = false; this.tagFor = null; this.tagPerson = null; return; }
+    const key = p.name + (prot ? 'p' : '') + (p.heavy ? 'h' : '');
+    if (this.tagFor !== key) { this.tagFor = key; const g = this.tagTex.userData.ctx; g.clearRect(0, 0, 512, 160);
+      const team = p.isDog ? '#c8a050' : p.team === 'paul' ? '#d23b3b' : p.team === 'martin' ? '#2f74c0' : '#2fa35a';
+      const sub = p.isDog ? 'The dog · R to stroke' : prot ? 'Too little to grab' : (p.spec?.role || '') + (p.heavy ? ' · heavy' : '');
+      g.font = 'bold 54px Georgia, serif'; const w = Math.max(g.measureText(p.name).width, (g.font = '26px sans-serif', g.measureText(sub).width)) + 60;
+      g.fillStyle = 'rgba(14,12,22,0.82)'; roundRect(g, 256 - w / 2, 8, w, 132, 26); g.fill(); g.fillStyle = team; roundRect(g, 256 - w / 2, 8, 14, 132, 7); g.fill();
+      g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = 'bold 54px Georgia, serif'; g.fillText(p.name, 263, 72); g.fillStyle = '#ffd98a'; g.font = '26px sans-serif'; g.fillText(sub, 263, 116); g.textAlign = 'left';
+      this.tagTex.needsUpdate = true; }
+    this.tagPerson = p; this.placeTag();
+  }
+  placeTag() {
+    const p = this.tagPerson; if (!p || !this.tagFor) { this.tag.visible = false; return; }
+    const hp = p.headPos(new THREE.Vector3()); this.tag.position.copy(hp).add(new THREE.Vector3(0, p.isDog ? 0.28 : 0.2, 0));
+    const d = hp.distanceTo(G.player.headPos(new THREE.Vector3())); const k = clamp(d / 2.2, 0.6, 1.8); this.tag.scale.set(0.95 * k, 0.3 * k, 1); this.tag.visible = !G.xr;
+    for (const b of this.bubbles) if (b.who === p && b.s.visible) b.s.position.y += 0.2 * k; // keep the speech bubble above it
   }
   showAnswers() {
     const q = G.quiz; const box = $('answers'); const cur = q.cur;
