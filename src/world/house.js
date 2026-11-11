@@ -113,7 +113,8 @@ export function buildHouse() {
     ops = ops.slice().sort((p, q) => p.a - q.a);
     const pieces = []; let cur = a0;
     for (const o of ops) { if (o.a > cur) pieces.push([cur, o.a, 0, h]); if (o.bottom > 0) pieces.push([o.a, o.b, 0, o.bottom]); if (o.top < h) pieces.push([o.a, o.b, o.top, h]); cur = o.b;
-      if (o.glass) glassPane(axis, c, o.a, o.b, o.bottom, o.top); }
+      if (o.glass) glassPane(axis, c, o.a, o.b, o.bottom, o.top);
+      if (o.bottom === 0) add(M.oak, axis === 'x' ? uvBox((o.a + o.b) / 2, -0.049, c, o.b - o.a, 0.1, WT + 0.04, 1.2) : uvBox(c, -0.049, (o.a + o.b) / 2, WT + 0.04, 0.1, o.b - o.a, 1.2)); } // threshold: no gap under doorways
     if (cur < a1) pieces.push([cur, a1, 0, h]);
     for (const [p0, p1, y0, y1] of pieces) {
       const len = p1 - p0, mid = (p0 + p1) / 2, ym = (y0 + y1) / 2, hh = y1 - y0;
@@ -171,6 +172,11 @@ export function buildHouse() {
   // the long east-west wall: living room above, garage + under-stairs below
   wallX(zMid, xLW, xGS, M.paintLiving, M.garageWall);
   wallX(zMid, xGS, xHW, M.paintLiving, M.paintHall);
+  // hall | living room: wall with a doorway, the door left open (swung back into the lounge)
+  wallX(zMid, xHW, xLD, M.paintLiving, M.paintHall, [door(-0.75, 0.15)]);
+  props.box(0.05, 2.0, 0.84, '#f4f1ea', 0.12, 1.0, zMid - 0.51).box(0.06, 0.02, 0.1, '#c0a050', 0.09, 1.0, zMid - 0.86);
+  for (const y of [0.55, 1.45]) props.box(0.055, 0.6, 0.6, '#ebe7de', 0.12, y, zMid - 0.51);
+  solid(0.12, 1.0, zMid - 0.51, 0.025, 1.0, 0.42);
   // garage | under-stairs/stairs/bathroom (door through the under-stairs cupboard into the garage)
   wallZ(xGS, zMid, zUS, M.garageWall, M.paintHall, [door(PZ(1340), PZ(1400))]);
   wallZ(xGS, zUS, zBT, M.garageWall, M.paintHall);
@@ -514,12 +520,12 @@ export function setDaylight() { setNight(); }
 // Simple waypoint graph for NPC walking between rooms
 function buildNav(H) {
   const N = {
-    hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], livingDoor: [-0.3, -0.9], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.3, -4.5], livingFire: [-4.4, -2.6],
+    hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], hallLiv: [-0.3, 0.25], livingDoor: [-0.3, -1.0], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.3, -4.5], livingFire: [-4.4, -2.6],
     kitchenDoor: [1.85, 2.06], kitchen: [2.8, 2.0], kitchenE: [5.1, 2.1], kitchenNE: [5.0, 4.4], kitchenN: [3.8, 4.4], kitchenW: [2.2, 4.4],
     diningDoorH: [1.45, 0.25], diningDoor: [1.45, -0.9], dining: [1.5, -2.6], diningE: [4.15, -2.0], diningN: [4.4, -5.2], diningBack: [2.0, -5.35], consDoor: [2.9, -6.6], cons: [2.0, -7.0], consW: [1.5, -8.05], patioCons: [0.2, -8.05], patio: [-0.4, -7.2], patioE: [-0.6, -9.7], patioW: [-4.6, -9.6], garden: [-2.5, -11.6], gardenFar: [1.5, -12.5], bayOut: [-0.9, -6.9], patioSide: [-6.7, -3.0], bbq: [-6.2, -8.2], hallK: [0.9, 2.06],
     toiletDoor: [-0.7, 4.7], toilet: [-1.9, 4.7], cupDoor: [-0.7, 0.25], cupboard: [-2.1, 0.25], garageDoor: [-3.6, 0.25], garage: [-5.2, 2.6], garageFridge: [-4.6, 1.1], stairFoot: [-0.75, 2.9], sideDoorOut: [-6.78, -1.2], sideDoorIn: [-6.6, 0.6],
   };
-  const E = [['hallFront', 'hallMid'], ['hallMid', 'hallBack'], ['hallBack', 'hallTop'], ['hallTop', 'livingDoor'], ['livingDoor', 'living'], ['livingDoor', 'livingR'], ['living', 'livingL'], ['living', 'livingR'], ['living', 'livingBack'], ['livingBack', 'livingTV'], ['living', 'livingFire'], ['livingFire', 'livingTV'], ['livingL', 'livingFire'],
+  const E = [['hallFront', 'hallMid'], ['hallMid', 'hallBack'], ['hallBack', 'hallTop'], ['hallTop', 'hallLiv'], ['hallBack', 'hallLiv'], ['hallLiv', 'livingDoor'], ['livingDoor', 'living'], ['livingDoor', 'livingR'], ['living', 'livingL'], ['living', 'livingR'], ['living', 'livingBack'], ['livingBack', 'livingTV'], ['living', 'livingFire'], ['livingFire', 'livingTV'], ['livingL', 'livingFire'],
     ['hallMid', 'hallK'], ['hallK', 'kitchenDoor'], ['kitchenDoor', 'kitchen'], ['kitchen', 'kitchenE'], ['kitchen', 'kitchenW'], ['kitchenE', 'kitchenN'], ['kitchenW', 'kitchenN'], ['kitchen', 'kitchenN'], ['kitchenE', 'kitchenNE'], ['kitchenN', 'kitchenNE'],
     ['hallTop', 'diningDoorH'], ['hallBack', 'diningDoorH'], ['diningDoorH', 'diningDoor'], ['diningDoor', 'dining'], ['diningDoor', 'diningE'], ['dining', 'diningBack'], ['diningE', 'diningN'], ['diningN', 'diningBack'], ['diningBack', 'consDoor'], ['consDoor', 'cons'], ['cons', 'consW'], ['consW', 'patioCons'], ['patioCons', 'patio'], ['patio', 'bayOut'], ['patioCons', 'patioE'], ['patio', 'patioE'], ['patioE', 'garden'], ['garden', 'gardenFar'], ['patioE', 'patioW'], ['patioW', 'garden'], ['patioW', 'bbq'], ['bbq', 'patioSide'],
     ['hallFront', 'toiletDoor'], ['toiletDoor', 'toilet'], ['hallBack', 'cupDoor'], ['hallTop', 'cupDoor'], ['cupDoor', 'cupboard'], ['cupboard', 'garageDoor'], ['garageDoor', 'garage'], ['garageDoor', 'garageFridge'], ['garage', 'garageFridge'], ['hallMid', 'stairFoot'], ['patioSide', 'sideDoorOut'], ['sideDoorOut', 'sideDoorIn'], ['sideDoorIn', 'garage'], ['sideDoorIn', 'garageFridge']];

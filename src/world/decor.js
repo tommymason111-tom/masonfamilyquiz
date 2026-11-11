@@ -22,7 +22,7 @@ export function buildDecor(P, add, M, solid, H) {
   const xGS = PX(455), xHW = PX(612), xHE = PX(850), xLD = PX(803), xR = PX(1222), zMid = PZ(1312), zBack = PZ(805), zF = PZ(1887), zBT = PZ(1648), xLW = PX(194);
   // ---------- architraves around every door opening ----------
   const AO = 0.1; // half wall thickness + a hair
-  const doorsX = [[PX(683), PX(762), zF], [PX(822), PX(880), zMid], [PX(912), PX(1048), zBack], [-7.2, -6.35, zMid]];
+  const doorsX = [[PX(683), PX(762), zF], [PX(822), PX(880), zMid], [PX(912), PX(1048), zBack], [-7.2, -6.35, zMid], [-0.75, 0.15, zMid]];
   const doorsZ = [[PZ(1340), PZ(1400), xHW], [PZ(1340), PZ(1400), xGS], [PZ(1575), PZ(1640), xHW], [PZ(1740), PZ(1800), xHW], [PZ(1500), PZ(1565), xHE], [PZ(587), PZ(657), xLD]];
   for (const [a, b, z] of doorsX) for (const s of [-1, 1]) { P.box(0.07, 2.12, 0.025, WHITE, a - 0.035, 1.06, z + s * AO).box(0.07, 2.12, 0.025, WHITE, b + 0.035, 1.06, z + s * AO).box(b - a + 0.14, 0.07, 0.025, WHITE, (a + b) / 2, 2.085, z + s * AO); }
   for (const [a, b, x] of doorsZ) for (const s of [-1, 1]) { P.box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, a - 0.035).box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, b + 0.035).box(0.025, 0.07, b - a + 0.14, WHITE, x + s * AO, 2.085, (a + b) / 2); }
