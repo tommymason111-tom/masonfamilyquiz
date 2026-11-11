@@ -44,10 +44,10 @@ class UI {
   // ---------------- start / VR ----------------
   startScreen() {
     $('startBtns').style.display = 'block';
-    const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else $('touch').classList.add('on'); };
+    const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else { $('touch').classList.add('on'); document.body.classList.add('touch'); } };
     $('btnPlay').onclick = go;
     if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { go(); this.enterVR(); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
-    addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) $('touch').classList.add('on'); } }, { once: true });
+    addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });
   }
   async enterVR() {
     this.started = true;

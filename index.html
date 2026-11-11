@@ -108,6 +108,10 @@
   #modeHud { position:absolute; left:50%; top:10px; transform:translateX(-50%); display:none; min-width:240px; text-align:center; background:var(--glass); border:1px solid rgba(255,215,0,.4); border-radius:14px; padding:8px 14px; }
   #modeHud .mh-name { font:700 13px Georgia,serif; color:#ffe08a; } #modeHud .mh-row { display:flex; justify-content:center; gap:18px; align-items:baseline; } #modeHud .mh-row b { font:900 34px Georgia,serif; color:#ffd700; } #modeHud .mh-row span { font:700 22px system-ui; }
   #modeHud .mh-extra { font-size:12.5px; max-width:520px; } #modeHud .mh-best { font-size:11px; opacity:.7; } #modeHud .mh-line { font-size:12px; color:#9fe0ff; }
+  body.touch #meters, body.touch #help { display:none; }
+  body.touch #scores { top:auto; bottom:12px; right:auto; left:12px; font-size:11px; padding:5px 8px; opacity:.85; }
+  body.touch #modeHud { top:92px; min-width:0; padding:4px 10px; } body.touch #modeHud .mh-row b { font-size:24px; } body.touch #modeHud .mh-row span { font-size:16px; } body.touch #modeHud .mh-line { display:none; }
+  body.touch #toasts { top:170px; }
   /* touch controls */
   #touch { position:fixed; inset:0; z-index:12; pointer-events:none; display:none; }
   #touch.on { display:block; }

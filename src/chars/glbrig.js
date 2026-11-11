@@ -172,8 +172,13 @@ export function buildFromModel(spec, model) {
     // hand rescue: anything close to a wrist (and away from the head/hips) is hand
     for (const side of ['L', 'R']) { const a = arm[side]; if (a.fdir.y > -0.5 && segDist(p, a.wrist, a.tip.clone().addScaledVector(a.fdir, 0.05 * H)) < 0.13 * H && Math.abs(p.x) > headHalf * 1.15 && (p.x >= 0) === (side === 'L')) { const k = segs.findIndex(sg => sg[0] === (side === 'L' ? 4 : 6)); dn[k] = -10; } }
     const order = [...dn.keys()].sort((a, b) => dn[a] - dn[b]).slice(0, 3);
-    const m = dn[order[0]]; let tot = 0; const w = order.map(k => { const x = Math.exp(-7 * (dn[k] - m)); tot += x; return x; });
-    for (let j = 0; j < 3; j++) { si[i * 4 + j] = segs[order[j]][0]; sw[i * 4 + j] = w[j] / tot; }
+    // rigid parts: every vertex follows ONE bone (faces, hands, torso never stretch); only a very thin seam at
+    // limb joints (shoulder, elbow, hip, knee) blends between a bone and its direct parent so joints don't crack
+    const b0 = segs[order[0]][0], b1 = segs[order[1]][0], gap = dn[order[1]] - dn[order[0]];
+    const adjacent = PARENT[b0] === b1 || PARENT[b1] === b0;
+    const limbSeam = adjacent && b0 !== 2 && b1 !== 2 && (b0 >= 3 || b1 >= 3) && gap < 0.12;
+    si[i * 4] = b0; sw[i * 4] = 1;
+    if (limbSeam) { const w1 = 0.5 * (1 - gap / 0.12); si[i * 4 + 1] = b1; sw[i * 4] = 1 - w1; sw[i * 4 + 1] = w1; }
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
   // ---- skeleton (flat part bones like the procedural rig; extra face bones kept for compatibility) ----

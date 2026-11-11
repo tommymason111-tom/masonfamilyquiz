@@ -16,6 +16,7 @@ names.forEach((n,i) => {
   const ch = buildFromModel(spec, models[n]); const O = ch.origins;
   // FK with optional pose
   const E = Array.from({length:PART_COUNT}, ()=>new THREE.Euler());
+  if (pose==='flop') { E[1].set(0.7,0.4,0.3); E[2].set(0.9,0.6,0.7); E[3].set(-2.2,0.4,0.8); E[4].set(-1.8,0,0); E[5].set(0.6,0,-1.4); E[6].set(-1.2,0,0); E[7].set(-1.2,0.3,0.4); E[8].set(1.8,0,0); E[9].set(0.5,0,-0.3); E[10].set(0.2,0,0); }
   if (pose==='wave') { E[3].set(-1.2,0,0.3); E[4].set(-1.0,0,0); E[5].set(0,0,-2.4); E[6].set(-0.5,0,0); E[7].set(-0.6,0,0); E[8].set(0.9,0,0); }
   const W=[]; for (let k=0;k<PART_COUNT;k++){ const p=PARENT[k]; const lq=new THREE.Quaternion().setFromEuler(E[k]); if(p<0) W[k]={p:O[k].clone(),q:lq}; else { const off=O[k].clone().sub(O[p]); W[k]={p:off.applyQuaternion(W[p].q).add(W[p].p), q:W[p].q.clone().multiply(lq)}; } }
   for (let k=0;k<PART_COUNT;k++){ ch.bones[k].position.copy(W[k].p); ch.bones[k].quaternion.copy(W[k].q).multiply(ch.corrections[k]); }

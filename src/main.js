@@ -59,6 +59,7 @@ async function boot() {
   createPeople();
   if (models.Chip) new Dog(); else new DogProc();
   new AI();
+  G.physUpdaters.push(ragdollPhysStep); // ragdoll muscles + joint limits
   G.player = new Player();
   new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX(); new Modes();
   initUI();
@@ -85,7 +86,6 @@ function loop(t, xrFrame) {
   if (!G.ui?.started && !G.xr) { orbitCamera(dt); G.player.controls.poll(); G.player.controls.endFrame(); } else G.player.preUpdate(dt, xrFrame);
   for (const p of G.chars) p.update(dt);
   G.dog?.update(dt);
-  G.physUpdaters.length || G.physUpdaters.push(ragdollPhysStep);
   stepPhysics(dt);
   G.items.update(dt);
   G.tree?.update(dt);

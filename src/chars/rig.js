@@ -77,13 +77,13 @@ export class Person {
     defs[5][2] = defs[3][2]; defs[6][2] = defs[4][2]; defs[9][2] = defs[7][2]; defs[10][2] = defs[8][2];
     this.bodies = []; this.colliders = []; this.partMass = [];
     for (const [i, frac, fn] of defs) {
-      const bd = R.RigidBodyDesc.kinematicPositionBased().setTranslation(O[i].x, O[i].y, O[i].z).setLinearDamping(0.15).setAngularDamping(1.2).setCcdEnabled(i === 2 || i === 1);
+      const bd = R.RigidBodyDesc.kinematicPositionBased().setTranslation(O[i].x, O[i].y, O[i].z).setLinearDamping(0.35).setAngularDamping(2.2).setCcdEnabled(i === 2 || i === 1);
       const body = w.createRigidBody(bd);
       const cds = []; fn(cds);
       const m = mf * frac;
       for (const cd of cds) {
-        cd.setMass(m / cds.length).setFriction(0.8).setRestitution(restitution).setCollisionGroups(grp).setActiveEvents(R.ActiveEvents.COLLISION_EVENTS);
-        const col = w.createCollider(cd, body);
+        cd.setMass(m / cds.length).setFriction(0.8).setRestitution(restitution).setCollisionGroups(grp).setActiveEvents(R.ActiveEvents.COLLISION_EVENTS).setActiveHooks(R.ActiveHooks.FILTER_CONTACT_PAIRS);
+        const col = w.createCollider(cd, body); G.selfOwner.set(col.handle, this.selfId ??= (Person._ids = (Person._ids || 0) + 1));
         G.colliderMap.set(col.handle, { kind: 'char', ref: this, part: i });
         this.colliders.push(col);
       }
@@ -173,17 +173,25 @@ export class Person {
       _q.set(rp.x, rp.y, rp.z, rp.w); _q2.set(rc.x, rc.y, rc.z, rc.w);
       const rel = _q3.copy(_q).invert().multiply(_q2);
       const tgt = this.target[i];
-      const err = tgt.clone().multiply(rel.invert()); // rotation from current rel to target (in parent frame)
+      const err = tgt.clone().multiply(rel.invert()).normalize(); // rotation from current rel to target (in parent frame)
       if (err.w < 0) { err.x *= -1; err.y *= -1; err.z *= -1; err.w *= -1; }
       const ang = 2 * Math.acos(Math.min(1, err.w)); if (ang < 1e-3) continue;
-      const s = Math.sqrt(1 - err.w * err.w) || 1;
+      const s = Math.sqrt(Math.max(0, 1 - err.w * err.w)); if (s < 1e-4 || !isFinite(ang)) continue;
       _v.set(err.x / s, err.y / s, err.z / s).applyQuaternion(_q); // world axis
-      const I = this.partMass[i] * 0.02 * this.H;
       const wc = bc.angvel(), wp = bp.angvel();
-      const kp = 60 * k, kd = 6 * Math.sqrt(k);
-      const tx = (_v.x * ang * kp - (wc.x - wp.x) * kd) * I * dt, ty = (_v.y * ang * kp - (wc.y - wp.y) * kd) * I * dt, tz = (_v.z * ang * kp - (wc.z - wp.z) * kd) * I * dt;
-      bc.applyTorqueImpulse({ x: tx, y: ty, z: tz }, true);
-      bp.applyTorqueImpulse({ x: -tx, y: -ty, z: -tz }, true);
+      const stiff = i === 2 ? 3 : i === 1 ? 2 : 1;        // neck & spine hold their shape; limbs stay floppy
+      const lim = i === 2 ? 0.6 : i === 1 ? 0.7 : (i === 3 || i === 5) ? 2.4 : (i === 7 || i === 9) ? 1.9 : 9;
+      const over = ang > lim;                             // soft joint limits: past a natural range push back hard
+      // velocity-level controller (unconditionally stable): blend the joint's relative spin towards the
+      // spin that would close the error, instead of applying stiff torques that overshoot and wobble
+      const gain = Math.min(12, 6 * k * stiff + (over ? 10 : 0)) * Math.min(ang, 1.2);
+      const blend = Math.min(0.9, (0.25 + k) * stiff * 0.6 + (over ? 0.5 : 0));
+      const rx = wc.x - wp.x, ry = wc.y - wp.y, rz = wc.z - wp.z;
+      // change in relative spin, shared between the two parts by mass (equal & opposite: no energy is created)
+      const dx = (_v.x * gain - rx) * blend, dy = (_v.y * gain - ry) * blend, dz = (_v.z * gain - rz) * blend;
+      const mc = this.partMass[i], mp = this.partMass[p], fc = mp / (mc + mp), fp = mc / (mc + mp);
+      bc.setAngvel({ x: wc.x + dx * fc, y: wc.y + dy * fc, z: wc.z + dz * fc }, true);
+      bp.setAngvel({ x: wp.x - dx * fp, y: wp.y - dy * fp, z: wp.z - dz * fp }, true);
     }
     // Gang-Beasts style: when struggling, the chest tries to get upright (and fails comically)
     if (this.struggle > 0) {

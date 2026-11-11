@@ -9,13 +9,17 @@ export async function initPhysics() {
   G.world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   G.world.integrationParameters.numSolverIterations = 6;
   G.eventQueue = new RAPIER.EventQueue(true);
+  // a person's own body parts never collide with each other (scans have arms close to the hips and thighs
+  // touching; self-collisions made bodies fight themselves forever = jelly). They still hit everyone else.
+  G.selfOwner = new Map(); // collider handle -> person id
+  G.hooks = { filterContactPair(c1, c2) { const a = G.selfOwner.get(c1); return a !== undefined && a === G.selfOwner.get(c2) ? RAPIER.SolverFlags.EMPTY : RAPIER.SolverFlags.COMPUTE_IMPULSE; }, filterIntersectionPair() { return true; } };
 }
 
 export function stepPhysics(dt) {
   const w = G.world;
   w.timestep = Math.min(Math.max(dt, 1 / 120), 1 / 40);
   for (const f of G.physUpdaters) f(w.timestep);
-  w.step(G.eventQueue);
+  w.step(G.eventQueue, G.hooks);
   G.eventQueue.drainCollisionEvents((h1, h2, started) => {
     if (!started) return;
     const a = G.colliderMap.get(h1), b = G.colliderMap.get(h2);
