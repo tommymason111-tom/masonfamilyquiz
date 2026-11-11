@@ -130,6 +130,7 @@ export function buildFromModel(spec, model) {
     [3, S.L, arm.L.elbow, 0.045 * H], [4, arm.L.elbow, arm.L.tip, 0.042 * H], [5, S.R, arm.R.elbow, 0.045 * H], [6, arm.R.elbow, arm.R.tip, 0.042 * H],
     [7, leg.L.hip, leg.L.knee, 0.07 * H], [8, leg.L.knee, leg.L.ankle.clone().add(V(0, -0.05 * H, 0.04 * H)), 0.055 * H], [9, leg.R.hip, leg.R.knee, 0.07 * H], [10, leg.R.knee, leg.R.ankle.clone().add(V(0, -0.05 * H, 0.04 * H)), 0.055 * H],
   ];
+  const headHalfE = Math.max(0.06 * H, (hmax.x - hmin.x) / 2);
   const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
   const dn = new Float32Array(segs.length);
   const marked = !!ARM_MARKS[spec.name];
@@ -145,7 +146,7 @@ export function buildFromModel(spec, model) {
   const tube = (p, side) => { const a = arm[side]; const sg = side === 'L' ? 1 : -1; const v = p.clone().sub(S[side]); const t = v.dot(a.dir);
     const c1 = closestOn(p, S[side], a.elbow), c2 = closestOn(p, a.elbow, a.tip.clone().addScaledVector(a.fdir, 0.03 * H)); const d1 = p.distanceTo(c1), d2 = p.distanceTo(c2); const c = d1 < d2 ? c1 : c2; const perp = Math.min(d1, d2);
     // tight mode: nothing on the body side of the arm's inner surface (thighs, dress, hair beside the arm)
-    const innerOK = !tightTube || (p.x - c.x) * sg > (handEndAt(c, side) ? -0.034 * H : -Math.max(armRad[side] * 1.3, armRad[side] + 0.012 * H)) || p.y > S[side].y + 0.02 * H && !marked;
+    const innerOK = !tightTube || (p.x - c.x) * sg > (handEndAt(c, side) ? -0.034 * H : -Math.max(armRad[side] * 1.3, armRad[side] + 0.012 * H)) || (d2 < d1 && p.y > S[side].y + 0.02 * H && Math.abs(p.x) > headHalf * 1.1);
     const handEnd = d2 < d1 && c.distanceTo(a.elbow) > a.elbow.distanceTo(a.wrist) * 0.75; const rad = handEnd ? Math.max(tubeR(t), 0.075) : tubeR(t);
     return { t, perp, inside: t > 0.015 * H && perp < rad * H && innerOK }; };
   const headHalf = Math.max(0.06 * H, (hmax.x - hmin.x) / 2); const upZone = (p) => !tightTube && p.y > shoulderY + 0.02 * H && Math.abs(p.x) > Math.max(headHalf * 1.2, sx * 0.85);
@@ -159,6 +160,7 @@ export function buildFromModel(spec, model) {
       if (side && p.x * side < -0.01 * H) v += 50;                       // never weight to the other side
       if ((b >= 7) && p.y > 0.6 * H) v += 50;                             // legs stay below the waist
       if (b === 2 && p.y < neck.y - 0.03 * H) v += 50;                    // head stays above the neck
+      if (b === 2 && Math.abs(p.x) > Math.max(0.13 * H, headHalfE * 2.2)) v += 20;      // far beside the head is never head
       if ((b === 3 || b === 5) && Math.abs(p.x) < sx * 0.55 && p.y < shoulderY) v += 3; // chest isn't arm
       if (b <= 1 && (Math.abs(p.x) > sx * 1.6 && p.y > 0.55 * H)) v += 1.5; // far-out arm isn't torso
       if (inArm && b <= 2) v += upZone(p) ? 4 : Math.min(4, tt.t / (0.025 * H));
@@ -167,6 +169,8 @@ export function buildFromModel(spec, model) {
       dn[k] = v;
     }
     // best 3, soft blend
+    // hand rescue: anything close to a wrist (and away from the head/hips) is hand
+    for (const side of ['L', 'R']) { const a = arm[side]; if (a.fdir.y > -0.5 && segDist(p, a.wrist, a.tip.clone().addScaledVector(a.fdir, 0.05 * H)) < 0.13 * H && Math.abs(p.x) > headHalf * 1.15 && (p.x >= 0) === (side === 'L')) { const k = segs.findIndex(sg => sg[0] === (side === 'L' ? 4 : 6)); dn[k] = -10; } }
     const order = [...dn.keys()].sort((a, b) => dn[a] - dn[b]).slice(0, 3);
     const m = dn[order[0]]; let tot = 0; const w = order.map(k => { const x = Math.exp(-7 * (dn[k] - m)); tot += x; return x; });
     for (let j = 0; j < 3; j++) { si[i * 4 + j] = segs[order[j]][0]; sw[i * 4 + j] = w[j] / tot; }

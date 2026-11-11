@@ -6,6 +6,7 @@ import { G, GR, groups, ALL, rand, mulberry, noise3 } from '../core.js';
 import { uvBox, worldUV, mergeGeometries, Prop, RoundedBoxGeometry } from '../engine/geo.js';
 import * as TX from '../engine/textures.js';
 import { staticBox, staticCyl } from '../engine/physics.js';
+import { buildDecor } from './decor.js';
 
 const WALL_H = 2.5, WT = 0.12;
 export const ROOMS = {
@@ -203,7 +204,6 @@ export function buildHouse() {
     add(M.oakWood, uvBox(-1.55, y - 0.03, z, 0.9, 0.06, 0.185, 0.8)); add(M.skirting, uvBox(-1.55, y - 0.12, z + 0.09, 0.9, 0.12, 0.02));
     solid(-1.55, y - 0.03, z, 0.45, 0.03, 0.0925);
   }
-  add(M.paintHall, uvBox(-1.55, 2.47, 1.0, 0.9, 0.06, 1.8)); // landing soffit
   for (let i = 0; i < 14; i++) { const z = 4.3 - i * 0.185; props.box(0.03, 0.9, 0.03, '#f4f4f4', -1.13, (i + 1) * 0.185 + 0.45, z); }
   props.box(0.06, 0.06, 3.4, '#5a3a22', -1.13, 2.05, 3.1, -Math.PI / 4).box(0.09, 1.1, 0.09, '#f4f4f4', -1.13, 0.55, 4.3).sph(0.06, '#f4f4f4', -1.13, 1.12, 4.3);
   // coat hooks with coats on the hall east wall near the door
@@ -255,10 +255,11 @@ export function buildHouse() {
   // ---------- seats the player can use + light switches ----------
   const SP = H.spots;
   H.seats = [...SP.sofaL, ...SP.sofaR, SP.sofaArmL, SP.toilet,
-    { pos: new THREE.Vector3(4.2, 0, -8.6), yaw: 0.5, seatY: 0.44 }, { pos: new THREE.Vector3(6.4, 0, -9.5), yaw: -0.5, seatY: 0.44 }, { pos: new THREE.Vector3(5.6, 0, -10.0), yaw: 0.1, seatY: 0.44 },
+    { pos: new THREE.Vector3(4.2, 0, -8.6), yaw: 0.5, seatY: 0.48 }, { pos: new THREE.Vector3(6.4, 0, -9.5), yaw: -0.5, seatY: 0.48 }, { pos: new THREE.Vector3(5.0, 0, -10.05), yaw: 0, seatY: 0.52 }, { pos: new THREE.Vector3(5.6, 0, -10.05), yaw: 0, seatY: 0.52 },
     { pos: new THREE.Vector3(3.6, 0, 2.05), yaw: Math.PI, seatY: 0.7 }, { pos: new THREE.Vector3(4.8, 0, 2.05), yaw: Math.PI, seatY: 0.7 }];
   const sw = (room, x, y, z, ry) => { props.box(0.08, 0.12, 0.015, '#f4f4f4', x, y, z, 0, ry).box(0.02, 0.04, 0.02, '#ddd', x, y, z, 0, ry); H.interact.push({ id: 'light', room, pos: new THREE.Vector3(x, y, z), r: 0.3, label: 'Light switch' }); };
   sw('living', 0.75, 1.3, -0.075, 0); sw('kitchen', 1.175, 1.3, 2.2, Math.PI / 2); sw('dining', 3.575, 1.3, -0.5, Math.PI / 2); sw('hall', 0.65, 1.3, 5.93, 0);
+  buildDecor(props, add, M, solid, H);
   // ---------- merge statics ----------
   for (const [mat, geos] of statics) {
     const g = mergeGeometries(geos.map(x => x.index ? x.toNonIndexed() : x).map(x => { x.deleteAttribute && x.attributes.uv2 && x.deleteAttribute('uv2'); return x; }), false);
@@ -352,7 +353,7 @@ function living(P, add, M, solid, H) {
   const tvc = staticBox(H.tv.center.x, H.tv.center.y, H.tv.center.z, 0.72, 0.42, 0.04, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tvYaw, 0)), { tag: 'tv' });
   G.colliderMap.get(tvc.collider.handle).tag = 'tv';
   // Martin's armchair spot by the TV (the armchair itself is a heavy dynamic item)
-  H.spots.armchair = { pos: new THREE.Vector3(-1.9, 0, -6.1), yaw: Math.PI * 0.82, seatY: 0.44 };
+  H.spots.armchair = { pos: new THREE.Vector3(-1.9, 0, -6.1), yaw: Math.PI * 0.82, seatY: 0.55 };
   // fireplace + mantelpiece on the front wall (z=0) — the Mason Cup lives here
   P.box(1.5, 1.2, 0.35, '#e8e2d8', -2.2, 0.6, -0.2).box(0.7, 0.55, 0.36, '#181412', -2.2, 0.3, -0.21).box(1.7, 0.06, 0.42, '#3a2a1e', -2.2, 1.22, -0.24).box(1.6, 0.06, 0.6, '#d8d0c4', -2.2, 0.03, -0.45);
   solid(-2.2, 0.62, -0.2, 0.85, 0.62, 0.21);
@@ -378,9 +379,9 @@ function living(P, add, M, solid, H) {
   H.spots.chipBed = new THREE.Vector3(-0.9, 0, -0.5);
   H.spots.tree = new THREE.Vector3(0, 0, -7.45);
   // Seats: left sofa (3), right sofa (3), floor cushions, standing spots
-  H.spots.sofaL = [-4.1, -3.3, -2.5].map(z => ({ pos: new THREE.Vector3(-2.85, 0, z), yaw: Math.PI / 2, seatY: 0.45 }));
-  H.spots.sofaR = [-4.4, -3.6, -2.8].map(z => ({ pos: new THREE.Vector3(2.7, 0, z), yaw: -Math.PI / 2, seatY: 0.45 }));
-  H.spots.sofaArmL = { pos: new THREE.Vector3(-2.9, 0, -1.75), yaw: Math.PI / 2, seatY: 0.62 };
+  H.spots.sofaL = [-4.1, -3.3, -2.5].map(z => ({ pos: new THREE.Vector3(-2.8, 0, z), yaw: Math.PI / 2, seatY: 0.57 }));
+  H.spots.sofaR = [-4.4, -3.6, -2.8].map(z => ({ pos: new THREE.Vector3(2.65, 0, z), yaw: -Math.PI / 2, seatY: 0.57 }));
+  H.spots.sofaArmL = { pos: new THREE.Vector3(-2.9, 0, -1.75), yaw: Math.PI / 2, seatY: 0.74 };
   H.spots.floor = [[-0.9, -2.3, Math.PI], [0.8, -2.3, Math.PI], [-1.1, -5.0, 0], [1.2, -5.0, 0]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
   H.spots.stand = [[-1.9, -1.0, Math.PI * 0.9], [1.9, -1.0, -Math.PI * 0.9], [2.3, -6.2, -Math.PI * 0.7], [-1.0, -6.6, Math.PI * 0.1], [0.2, -0.8, Math.PI]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
   H.spots.martinStand = { pos: new THREE.Vector3(-1.6, 0, -5.4), yaw: Math.PI * 0.85 };

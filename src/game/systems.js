@@ -157,7 +157,7 @@ export class Systems {
   spill(pos, color = '#5a0a1a') { this.addDecal(pos, color, 0.35); const d = this.decals[this.decals.length - 1]; if (color === '#5a0a1a') { G.ui?.toast('Red wine on the oak! Grab the kitchen roll (by the sink) and clean it before Julie sees!', 5); setTimeout(() => { if (this.decals.includes(d)) { G.ai.say('Julie', 'Is that RED WINE on my OAK FLOOR?!', 2); this.banter(12); } }, 30000); } }
   laughWave(src) {
     this.stats.laughFits++; this.banter(-8);
-    const order = ['Hollie', 'Kirsty', 'Jodie', 'Debbie', 'Charli', 'Karen', 'Tasha', 'Sophie'];
+    const order = ['Hollie', 'Kirsty', 'Jodie', 'Debbie', 'Charli', 'Karen', 'Sophie'];
     order.forEach((n, i) => { const o = G.charByName[n]; if (!o || o.isDown() || (src && o.pos.distanceTo(src.pos) > 8)) return; setTimeout(() => { o.gesture = n === 'Kirsty' || n === 'Jodie' ? 'laughDouble' : 'laugh'; o.gestureT = 0; if (i < 2) o.bark('laugh', { prio: 0 }); setTimeout(() => { if (o.gesture?.startsWith('laugh')) o.gesture = null; }, 3500); }, 400 + i * 350); });
   }
   harrisonLaugh() {

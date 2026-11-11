@@ -23,7 +23,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   built procedurally per the appearance chart: heights (every man taller than every woman), three builds (Paul, Martin and
   Gary are 15–20% broader), sculpted faces with jaw, eye sockets, brow, cheekbones, nose, ears and lips, stubble painted
   into the skin at three densities (grey for Gary), long hair as layered hair cards over a hair mass (blonde roots darker,
-  tips lighter; Tasha's curls; James's tuck-behind-the-ear hair), knitted jumper patterns (Paul's reindeer with a
+  tips lighter; James's tuck-behind-the-ear hair), knitted jumper patterns (Paul's reindeer with a
   light-up nose, fair isle, snowflake, sparkly, hoodie, quarter-zip…), festive socks (it's a no-shoes house).
 - **Face rig:** jaw (lip-sync while talking), blinking eyelids, eyes that track whoever is talking (or you), brows for
   surprise/anger, laughing squint, asleep. Hair sways with a spring.
@@ -45,7 +45,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   mince pies…), drinks (lager, cider, bitter, Prosecco with a cork that fires at Martin, wine, Baileys, squash…),
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
-- **Where everyone is:** living room — Paul, Karen, Tasha, Charli, Martin (armchair), Debbie, Kirsty, Gary, Mason;
+- **Where everyone is:** living room — Paul (who does the rounds between his family, Martin and Debbie), Karen, Charli, Martin (armchair), Debbie, Kirsty, Gary, Mason;
   kitchen — Julie, Jodie, Hollie & Dan; games room — Sophie & James, Harry; conservatory — Bradley with Harrison.
 - **The quiz:** five rounds (Sport, Telly/Film/Music, News & Nonsense, Picture round drawn on the TV, the Family Round),
   Martin reads from the armchair, Charli whispers the right answer, Paul overrules you (stop him with a mince pie, a
@@ -61,6 +61,14 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 - **MASON TV REPLAY:** the last 15 seconds of every moving thing are recorded (positions, not video) and replayed on
   Martin's TV from the corner camera — slow-mo, second angle, score out of 10, VAR, and the Replay of the Night.
 - **Mini-games:** Sprout Pong, Cracker Pull Duel, Pass the Parcel, Stack the Celebrations, Gift Grab.
+
+## Real family models
+
+The 14 family members and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
+with the colour re-baked from the originals so they still look the same; 256 MB -> 15 MB). They're auto-rigged at
+load time onto the ragdoll skeleton (`src/chars/glbrig.js`), so they fall, get thrown and get up exactly like
+everyone else. Mason and Harrison (no scans yet) use the procedural models. Chip runs on his own dog skeleton
+(`src/chars/dogrig.js`) with walk/trot/gallop gaits and carries things crosswise in his jaws.
 
 ## Controls
 

@@ -30,9 +30,6 @@ export const CAST = [
     legs: { type: 'jeans', c1: '#1e2533' }, socks: '#ffffff', socks2: '#c02020', socksStripe: true, eyes: '#4a3a24', crown: '#f2c20f',
     voice: { pitch: 1.25, rate: 1.12, female: true, idx: 1 },
     lines: { idle: ["I literally said that.", "Dad, sit DOWN.", "That's not even a real answer.", "Did anyone film that?", "I'm putting this on the group chat."], thrown: ["Did anyone film that?", "TOMMY!", "I'm telling Mum."], toldyou: ["I SAID THAT!", "I literally said that. Nobody listens to me.", "Told you so."] } },
-  { name: 'Tasha', role: 'Girlfriend', team: 'paul', height: 1.63, build: 'slim', sex: 'f', hair: { style: 'curly', color: '#3e2616', length: 0.3 }, top: { pattern: 'topsmart', c1: '#14141c', sleeves: 'long' },
-    legs: { type: 'trousers', c1: '#2a1a2a' }, socks: '#222', lip: '#a8404a', face: { jaw: 0.78, lips: 1.25 }, voice: { pitch: 1.15, rate: 0.98, female: true, idx: 2 },
-    lines: { idle: ["I don't want to get involved... but it's Bulgaria.", "Is it always like this?", "Your dad is actually so funny.", "Should I be writing this down?"], thrown: ["Tommy! I'm a guest!", "Is this normal?!"], gasp: ["Not the GUEST!"] } },
 
   { name: 'Martin', role: 'Uncle, quizmaster', team: 'martin', height: 1.81, build: 'bigger', sex: 'm', hair: { style: 'short', color: '#17120f' }, stubble: 0.6, stubbleColor: '#1c1612',
     top: { pattern: 'shirtjumper', c1: '#204a2a' }, legs: { type: 'trousers', c1: '#3a3632' }, socks: '#802020', face: { jaw: 0.92, nose: 1.05, brow: 1 },
@@ -88,7 +85,6 @@ export const PERSONA = {
   Paul: { idle: ['bellyPat', 'point', 'argue'], seat: 'sofaL', drink: 'lager', loud: 1.4 },
   Karen: { idle: ['drink', 'tidy'], seat: 'sofaL', drink: 'prosecco', holds: 'wine' },
   Charli: { idle: ['phone', 'film'], seat: 'sofaL', drink: 'prosecco', holds: 'phone' },
-  Tasha: { idle: ['laughPolite', 'whisper'], seat: 'sofaL', drink: 'wine' },
   Martin: { idle: ['clipboard', 'whistle', 'straightenTree'], seat: 'armchair', drink: 'lager', holds: 'clipboard' },
   Julie: { idle: ['refill', 'wipe', 'coaster'], seat: 'kitchen', drink: 'small', holds: 'towel' },
   Hollie: { idle: ['phone', 'laugh', 'selfie'], seat: 'sofaR', drink: 'prosecco', holds: 'phone', pair: 'Dan' },
@@ -103,7 +99,7 @@ export const PERSONA = {
   Bradley: { idle: ['bounce'], seat: 'stand', drink: 'lager', holdsBaby: true },
 };
 
-export const DRINK_ORDERS = { Paul: 'lager', Martin: 'lager', Gary: 'bitter', Dan: 'pint', Karen: 'prosecco', Debbie: 'prosecco', Julie: 'small', Tasha: 'wine', Mason: 'juice', Hollie: 'prosecco', Sophie: 'prosecco', James: 'lager', Kirsty: 'wine', Jodie: 'prosecco', Harry: 'lager', Bradley: 'lager', Charli: 'prosecco' };
+export const DRINK_ORDERS = { Paul: 'lager', Martin: 'lager', Gary: 'bitter', Dan: 'pint', Karen: 'prosecco', Debbie: 'prosecco', Julie: 'small', Mason: 'juice', Hollie: 'prosecco', Sophie: 'prosecco', James: 'lager', Kirsty: 'wine', Jodie: 'prosecco', Harry: 'lager', Bradley: 'lager', Charli: 'prosecco' };
 
 // Gary's Outfit Wheel
 export const OUTFITS = [

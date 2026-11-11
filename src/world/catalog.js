@@ -207,7 +207,8 @@ export const CATALOG = {
 export const PLACEMENTS = [
   // ---- living room ----
   ['coffee_table', 0, 0, -3.6, 0], ['armchair', -1.9, 0, -6.1, Math.PI * 0.82], ['pouffe', 1.2, 0, -5.2],
-  ['cushion', -3.0, 0.57, -4.1, Math.PI / 2], ['cushion', -3.0, 0.57, -2.6, Math.PI / 2], ['cushion', -3.15, 0.75, -3.3, Math.PI / 2], ['cushion', 2.8, 0.57, -4.5, -Math.PI / 2], ['cushion', 2.8, 0.57, -2.8, -Math.PI / 2], ['cushion', 3.0, 0.75, -3.6, -Math.PI / 2], ['cushion', -1.9, 0.72, -6.05], ['cushion', 0.8, 0.02, -2.3],
+  // cushions stand up against the sofa backs at the ends (people sit on the seats, not in the cushions)
+  ['cushion', -3.06, 0.72, -4.32, Math.PI / 2, 1, 0, 0, 0, -1.2], ['cushion', -3.06, 0.72, -2.08, Math.PI / 2, 1, 0, 0, 0, -1.2], ['cushion', 2.92, 0.72, -4.62, -Math.PI / 2, 1, 0, 0, 0, -1.2], ['cushion', 2.92, 0.72, -2.62, -Math.PI / 2, 1, 0, 0, 0, -1.2], ['cushion', 0.8, 0.02, -2.3],
   ['answer_sheet', -0.35, 0.42, -3.75, 0], ['answer_sheet', 0.3, 0.42, -3.5, 0.3], ['answer_sheet', -2.0, 0.6, -5.9, 0],
   ['pen', -0.1, 0.42, -3.85, 0, 2, 0.05, 0.02], ['pen', 0.45, 0.42, -3.75, 1],
   ['remote', 0.1, 0.42, -3.35, 0.4], ['cracker', -0.45, 0.42, -3.4, 0.2, 3, 0.06, 0.05],
@@ -262,14 +263,14 @@ export const PLACEMENTS = [
   ['prosecco', 3.55, 0.13, 0.45], ['white_wine', 3.75, 0.13, 0.45], ['red_wine', 3.95, 0.13, 0.4], ['lager', 4.05, 0.58, 0.35, 0, 3, 0.07, 0.12],
   ['milk', 3.5, 0.58, 0.5], ['juice', 3.65, 0.58, 0.5], ['foil', 3.8, 1.03, 0.45], ['squash', 3.55, 1.43, 0.45], ['baileys', 3.75, 1.43, 0.45],
   // ---- dining / games room ----
-  ['dining_table', 6.45, 0, -3.5], ['dining_chair', 5.75, 0, -4.6, Math.PI / 2], ['dining_chair', 5.75, 0, -3.5, Math.PI / 2], ['dining_chair', 5.75, 0, -2.4, Math.PI / 2], ['dining_chair', 6.45, 0, -1.95, Math.PI], ['dining_chair', 6.45, 0, -5.05, 0], ['dining_chair', 4.2, 0, -5.9, 0.8],
+  ['dining_table', 6.45, 0, -3.5], ['dining_chair', 5.75, 0, -4.6, Math.PI / 2], ['dining_chair', 5.75, 0, -3.5, Math.PI / 2], ['dining_chair', 5.75, 0, -2.4, Math.PI / 2], ['dining_chair', 6.45, 0, -1.95, Math.PI], ['dining_chair', 6.45, 0, -5.05, 0], ['dining_chair', 4.6, 0, -6.3, 0.8],
   ['office_chair', 6.0, 0, -6.0, Math.PI], ['highchair', 4.3, 0, -1.6, 0.4], ['bouncer', 4.6, 0, -4.5, 1.2],
   ['pong_cup', 6.2, 0.77, -4.3, 0, 3, 0.11, 0], ['pong_cup', 6.25, 0.77, -4.2, 0, 2, 0.11, 0], ['pong_cup', 6.3, 0.77, -4.1, 0, 1],
   ['parcel', 6.4, 0.77, -3.2], ['board_game', 6.5, 0.77, -2.3, 0.2], ['buzzer', 6.6, 0.77, -3.9, 0, 3, 0, 0.18],
   ['sippy_cup', 4.35, 0.77, -1.45], ['rusk', 4.3, 0.77, -1.4], ['baby_bottle', 3.85, 0.86, -2.8],
-  ['cracker', 3.85, 0.86, -4.0, 0, 2, 0, 0.12], ['present_s', 4.6, 0, -6.3, 0, 2, 0.4, 0],
+  ['cracker', 3.85, 0.86, -4.0, 0, 2, 0, 0.12], ['present_s', 4.9, 0, -5.4, 0, 2, 0.4, 0],
   // ---- conservatory ----
-  ['wicker_chair', 4.2, 0, -8.6, 0.5], ['wicker_chair', 6.4, 0, -9.5, -0.5], ['wicker_chair', 5.6, 0, -10.0, 0.1], ['wicker_table', 5.3, 0, -9.0],
+  ['wicker_chair', 4.2, 0, -8.6, 0.5], ['wicker_chair', 6.4, 0, -9.5, -0.5],  ['wicker_table', 5.3, 0, -9.0],
   ['plant_pot', 7.0, 0, -7.4], ['plant_pot', 3.6, 0, -10.2], ['watering_can', 6.9, 0, -9.4], ['microphone', 4.0, 0.62, -10.2], ['magazine', 5.3, 0.43, -9.0, 0.4],
   // ---- garden / patio ----
   ['patio_table', -1.2, 0, -9.4], ['patio_chair', -1.9, 0, -9.4, Math.PI / 2], ['patio_chair', -0.5, 0, -9.4, -Math.PI / 2], ['patio_chair', -1.2, 0, -10.1, 0], ['patio_chair', -1.2, 0, -8.7, Math.PI],

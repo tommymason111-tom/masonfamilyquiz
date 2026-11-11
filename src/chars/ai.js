@@ -19,7 +19,7 @@ export class AI {
     const V = (x, z) => new THREE.Vector3(x, 0, z);
     const plan = {
       // Living room: the quiz lot
-      Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Tasha: seat(H.sofaL[2]), Charli: { ...seat(H.sofaArmL) },
+      Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Charli: { ...seat(H.sofaArmL) },
       Martin: { ...seat(H.armchair), armchair: true },
       Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]),
       Gary: { pos: V(1.9, -6.0), yaw: -Math.PI * 0.8, stand: true },
@@ -34,7 +34,7 @@ export class AI {
       James: { pos: V(5.45, -3.4), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
       Harry: { pos: V(5.2, -5.9), yaw: Math.PI * 0.75, stand: true, room: 'dining' },
       // Conservatory: Bradley keeping Harrison calm in the quiet
-      Bradley: { pos: V(4.2, -8.6), yaw: 0.5, seatY: 0.44, room: 'conservatory' },
+      Bradley: { pos: V(4.2, -8.6), yaw: 0.5, seatY: 0.48, room: 'conservatory' },
       Harrison: { carried: 'Bradley' },
     };
     for (const p of G.chars) {
@@ -57,7 +57,7 @@ export class AI {
   }
   sitAtHome(b, snap) {
     const h = b.home; const p = b.p;
-    if (h.armchair) { const ac = G.items.byType.armchair?.[0]; if (ac) { const t = ac.body.translation(), r = ac.body.rotation(); const q = new THREE.Quaternion(r.x, r.y, r.z, r.w); const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q); if (up.y > 0.8) { const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(q); h.pos.set(t.x + fwd.x * 0.05, 0, t.z + fwd.z * 0.05); h.yaw = Math.atan2(fwd.x, fwd.z); h.seatY = 0.36 + (t.y - 0.42); } } }
+    if (h.armchair) { const ac = G.items.byType.armchair?.[0]; if (ac) { const t = ac.body.translation(), r = ac.body.rotation(); const q = new THREE.Quaternion(r.x, r.y, r.z, r.w); const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q); if (up.y > 0.8) { const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(q); h.pos.set(t.x + fwd.x * 0.05, 0, t.z + fwd.z * 0.05); h.yaw = Math.atan2(fwd.x, fwd.z); h.seatY = 0.55 + (t.y - 0.42); } } }
     p.seatY = h.seatY ?? 0.45;
     p.base = h.stand ? 'stand' : h.floor ? 'sitFloor' : 'sit';
     if (snap) p.teleport(h.pos.x, 0, h.pos.z, h.yaw); else { p.pos.copy(h.pos); p.yaw = h.yaw; }
@@ -75,6 +75,7 @@ export class AI {
       if (p.state !== 'anim') continue;
       if (b.state === 'hidden' || b.state === 'carried') continue;
       if (p.name === 'Mason') { this.mason(b, dt); continue; }
+      if (p.name === 'Paul') this.paulRounds(b, dt);
       if (b.state === 'walk') { this.walk(b, dt); continue; }
       if (b.state === 'storm' || b.state === 'sulk' || b.state === 'asleep' || b.state === 'knock' || b.state === 'scripted') { b.timer -= dt; if (b.timer < 0 && b.state !== 'storm' && b.state !== 'asleep') { b.state = 'idle'; p.gesture = null; this.goHome(b); } }
       // look at whoever is talking (or at you)
@@ -97,6 +98,31 @@ export class AI {
     }
     this.babyUpdate(dt);
     this.pairings(dt);
+  }
+  // Paul doesn't sit still: he does the rounds between his own family, Martin and Debbie
+  paulRounds(b, dt) {
+    const p = b.p; if (b.state === 'asleep' || p.isDown()) return;
+    b.visitT = (b.visitT ?? 20) - dt;
+    if (b.visiting && G.quiz?.questionLive && b.state !== 'walk') { b.visiting = null; p.gesture = null; this.goHome(b); return; }
+    if (b.state !== 'idle' || b.visitT > 0 || G.quiz?.questionLive) return;
+    b.visitT = rand(30, 60);
+    const options = [
+      { who: 'Martin', g: 'argue', lines: ['Martin. Martin. Question four. Let\'s talk about it.', 'You\'re marking us harder, admit it.', 'Is there any more lager, Martin?'] },
+      { who: 'Debbie', g: 'point', lines: ['Deb, back me up here.', 'Debbie! Tell him I\'m right.', 'You still talking about that horse?'] },
+      { who: 'Karen', g: 'bellyPat', lines: ['Alright, love?', 'I\'m behaving, I\'m behaving.'] },
+      { who: 'Charli', g: 'point', lines: ['Charli, what\'s the answer to the last one?', 'Stop filming me.'] },
+      { who: 'Tommy', g: 'argue', lines: ['Tommy! Get your old man a drink.', 'We\'re winning this, son. I can feel it.', 'Listen. Next round, I\'m on the pen.'] },
+    ];
+    const o = pick(options); const t = o.who === 'Tommy' ? { pos: G.player.pos, yaw: 0 } : G.charByName[o.who]; if (!t) return;
+    // stand an arm's length in front of them
+    const fwd = new THREE.Vector3(Math.sin(t.yaw ?? 0), 0, Math.cos(t.yaw ?? 0)); const spot = t.pos.clone().addScaledVector(fwd, o.who === 'Tommy' ? -0.9 : 0.85); G.house.clampToNav(spot);
+    b.visiting = o.who;
+    this.goTo(b, spot, () => {
+      b.state = 'scripted'; b.timer = rand(9, 15); p.base = 'stand'; const tp = o.who === 'Tommy' ? G.player.pos : t.pos; p.yaw = Math.atan2(tp.x - p.pos.x, tp.z - p.pos.z);
+      p.gesture = o.g; p.gestureT = 0; p.say(pick(o.lines), { prio: 1 });
+      const other = G.charByName[o.who]; if (other && !other.isDown() && Math.random() < 0.7) setTimeout(() => { const r = { Martin: ['Sit DOWN, Paul.', 'My house, my rules.'], Debbie: ['Paul, that\'s NOT funny.', 'Hahaha! Go away!'], Karen: ['Paul.'], Charli: ['Dad, sit DOWN.'] }[o.who]; if (r) other.say(pick(r), { prio: 1 }); }, 2500);
+      setTimeout(() => { if (p.gesture === o.g) p.gesture = null; }, 4000);
+    });
   }
   chooseLook(p, b) {
     let tgt = null; let best = 0;
@@ -134,7 +160,6 @@ export class AI {
   onRagdoll(p) { const b = this.brains.get(p); if (b) { b.state = 'down'; b.path = null; } this.reactToFall(p); }
   reactToFall(p) {
     // laugh wave from the gigglers nearby, gasps for the guest
-    if (p.name === 'Tasha') setTimeout(() => { for (const n of ['Karen', 'Julie', 'Debbie']) this.say(n, 'Not the GUEST!', 1); }, 400);
     for (const n of ['Kirsty', 'Jodie', 'Debbie', 'Hollie', 'Charli']) {
       const o = G.charByName[n]; if (!o || o === p || o.isDown() || o.pos.distanceTo(p.world[0].p) > 7) continue;
       if (Math.random() < 0.55) setTimeout(() => { if (o.isDown()) return; o.gesture = n === 'Kirsty' || n === 'Jodie' ? 'laughDouble' : 'laugh'; o.gestureT = 0; if (Math.random() < 0.4) o.bark('laugh', { prio: 0 }); setTimeout(() => { if (o.gesture?.startsWith('laugh')) o.gesture = null; }, 3000); }, rand(300, 1200));

@@ -52,7 +52,7 @@ function countdown() {
 // team cards; portraits are filled in once the 3D family has loaded
 export function teamCards(withPortraits, portraits = {}) {
   const el = $('teams'); if (!el) return;
-  const emoji = { Mason: '🦖', Harrison: '👶', Tommy: '🧑', Tasha: '💃', Dan: '🍺' };
+  const emoji = { Mason: '🦖', Harrison: '👶', Tommy: '🧑', Dan: '🍺' };
   el.innerHTML = Object.entries(TEAMS).map(([k, t]) => `<div class="team" style="--tc:${t.color}"><h4>${t.name}</h4><div class="faces">${CAST.filter(c => c.team === k).map(c => `<div class="face">${portraits[c.name] ? `<img src="${portraits[c.name]}" alt="${c.name}">` : `<div class="ph">${emoji[c.name] || '🎄'}</div>`}<span>${c.name === 'Tommy' ? 'You' : c.name}</span></div>`).join('')}${k === 'debbie' ? '<div class="face"><div class="ph">🐶</div><span>Chip</span></div>' : ''}</div></div>`).join('');
 }
 // render a little portrait of each person from the live scene

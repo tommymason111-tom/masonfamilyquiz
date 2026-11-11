@@ -36,8 +36,8 @@ export class Items {
       this.types[id] = t; this.byType[id] = [];
     }
     for (const pl of PLACEMENTS) {
-      const [id, x, y, z, yaw = 0, n = 1, dx = 0, dz = 0, dy = 0] = pl;
-      for (let i = 0; i < n; i++) this.spawn(id, new THREE.Vector3(x + dx * i, y + dy * i, z + dz * i), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw + (n > 1 ? rand(-0.2, 0.2) : 0), 0)), { surface: true, sleep: true });
+      const [id, x, y, z, yaw = 0, n = 1, dx = 0, dz = 0, dy = 0, tilt = 0] = pl;
+      for (let i = 0; i < n; i++) this.spawn(id, new THREE.Vector3(x + dx * i, y + dy * i, z + dz * i), new THREE.Quaternion().setFromEuler(new THREE.Euler(tilt, yaw + (n > 1 ? rand(-0.2, 0.2) : 0), 0, 'YXZ')), { surface: true, sleep: true });
     }
     this.hinged = buildHinged();
     on('collision', (a, b) => this.onCollision(a, b));
