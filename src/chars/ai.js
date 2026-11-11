@@ -30,8 +30,8 @@ export class AI {
       Hollie: { pos: V(3.68, 1.2), yaw: Math.PI + 0.35, stand: true, room: 'kitchen' },
       Dan: { pos: V(4.32, 1.25), yaw: Math.PI - 0.35, stand: true, room: 'kitchen' },
       // Games room: Sophie & James planning the wedding at the table, Harry by the PC
-      Sophie: { pos: V(1.75, -3.0), yaw: Math.PI / 2, stand: true, room: 'dining' },
-      James: { pos: V(1.75, -3.7), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
+      Sophie: { pos: V(4.1, -3.45), yaw: Math.PI / 2, stand: true, room: 'dining' },
+      James: { pos: V(4.1, -4.25), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
       Harry: { pos: V(4.25, -1.75), yaw: Math.PI / 2 + 0.3, stand: true, room: 'dining' },
       // Kitchen: Bradley (carrying Harrison) with the rest of his team
       Bradley: { pos: V(2.75, 1.3), yaw: 1.65, stand: true, room: 'kitchen' }, // with his team (Hollie & Dan) by the bar

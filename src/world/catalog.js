@@ -67,7 +67,7 @@ export const CATALOG = {
   gamepad: { name: 'Games controller', geo: () => P().rbox(0.15, 0.03, 0.08, 0.02, '#222').sph(0.03, '#222', -0.055, -0.005, 0.025, 1, 0.8, 1.3).sph(0.03, '#222', 0.055, -0.005, 0.025, 1, 0.8, 1.3).cyl(0.009, 0.009, 0.01, '#555', -0.035, 0.018, -0.005).cyl(0.009, 0.009, 0.01, '#555', 0.02, 0.018, 0.01).build(), shape: ['box', 0.075, 0.02, 0.05], mass: 0.25 },
   // ===================== KITCHEN BUFFET =====================
   sausage_roll: { name: 'Sausage roll', geo: () => P().rbox(0.09, 0.035, 0.045, 0.015, '#d8a050').box(0.092, 0.012, 0.03, '#a86a3a', 0, 0.01, 0).build(), shape: ['box', 0.045, 0.018, 0.023], mass: 0.05, food: 'sausageRoll', use: 'eat', sound: 'crunch' },
-  pig_blanket: { name: 'Pig in blanket', geo: () => P().cyl(0.012, 0.012, 0.06, '#9a4a2a', 0, 0, 0, 0, 0, Math.PI / 2, 8).cyl(0.014, 0.014, 0.035, '#c06a5a', 0, 0, 0, 0, 0, Math.PI / 2, 8).build(), shape: ['cap', 0.025, 0.013], mass: 0.02, food: 'pig', use: 'eat' },
+  pig_blanket: { name: 'Pig in blanket', geo: () => P().cyl(0.012, 0.012, 0.06, '#9a4a2a', 0, 0, 0, 0, 0, Math.PI / 2, 8).cyl(0.014, 0.014, 0.035, '#c06a5a', 0, 0, 0, 0, 0, Math.PI / 2, 8).build(), shape: ['cap', 0.025, 0.013], mass: 0.02, angDamp: 6, friction: 1.2, food: 'pig', use: 'eat' },
   pig_tray: { name: 'Pigs-in-blankets tray', geo: () => P().box(0.36, 0.02, 0.26, '#c0c0c0').box(0.36, 0.03, 0.01, '#aaa', 0, 0.015, 0.13).box(0.36, 0.03, 0.01, '#aaa', 0, 0.015, -0.13).box(0.01, 0.03, 0.26, '#aaa', 0.18, 0.015, 0).box(0.01, 0.03, 0.26, '#aaa', -0.18, 0.015, 0).build(), shape: ['box', 0.18, 0.012, 0.13], mass: 0.4, sound: 'clink' },
   turkey: { name: 'Cold turkey', geo: () => P().sph(0.13, '#c8854a', 0, 0, 0, 1.2, 0.75, 1).sph(0.04, '#b87a40', 0.15, -0.02, 0.06, 1.6, 0.7, 0.7).sph(0.04, '#b87a40', 0.15, -0.02, -0.06, 1.6, 0.7, 0.7).cyl(0.01, 0.01, 0.04, '#f4e8d8', 0.22, -0.02, 0.06, 0, 0, Math.PI / 2).cyl(0.01, 0.01, 0.04, '#f4e8d8', 0.22, -0.02, -0.06, 0, 0, Math.PI / 2).build(), shape: ['box', 0.16, 0.1, 0.13], mass: 3, food: 'turkey', use: 'eat', uses: 8, sound: 'splat' },
   platter: { name: 'Turkey & ham platter', geo: () => { const p = P().cyl(0.25, 0.22, 0.02, '#f4f4f4', 0, 0, 0, 0, 0, 0, 28); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; p.box(0.08, 0.008, 0.06, i % 2 ? '#e8b0a0' : '#f2e2cc', Math.cos(a) * 0.15, 0.015, Math.sin(a) * 0.15, 0, -a, 0.1); } return p.build(); }, shape: ['cyl', 0.012, 0.25], mass: 1.2, sound: 'clink', food: 'ham', use: 'eat', uses: 10 },
@@ -168,6 +168,7 @@ export const CATALOG = {
   torch: { name: 'Torch', geo: () => P().cyl(0.02, 0.02, 0.18, '#222', 0, 0, 0, 0, 0, Math.PI / 2).cyl(0.03, 0.02, 0.05, '#555', 0.11, 0, 0, 0, 0, Math.PI / 2).build(), shape: ['cap', 0.1, 0.03], mass: 0.3, use: 'torch' },
   // ===================== DINING / GAMES ROOM =====================
   dining_chair: { name: 'Dining chair', geo: () => P().box(0.44, 0.04, 0.42, '#4a2e1c', 0, -0.02, 0).box(0.44, 0.48, 0.04, '#4a2e1c', 0, 0.26, -0.19).box(0.4, 0.05, 0.37, '#8a3a3a', 0, 0.02, 0.01).box(0.04, 0.44, 0.04, '#3a2216', -0.19, -0.26, 0.18).box(0.04, 0.44, 0.04, '#3a2216', 0.19, -0.26, 0.18).box(0.04, 0.44, 0.04, '#3a2216', -0.19, -0.26, -0.18).box(0.04, 0.44, 0.04, '#3a2216', 0.19, -0.26, -0.18).build(), shape: ['box', 0.22, 0.48, 0.21], mass: 5, sound: 'thud' },
+  chair_stack: { name: 'Stack of dining chairs', geo: () => { const p = P(); for (let k = 0; k < 3; k++) { const y = -0.45 + k * 0.45, r = (k - 1) * 0.04; p.box(0.44, 0.04, 0.42, '#4a2e1c', r, y - 0.02, 0).box(0.44, 0.48, 0.04, '#4a2e1c', r, y + 0.26, -0.19).box(0.4, 0.05, 0.37, '#8a3a3a', r, y + 0.02, 0.01); for (const [lx, lz] of [[-0.19, 0.18], [0.19, 0.18], [-0.19, -0.18], [0.19, -0.18]]) p.box(0.04, 0.44, 0.04, '#3a2216', r + lx, y - 0.26, lz); } return p.build(); }, shape: ['box', 0.24, 0.94, 0.23], mass: 15, sound: 'thud', fixed: true },
   dining_table: { name: 'Dining table', geo: () => P().box(0.95, 0.05, 1.7, '#7a4a26', 0, 0.36, 0).box(0.07, 0.72, 0.07, '#5a3418', -0.42, 0, -0.78).box(0.07, 0.72, 0.07, '#5a3418', 0.42, 0, -0.78).box(0.07, 0.72, 0.07, '#5a3418', -0.42, 0, 0.78).box(0.07, 0.72, 0.07, '#5a3418', 0.42, 0, 0.78).build(), shape: ['box', 0.475, 0.385, 0.85], mass: 45, sound: 'bigthud', angDamp: 2, fixed: true },
   office_chair: { name: 'Office chair', geo: () => P().rbox(0.48, 0.08, 0.46, 0.03, '#222', 0, 0.05, 0).rbox(0.44, 0.5, 0.06, 0.03, '#222', 0, 0.35, -0.21).cyl(0.03, 0.03, 0.3, '#888', 0, -0.15, 0).cyl(0.28, 0.28, 0.03, '#333', 0, -0.32, 0, 0, 0, 0, 5).build(), shape: ['box', 0.24, 0.35, 0.23], mass: 9, sound: 'thud', angDamp: 0.2, fixed: true },
   pong_cup: { name: 'Pong cup', geo: () => P().lathe([[0, -0.06], [0.03, -0.06], [0.045, 0.06], [0.042, 0.06], [0.028, -0.055], [0, -0.055]], '#d62828', 0, 0, 0, 14).build(), shape: ['cyl', 0.06, 0.04], mass: 0.02, extra: 0 },
@@ -261,13 +262,15 @@ export const PLACEMENTS = [
   ['prosecco', 5.25, 0.13, 0.12], ['white_wine', 5.45, 0.13, 0.12], ['red_wine', 5.65, 0.13, 0.08], ['lager', 5.75, 0.58, 0.05, 0, 3, -0.07, 0.0],
   ['milk', 5.2, 0.58, 0.15], ['juice', 5.35, 0.58, 0.15], ['foil', 5.5, 1.03, 0.12], ['squash', 5.25, 1.43, 0.12], ['baileys', 5.45, 1.43, 0.12],
   // ---- dining room ----
-  ['dining_table', 3.0, 0, -3.3], ['dining_chair', 2.25, 0, -3.7, Math.PI / 2], ['dining_chair', 2.25, 0, -2.9, Math.PI / 2], ['dining_chair', 3.75, 0, -3.7, -Math.PI / 2], ['dining_chair', 3.75, 0, -2.9, -Math.PI / 2], ['dining_chair', 3.0, 0, -4.45, 0], ['dining_chair', 3.0, 0, -2.15, Math.PI],
-  ['office_chair', 4.62, 0, -1.3, Math.PI / 2], ['highchair', 3.75, 0, -4.6, 0.4], ['bouncer', 4.0, 0, -0.95, 1.2],
-  ['pong_cup', 2.8, 0.77, -3.95, 0, 3, 0.11, 0], ['pong_cup', 2.85, 0.77, -3.85, 0, 2, 0.11, 0], ['pong_cup', 2.9, 0.77, -3.75, 0, 1],
-  ['parcel', 3.2, 0.77, -3.3], ['board_game', 3.0, 0.77, -2.75, 0.2], ['buzzer', 2.75, 0.77, -3.45, 0, 3, 0, 0.18],
-  ['sippy_cup', 3.25, 0.77, -2.6], ['rusk', 2.75, 0.77, -2.6], ['pork_pie', 3.25, 0.77, -3.6], ['baby_bottle', 5.22, 0.88, -3.1],
-  ['pudding', 5.2, 0.88, -4.6], ['cream_jug', 5.2, 0.88, -4.3], ['brandy', 5.28, 0.88, -4.1], ['mince_pie', 5.15, 0.88, -3.85, 0, 5, 0, 0.08],
-  ['cracker', 2.7, 0.77, -2.9, 0, 2, 0, 0.12],
+  ['dining_table', 4.99, 0, -3.9], ['chair_stack', 5.05, 0, -5.3, Math.PI / 2], ['chair_stack', 4.45, 0, -5.35, Math.PI / 2 + 0.1],
+  ['office_chair', 4.62, 0, -1.3, Math.PI / 2], ['highchair', 2.6, 0, -2.6, 0.4], ['bouncer', 4.0, 0, -0.95, 1.2],
+  // table against the east wall (x 4.52..5.47, z -4.75..-3.05, top 0.77)
+  ['pong_cup', 4.79, 0.77, -4.55, 0, 3, 0.11, 0], ['pong_cup', 4.84, 0.77, -4.45, 0, 2, 0.11, 0], ['pong_cup', 4.89, 0.77, -4.35, 0, 1],
+  ['parcel', 5.25, 0.77, -3.55], ['board_game', 4.99, 0.77, -3.35, 0.2], ['buzzer', 4.64, 0.77, -4.3, 0, 3, 0, 0.16],
+  ['sippy_cup', 5.24, 0.77, -3.2], ['rusk', 4.74, 0.77, -3.2], ['pork_pie', 5.24, 0.77, -4.2],
+  // sideboard on the west wall (x 1.22, z -5.13..-3.27, top 0.88)
+  ['baby_bottle', 1.2, 0.88, -3.45], ['pudding', 1.2, 0.88, -4.95], ['cream_jug', 1.2, 0.88, -4.65], ['brandy', 1.28, 0.88, -4.45], ['mince_pie', 1.15, 0.88, -4.2, 0, 5, 0, 0.08],
+  ['cracker', 4.69, 0.77, -3.5, 0, 2, 0, 0.12],
   // ---- conservatory ----
   ['wicker_table', 3.13, 0, -7.75], ['wicker_chair', 4.6, 0, -7.2, -1.8], ['wicker_chair', 4.65, 0, -8.15, -1.4],
   ['watering_can', 4.95, 0, -6.55], ['microphone', 1.5, 0.62, -8.95], ['magazine', 3.13, 0.43, -7.75, 0.4],

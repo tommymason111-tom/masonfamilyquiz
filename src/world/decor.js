@@ -27,16 +27,20 @@ export function buildDecor(P, add, M, solid, H) {
   for (const [a, b, z] of doorsX) for (const s of [-1, 1]) { P.box(0.07, 2.12, 0.025, WHITE, a - 0.035, 1.06, z + s * AO).box(0.07, 2.12, 0.025, WHITE, b + 0.035, 1.06, z + s * AO).box(b - a + 0.14, 0.07, 0.025, WHITE, (a + b) / 2, 2.085, z + s * AO); }
   for (const [a, b, x] of doorsZ) for (const s of [-1, 1]) { P.box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, a - 0.035).box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, b + 0.035).box(0.025, 0.07, b - a + 0.14, WHITE, x + s * AO, 2.085, (a + b) / 2); }
   // ---------- cornice / coving in every room (inner faces) ----------
-  const rooms = [[-1.13, 1.33, -0.3, 5.91], [1.51, 6.37, -0.3, 5.91], [-5.78, 0.81, -5.93, -0.48], [0.99, 5.47, -5.93, -0.48], [-2.88, -1.31, 3.43, 5.91]];
+  const rooms = [[1.51, 6.37, -0.3, 5.91], [-5.78, 0.81, -5.93, -0.48], [0.99, 5.47, -5.93, -0.48], [-2.88, -1.31, 3.43, 5.91]];
   for (const [x0, x1, z0, z1] of rooms) {
     P.box(x1 - x0, 0.07, 0.07, WHITE, (x0 + x1) / 2, WALL_H - 0.035, z0 + 0.035, 0.6).box(x1 - x0, 0.07, 0.07, WHITE, (x0 + x1) / 2, WALL_H - 0.035, z1 - 0.035, -0.6)
       .box(0.07, 0.07, z1 - z0, WHITE, x0 + 0.035, WALL_H - 0.035, (z0 + z1) / 2, 0, 0, -0.6).box(0.07, 0.07, z1 - z0, WHITE, x1 - 0.035, WALL_H - 0.035, (z0 + z1) / 2, 0, 0, 0.6);
   }
+  // the hall's coving follows its walls, including the little notch by the dining-room door
+  const cov = (x0, z0, x1, z1, tilt) => { if (z0 === z1) P.box(x1 - x0, 0.07, 0.07, WHITE, (x0 + x1) / 2, WALL_H - 0.035, z0, tilt); else P.box(0.07, 0.07, z1 - z0, WHITE, x0, WALL_H - 0.035, (z0 + z1) / 2, 0, 0, tilt); };
+  cov(-1.13, -0.3 + 0.035, 1.92, -0.3 + 0.035, 0.6); cov(-1.13, 5.91 - 0.035, 1.33, 5.91 - 0.035, -0.6); cov(-1.13 + 0.035, -0.3, -1.13 + 0.035, 5.91, -0.6);
+  cov(1.33 - 0.035, 0.72, 1.33 - 0.035, 5.91, 0.6); cov(1.92 - 0.035, -0.3, 1.92 - 0.035, 0.72, 0.6); cov(1.33, 0.72 - 0.035, 1.92, 0.72 - 0.035, -0.6);
   // ceiling roses
-  for (const [x, z] of [[-2.5, -3.3], [0.1, 2.9], [3.4, 2.6], [PX(992), PZ(1050)]]) P.cyl(0.2, 0.2, 0.02, WHITE, x, WALL_H - 0.01, z, 0, 0, 0, 20).torus(0.15, 0.012, WHITE, x, WALL_H - 0.02, z, Math.PI / 2);
+  for (const [x, z] of [[-2.5, -3.3], [0.1, 2.9], [3.4, 2.6], [4.99, -3.9]]) P.cyl(0.2, 0.2, 0.02, WHITE, x, WALL_H - 0.01, z, 0, 0, 0, 20).torus(0.15, 0.012, WHITE, x, WALL_H - 0.02, z, Math.PI / 2);
   // ---------- radiators, sockets & switches ----------
   const radiator = (x, z, len, ry) => { const c = Math.cos(ry), s = Math.sin(ry); for (let i = 0; i < Math.round(len / 0.06); i++) { const o = -len / 2 + i * 0.06 + 0.03; P.box(0.04, 0.55, 0.07, '#f2f2f2', x + o * c, 0.42, z - o * s, 0, ry); } P.box(len, 0.03, 0.04, '#e8e8e8', x, 0.72, z, 0, ry).cyl(0.012, 0.012, 0.1, '#c0c0c0', x + (len / 2 + 0.03) * c, 0.2, z - (len / 2 + 0.03) * s); };
-  radiator(-4.6, -5.86, 1.2, 0); radiator(1.26, 3.9, 0.6, Math.PI / 2); radiator(1.07, -3.3, 0.9, Math.PI / 2); radiator(-1.38, 3.9, 0.4, Math.PI / 2);
+  radiator(-4.6, -5.86, 1.2, 0); radiator(1.26, 3.9, 0.6, Math.PI / 2); radiator(1.07, -2.0, 0.9, Math.PI / 2); radiator(-1.38, 3.9, 0.4, Math.PI / 2);
   const socket = (x, y, z, ry) => P.box(0.14, 0.085, 0.012, '#f6f6f6', x, y, z, 0, ry).box(0.03, 0.03, 0.006, '#e0e0e0', x - 0.03 * Math.cos(ry), y, z + 0.03 * Math.sin(ry), 0, ry).box(0.03, 0.03, 0.006, '#e0e0e0', x + 0.03 * Math.cos(ry), y, z - 0.03 * Math.sin(ry), 0, ry);
   for (const [x, y, z, ry] of [[-5.77, 0.3, -4.7, Math.PI / 2], [-3.0, 0.3, -0.49, 0], [0.8, 0.3, -1.2, Math.PI / 2], [6.36, 1.1, 1.6, Math.PI / 2], [1.8, 1.1, 5.9, 0], [5.46, 0.3, -1.0, Math.PI / 2], [1.32, 0.3, 4.0, Math.PI / 2]]) socket(x, y, z, ry);
 
@@ -140,8 +144,8 @@ export function buildDecor(P, add, M, solid, H) {
   glow.box(0.006, 0.18, 0.34, '#ff9a40', KX(1148) - 0.03, 0.45, hz); P.box(0.02, 0.3, 0.16, '#f4f4f4', KX(1148) - 0.04, 0.62, hz + 0.2).box(0.021, 0.04, 0.16, '#c1121f', KX(1148) - 0.04, 0.6, hz + 0.2);
 
   // ---------- dining room ----------
-  const tx = PX(992), tz = PZ(1050);
-  P.box(0.5, 0.01, 2.0, '#c1121f', tx, 0.775, tz).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz - 0.9).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz + 0.9);
+  const tx = 4.99, tz = -3.9;
+  P.box(0.5, 0.01, 1.6, '#c1121f', tx, 0.775, tz).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz - 0.72).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz + 0.72);
   P.torus(0.16, 0.05, '#1f5a2a', tx, 0.8, tz, Math.PI / 2); for (let i = 0; i < 3; i++) { P.cyl(0.025, 0.025, 0.2, '#f4f1ea', tx + (i - 1) * 0.06, 0.88, tz + (i - 1) * 0.05); glow.cone(0.012, 0.03, '#ffcf60', tx + (i - 1) * 0.06, 1.0, tz + (i - 1) * 0.05); }
   const word = 'MERRY XMAS'; for (let i = 0; i < word.length; i++) { const t = i / (word.length - 1); const x = 1.3 + t * 3.0, y = 2.35 - Math.sin(t * Math.PI) * 0.18; P.cone(0.1, 0.18, i % 2 ? '#c1121f' : '#1f6a3a', x, y - 0.09, -0.52, Math.PI, 0, 0, 3); }
   P.box(3.1, 0.005, 0.005, '#d4af37', 2.8, 2.35, -0.52);
@@ -235,7 +239,7 @@ export function buildDecor(P, add, M, solid, H) {
   });
   // framed family photos up the stair wall and along the hall (textured)
   const frameMat = (seed) => new THREE.MeshStandardMaterial({ map: TX.photo(seed), roughness: 0.5 });
-  [[-2.86, 1.9, 2.2, 1], [-2.86, 2.3, 1.7, 1], [-2.86, 2.7, 1.2, 1], [-2.86, 3.1, 0.9, 1], [1.31, 1.6, 4.0, -1], [1.31, 1.6, 0.4, -1]].forEach(([x, y, z, f], i) => {
+  [[-2.86, 1.9, 2.2, 1], [-2.86, 2.3, 1.7, 1], [-2.86, 2.7, 1.2, 1], [-2.86, 3.1, 0.9, 1], [1.31, 1.6, 4.0, -1], [1.9, 1.6, 0.2, -1]].forEach(([x, y, z, f], i) => {
     P.box(0.03, 0.34, 0.28, '#3a2a1a', x, y, z);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.3), frameMat(20 + i)); m.position.set(x + f * 0.02, y, z); m.rotation.y = f > 0 ? Math.PI / 2 : -Math.PI / 2; G.scene.add(m);
   });

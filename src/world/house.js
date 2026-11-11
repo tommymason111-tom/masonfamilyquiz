@@ -488,19 +488,19 @@ function dining(P, add, M, solid, H) {
   H.pc = { group: mon, w: 0.66, h: 0.38, center: new THREE.Vector3(dx + 0.12, 1.13, dz) };
   H.interact.push({ id: 'pc', pos: new THREE.Vector3(dx - 0.2, 1.0, dz), r: 0.5, label: 'Dining room PC' });
   H.spots.pcChair = new THREE.Vector3(PX(1138), 0, PZ(1230));
-  // sideboard on the east wall with a plant either side
-  const sx = (PX(1173) + PX(1212)) / 2 - 0.03, sz = (PZ(890) + PZ(1078)) / 2, sl = PZ(1078) - PZ(890);
+  // sideboard on the west wall (the table has the east wall)
+  const sx = 1.22, sz = -4.2, sl = 1.87;
   P.box(0.45, 0.85, sl, '#a8784a', sx, 0.425, sz).box(0.47, 0.03, sl + 0.02, '#8a6038', sx, 0.86, sz);
-  for (let i = 0; i < 3; i++) P.box(0.01, 0.6, sl / 3 - 0.06, '#b8885a', sx - 0.23, 0.45, sz - sl / 3 + i * sl / 3).sph(0.02, '#c8a050', sx - 0.24, 0.6, sz - sl / 3 + i * sl / 3 + 0.18);
+  for (let i = 0; i < 3; i++) P.box(0.01, 0.6, sl / 3 - 0.06, '#b8885a', sx + 0.23, 0.45, sz - sl / 3 + i * sl / 3).sph(0.02, '#c8a050', sx + 0.24, 0.6, sz - sl / 3 + i * sl / 3 + 0.18);
   solid(sx, 0.43, sz, 0.23, 0.43, sl / 2);
   H.spots.sideboard = { x: sx, y: 0.88, z: sz, len: sl };
-  for (const pz of [PZ(860), PZ(1103)]) P.cyl(0.16, 0.12, 0.3, '#e8e0d0', PX(1190), 0.15, pz).sph(0.25, '#4a8a3a', PX(1190), 0.55, pz, 1, 1.3, 1, 8).sph(0.18, '#5a9a42', PX(1190) - 0.05, 0.8, pz, 1, 1.2, 1, 8);
+  for (const pz of [PZ(1103)]) P.cyl(0.16, 0.12, 0.3, '#e8e0d0', PX(1190), 0.15, pz).sph(0.25, '#4a8a3a', PX(1190), 0.55, pz, 1, 1.3, 1, 8).sph(0.18, '#5a9a42', PX(1190) - 0.05, 0.8, pz, 1, 1.2, 1, 8);
   // wall art + ceiling light over the table
   P.box(0.03, 0.7, 1.0, '#2a2a2a', PX(1212) - 0.02, 1.6, -4.0).box(0.01, 0.6, 0.9, '#c87a3a', PX(1212) - 0.04, 1.6, -4.0);
-  const tx = PX(992), tz = PZ(1050);
+  const tx = 4.99, tz = -3.9; // dining table pushed against the right-hand wall
   P.cyl(0.2, 0.05, 0.25, '#e8d8a8', tx, 2.3, tz).cyl(0.005, 0.005, 0.2, '#555', tx, 2.45, tz);
   H.spots.table = new THREE.Vector3(tx, 0.77, tz);
-  H.spots.dining = [[tx - 0.75, tz - 0.4, Math.PI / 2], [tx + 0.75, tz + 0.4, -Math.PI / 2], [tx, tz + 1.3, Math.PI]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
+  H.spots.dining = [[tx - 0.85, tz + 0.3, Math.PI / 2], [tx - 0.85, tz - 0.4, Math.PI / 2], [tx - 0.4, tz + 1.3, Math.PI]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
   H.spots.games = new THREE.Vector3(tx, 0, tz);
   H.spots.conservatory = [[2.0, -7.4, 0.4], [3.9, -6.8, -0.6], [3.1, -6.6, Math.PI]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
   H.spots.garden = [[-2.4, -7.2, 0], [-4.5, -9.4, 0], [-1.0, -11.5, 0.5], [2.5, -12.5, 0]].map(([x, z, y]) => ({ pos: new THREE.Vector3(x, 0, z), yaw: y }));
@@ -522,7 +522,7 @@ function buildNav(H) {
   const N = {
     hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], hallLiv: [-0.3, 0.25], livingDoor: [-0.3, -1.0], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.4, -4.25], livingFire: [-4.4, -2.6],
     kitchenDoor: [1.85, 2.06], kitchen: [2.8, 2.0], kitchenE: [5.1, 2.1], kitchenNE: [5.0, 4.4], kitchenN: [3.8, 4.4], kitchenW: [2.2, 4.4],
-    diningDoorH: [1.45, 0.25], diningDoor: [1.45, -0.9], dining: [1.5, -2.6], diningE: [4.15, -2.0], diningN: [4.4, -5.2], diningBack: [2.0, -5.35], consDoor: [2.9, -6.6], cons: [2.0, -7.0], consW: [1.5, -8.05], patioCons: [0.2, -8.05], patio: [-0.4, -7.2], patioE: [-0.6, -9.7], patioW: [-4.6, -9.6], garden: [-2.5, -11.6], gardenFar: [1.5, -12.5], bayOut: [-0.9, -6.9], patioSide: [-6.7, -3.0], bbq: [-6.2, -8.2], hallK: [0.9, 2.06],
+    diningDoorH: [1.45, 0.25], diningDoor: [1.45, -0.9], dining: [1.9, -2.6], diningE: [4.15, -2.0], diningN: [3.6, -4.9], diningBack: [2.15, -5.4], consDoor: [2.9, -6.6], cons: [2.0, -7.0], consW: [1.5, -8.05], patioCons: [0.2, -8.05], patio: [-0.4, -7.2], patioE: [-0.6, -9.7], patioW: [-4.6, -9.6], garden: [-2.5, -11.6], gardenFar: [1.5, -12.5], bayOut: [-0.9, -6.9], patioSide: [-6.7, -3.0], bbq: [-6.2, -8.2], hallK: [0.9, 2.06],
     toiletDoor: [-0.7, 4.7], toilet: [-1.9, 4.7], cupDoor: [-0.7, 0.25], cupboard: [-2.1, 0.25], garageDoor: [-3.6, 0.25], garage: [-5.2, 2.6], garageFridge: [-4.6, 1.1], stairFoot: [-0.75, 2.9], sideDoorOut: [-6.78, -1.2], sideDoorIn: [-6.6, 0.6],
   };
   const E = [['hallFront', 'hallMid'], ['hallMid', 'hallBack'], ['hallBack', 'hallTop'], ['hallTop', 'hallLiv'], ['hallBack', 'hallLiv'], ['hallLiv', 'livingDoor'], ['livingDoor', 'living'], ['livingDoor', 'livingR'], ['living', 'livingL'], ['living', 'livingR'], ['living', 'livingBack'], ['livingBack', 'livingTV'], ['living', 'livingFire'], ['livingFire', 'livingTV'], ['livingL', 'livingFire'],

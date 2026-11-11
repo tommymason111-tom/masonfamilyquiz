@@ -208,7 +208,7 @@ export class Systems {
   sweetsLeft() { return (G.items.byType.celebration?.length || 0) + (G.items.byType.sweet?.length || 0); }
   refillBuffet() {
     if (G.quiz && G.quiz.round >= 4) { if (!this.noMore) { this.noMore = true; G.ai.say('Julie', 'That\'s it, there\'s no more.', 1); } return; }
-    const want = { sausage_roll: [2.1, 5.4], mince_pie: [5.15, -3.7], pig_blanket: [4.1, 5.43], scotch_egg: [5.8, 0.85] };
+    const want = { sausage_roll: [2.1, 5.4], mince_pie: [1.15, -4.0], pig_blanket: [4.1, 5.43], scotch_egg: [5.8, 0.85] };
     for (const id in want) { if ((G.items.byType[id]?.length || 0) < 3) { for (let i = 0; i < 3; i++) G.items.spawn(id, new THREE.Vector3(want[id][0] + rand(-0.1, 0.1), 0.93, want[id][1] + rand(-0.08, 0.08)), null, { surface: true }); } }
   }
   // ---------------- rounds & the Chaos Director ----------------
