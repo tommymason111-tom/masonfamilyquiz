@@ -25,10 +25,10 @@ export class AI {
       Gary: { pos: V(-3.9, -5.1), yaw: 1.0, stand: true },
       Mason: { ...seat(H.floor[2]), floor: true },
       // Kitchen: Julie at the hob, Jodie by the kettle, Hollie & Dan leaning on the island by the drinks
-      Julie: { pos: V(4.35, 2.85), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Jodie: { pos: V(4.35, 4.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Hollie: { pos: V(3.0, 2.0), yaw: 2.16, stand: true, room: 'kitchen' },
-      Dan: { pos: V(3.6, 1.6), yaw: -0.98, stand: true, room: 'kitchen' },
+      Julie: { pos: V(5.25, 2.85), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Jodie: { pos: V(5.25, 4.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
+      Hollie: { pos: V(3.55, 1.95), yaw: Math.PI + 0.3, stand: true, room: 'kitchen' },
+      Dan: { pos: V(4.22, 2.0), yaw: Math.PI - 0.3, stand: true, room: 'kitchen' },
       // Games room: Sophie & James planning the wedding at the table, Harry by the PC
       Sophie: { pos: V(1.75, -3.0), yaw: Math.PI / 2, stand: true, room: 'dining' },
       James: { pos: V(1.75, -3.7), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },

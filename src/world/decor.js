@@ -7,7 +7,7 @@ import { G, rand, pick, mulberry } from '../core.js';
 import { uvBox, Prop } from '../engine/geo.js';
 import { staticBox } from '../engine/physics.js';
 import * as TX from '../engine/textures.js';
-import { PX, PZ, STAIR } from './house.js';
+import { PX, PZ, KX, STAIR } from './house.js';
 
 const WALL_H = 2.5;
 export function buildDecor(P, add, M, solid, H) {
@@ -22,12 +22,12 @@ export function buildDecor(P, add, M, solid, H) {
   const xGS = PX(455), xHW = PX(612), xHE = PX(850), xLD = PX(803), xR = PX(1222), zMid = PZ(1312), zBack = PZ(805), zF = PZ(1887), zBT = PZ(1648), xLW = PX(194);
   // ---------- architraves around every door opening ----------
   const AO = 0.1; // half wall thickness + a hair
-  const doorsX = [[PX(683), PX(762), zF], [PX(822), PX(880), zMid], [PX(912), PX(1048), zBack]];
+  const doorsX = [[PX(683), PX(762), zF], [PX(822), PX(880), zMid], [PX(912), PX(1048), zBack], [-7.2, -6.35, zMid]];
   const doorsZ = [[PZ(1340), PZ(1400), xHW], [PZ(1340), PZ(1400), xGS], [PZ(1575), PZ(1640), xHW], [PZ(1740), PZ(1800), xHW], [PZ(1500), PZ(1565), xHE], [PZ(587), PZ(657), xLD]];
   for (const [a, b, z] of doorsX) for (const s of [-1, 1]) { P.box(0.07, 2.12, 0.025, WHITE, a - 0.035, 1.06, z + s * AO).box(0.07, 2.12, 0.025, WHITE, b + 0.035, 1.06, z + s * AO).box(b - a + 0.14, 0.07, 0.025, WHITE, (a + b) / 2, 2.085, z + s * AO); }
   for (const [a, b, x] of doorsZ) for (const s of [-1, 1]) { P.box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, a - 0.035).box(0.025, 2.12, 0.07, WHITE, x + s * AO, 1.06, b + 0.035).box(0.025, 0.07, b - a + 0.14, WHITE, x + s * AO, 2.085, (a + b) / 2); }
   // ---------- cornice / coving in every room (inner faces) ----------
-  const rooms = [[-1.13, 1.33, -0.3, 5.91], [1.51, 5.47, -0.3, 5.91], [-5.78, 0.81, -5.93, -0.48], [0.99, 5.47, -5.93, -0.48], [-2.88, -1.31, 3.43, 5.91]];
+  const rooms = [[-1.13, 1.33, -0.3, 5.91], [1.51, 6.37, -0.3, 5.91], [-5.78, 0.81, -5.93, -0.48], [0.99, 5.47, -5.93, -0.48], [-2.88, -1.31, 3.43, 5.91]];
   for (const [x0, x1, z0, z1] of rooms) {
     P.box(x1 - x0, 0.07, 0.07, WHITE, (x0 + x1) / 2, WALL_H - 0.035, z0 + 0.035, 0.6).box(x1 - x0, 0.07, 0.07, WHITE, (x0 + x1) / 2, WALL_H - 0.035, z1 - 0.035, -0.6)
       .box(0.07, 0.07, z1 - z0, WHITE, x0 + 0.035, WALL_H - 0.035, (z0 + z1) / 2, 0, 0, -0.6).box(0.07, 0.07, z1 - z0, WHITE, x1 - 0.035, WALL_H - 0.035, (z0 + z1) / 2, 0, 0, 0.6);
@@ -38,7 +38,7 @@ export function buildDecor(P, add, M, solid, H) {
   const radiator = (x, z, len, ry) => { const c = Math.cos(ry), s = Math.sin(ry); for (let i = 0; i < Math.round(len / 0.06); i++) { const o = -len / 2 + i * 0.06 + 0.03; P.box(0.04, 0.55, 0.07, '#f2f2f2', x + o * c, 0.42, z - o * s, 0, ry); } P.box(len, 0.03, 0.04, '#e8e8e8', x, 0.72, z, 0, ry).cyl(0.012, 0.012, 0.1, '#c0c0c0', x + (len / 2 + 0.03) * c, 0.2, z - (len / 2 + 0.03) * s); };
   radiator(-4.6, -5.86, 1.2, 0); radiator(1.26, 3.9, 0.6, Math.PI / 2); radiator(1.07, -3.3, 0.9, Math.PI / 2); radiator(-1.38, 3.9, 0.4, Math.PI / 2);
   const socket = (x, y, z, ry) => P.box(0.14, 0.085, 0.012, '#f6f6f6', x, y, z, 0, ry).box(0.03, 0.03, 0.006, '#e0e0e0', x - 0.03 * Math.cos(ry), y, z + 0.03 * Math.sin(ry), 0, ry).box(0.03, 0.03, 0.006, '#e0e0e0', x + 0.03 * Math.cos(ry), y, z - 0.03 * Math.sin(ry), 0, ry);
-  for (const [x, y, z, ry] of [[-5.77, 0.3, -4.7, Math.PI / 2], [-3.0, 0.3, -0.49, 0], [0.8, 0.3, -1.2, Math.PI / 2], [5.46, 1.1, 1.6, Math.PI / 2], [1.8, 1.1, 5.9, 0], [5.46, 0.3, -1.0, Math.PI / 2], [1.32, 0.3, 4.0, Math.PI / 2]]) socket(x, y, z, ry);
+  for (const [x, y, z, ry] of [[-5.77, 0.3, -4.7, Math.PI / 2], [-3.0, 0.3, -0.49, 0], [0.8, 0.3, -1.2, Math.PI / 2], [6.36, 1.1, 1.6, Math.PI / 2], [1.8, 1.1, 5.9, 0], [5.46, 0.3, -1.0, Math.PI / 2], [1.32, 0.3, 4.0, Math.PI / 2]]) socket(x, y, z, ry);
 
   // ---------- curtains (pleated, with tie-backs and poles) ----------
   const curtains = (cx, cz, w, top, ry, col) => { const c = Math.cos(ry), s = Math.sin(ry); P.cyl(0.015, 0.015, w + 0.4, BRASS, cx, top + 0.08, cz, 0, ry, Math.PI / 2).sph(0.03, BRASS, cx + (w / 2 + 0.2) * c, top + 0.08, cz - (w / 2 + 0.2) * s).sph(0.03, BRASS, cx - (w / 2 + 0.2) * c, top + 0.08, cz + (w / 2 + 0.2) * s);
@@ -127,16 +127,17 @@ export function buildDecor(P, add, M, solid, H) {
   P.cyl(0.005, 0.005, 0.4, '#555', 0.1, 2.3, 2.9).cyl(0.12, 0.16, 0.2, '#e8d8a8', 0.1, 2.05, 2.9, 0, 0, 0, 12, true); glow.sph(0.04, '#fff3d0', 0.1, 2.0, 2.9);
 
   // ---------- kitchen ----------
-  const krx = (PX(1148) + PX(1212)) / 2;
-  P.cyl(0.004, 0.004, 0.3, '#222', 3.4, 2.35, 2.6).cyl(0.3, 0.3, 0.06, '#f4f4f4', 3.4, 2.2, 2.6, 0, 0, 0, 20); glow.cyl(0.26, 0.26, 0.005, '#fff3d0', 3.4, 2.165, 2.6);
-  P.box(0.21, 0.28, 0.003, '#ffffff', 4.45, 1.5, 0.48, 0, 0, 0.05).box(0.21, 0.28, 0.003, '#fff8e0', 4.8, 1.45, 0.48, 0, 0, -0.08); // Mason's drawings on the fridge
+  const krx = (KX(1148) + KX(1212)) / 2;
+  P.cyl(0.004, 0.004, 0.3, '#222', 3.9, 2.35, 2.6).cyl(0.3, 0.3, 0.06, '#f4f4f4', 3.9, 2.2, 2.6, 0, 0, 0, 20); glow.cyl(0.26, 0.26, 0.005, '#fff3d0', 3.9, 2.165, 2.6);
+  for (const x of [3.3, 3.9, 4.5]) { P.cyl(0.004, 0.004, 0.75, '#222', x, 2.12, 0.95).cone(0.12, 0.16, '#1a1a1a', x, 1.7, 0.95, Math.PI, 0, 0, 16); glow.sph(0.03, '#fff3d0', x, 1.65, 0.95); } // pendants over the breakfast bar
+  P.box(0.21, 0.28, 0.003, '#ffffff', 5.35, 1.5, 0.48, 0, 0, 0.05).box(0.21, 0.28, 0.003, '#fff8e0', 5.7, 1.45, 0.48, 0, 0, -0.08); // Mason's drawings on the fridge
   P.cyl(0.05, 0.045, 0.14, '#e8e0d0', krx + 0.15, 0.98, 2.2).cyl(0.004, 0.004, 0.25, '#c8a070', krx + 0.13, 1.08, 2.19, 0.1).cyl(0.004, 0.004, 0.25, '#888', krx + 0.17, 1.08, 2.21, -0.1);
   P.box(0.14, 0.22, 0.1, '#3a2216', krx + 0.15, 1.02, 1.85, 0, 0, 0.2); for (let i = 0; i < 5; i++) P.box(0.015, 0.08, 0.015, '#222', krx + 0.12 + Math.floor(i / 3) * 0.03, 1.16, 1.82 + (i % 3) * 0.02);
   for (let r2 = 0; r2 < 2; r2++) for (let c = 0; c < 4; c++) P.cyl(0.035, 0.035, 0.11, pick(['#2a0a12', '#1f4a2a', '#c8d890']), 4.25 + c * 0.1, 1.0 + r2 * 0.12, 5.86, Math.PI / 2, 0, 0, 10);
   P.box(0.03, 0.42, 0.3, '#f4f4f4', 1.53, 1.55, 4.6); // calendar
-  glow.box(0.02, 0.008, 2.0, '#fff3d0', 5.25, 1.49, 3.6); for (const x of [1.9, 4.6, 5.1]) glow.box(0.5, 0.008, 0.02, '#fff3d0', x, 1.49, 5.72);
+  glow.box(0.02, 0.008, 2.0, '#fff3d0', 6.15, 1.49, 3.6); for (const x of [1.9, 4.6, 5.5, 6.0]) glow.box(0.5, 0.008, 0.02, '#fff3d0', x, 1.49, 5.72);
   const hz = (PZ(1555) + PZ(1650)) / 2;
-  glow.box(0.006, 0.18, 0.34, '#ff9a40', PX(1148) - 0.03, 0.45, hz); P.box(0.02, 0.3, 0.16, '#f4f4f4', PX(1148) - 0.04, 0.62, hz + 0.2).box(0.021, 0.04, 0.16, '#c1121f', PX(1148) - 0.04, 0.6, hz + 0.2);
+  glow.box(0.006, 0.18, 0.34, '#ff9a40', KX(1148) - 0.03, 0.45, hz); P.box(0.02, 0.3, 0.16, '#f4f4f4', KX(1148) - 0.04, 0.62, hz + 0.2).box(0.021, 0.04, 0.16, '#c1121f', KX(1148) - 0.04, 0.6, hz + 0.2);
 
   // ---------- dining room ----------
   const tx = PX(992), tz = PZ(1050);
@@ -156,12 +157,11 @@ export function buildDecor(P, add, M, solid, H) {
   // ---------- under the stairs & garage ----------
   P.box(0.4, 0.3, 0.3, '#c8a070', -2.6, 1.57, -0.12).box(0.3, 0.25, 0.3, '#d8b080', -1.8, 1.55, -0.12);
   P.cyl(0.004, 0.004, 0.2, '#555', -2.1, 2.28, 0.2); glow.sph(0.03, '#555555', -2.1, 2.16, 0.2); // dead bulb
-  P.box(0.02, 0.9, 1.6, '#c8a070', -7.47, 1.6, 4.6); for (let i = 0; i < 12; i++) P.box(0.02, 0.15 + rnd() * 0.2, 0.04 + rnd() * 0.05, pick(['#c1121f', '#222', '#888', '#e8b020']), -7.45, 1.85 - Math.floor(i / 6) * 0.4, 3.95 + (i % 6) * 0.26, rnd() * 0.4, 0, 0);
-  for (const z of [3.0, 3.9]) P.torus(0.3, 0.025, '#111', -3.2, 1.5, z, 0, Math.PI / 2); P.box(0.03, 0.04, 0.9, '#c1121f', -3.18, 1.6, 3.45).box(0.03, 0.4, 0.04, '#c1121f', -3.18, 1.45, 3.45);
+  P.box(0.02, 0.9, 1.6, '#c8a070', -3.07, 1.6, 4.2); for (let i = 0; i < 12; i++) P.box(0.02, 0.15 + rnd() * 0.2, 0.04 + rnd() * 0.05, pick(['#c1121f', '#222', '#888', '#e8b020']), -3.09, 1.85 - Math.floor(i / 6) * 0.4, 3.55 + (i % 6) * 0.26, rnd() * 0.4, 0, 0);
+  for (const z of [2.45, 3.25]) P.torus(0.3, 0.025, '#111', -3.2, 1.5, z, 0, Math.PI / 2); P.box(0.03, 0.04, 0.8, '#c1121f', -3.18, 1.6, 2.85).box(0.03, 0.4, 0.04, '#c1121f', -3.18, 1.45, 2.85);
   P.rbox(0.45, 0.3, 0.6, 0.05, '#2d8a3a', -6.9, 0.25, 5.2).cyl(0.012, 0.012, 0.9, '#222', -6.9, 0.6, 4.8, 0.6).cyl(0.1, 0.1, 0.05, '#111', -7.1, 0.1, 5.0, 0, 0, Math.PI / 2).cyl(0.1, 0.1, 0.05, '#111', -6.7, 0.1, 5.0, 0, 0, Math.PI / 2);
   P.box(0.05, 2.2, 0.05, '#c0c0c0', -3.25, 1.1, 1.6, 0, 0, -0.12).box(0.05, 2.2, 0.05, '#c0c0c0', -3.25, 1.1, 2.0, 0, 0, -0.12); for (let i = 0; i < 7; i++) P.box(0.03, 0.03, 0.4, '#c0c0c0', -3.27 + i * 0.03, 0.2 + i * 0.3, 1.8);
-  for (let i = 0; i < 4; i++) P.box(0.55, 0.35, 0.4, i % 2 ? '#c8a070' : '#d8b080', -7.1, 0.18 + Math.floor(i / 2) * 0.36, 0.9 - (i % 2) * 0.45);
-  P.box(0.5, 0.4, 0.4, '#3a3a3a', -7.25, 1.12, 2.0).box(0.01, 0.32, 0.42, '#1a1a1a', -7.0, 1.12, 2.0);
+  P.box(0.42, 0.4, 0.4, '#3a3a3a', -7.22, 1.24, 5.2).box(0.01, 0.32, 0.36, '#1a1a1a', -7.0, 1.24, 5.2);
   P.rbox(0.58, 1.05, 0.72, 0.03, '#2a4a2a', -3.5, 0.53, 5.5).box(0.6, 0.04, 0.75, '#1f3a1f', -3.5, 1.07, 5.5);
   solid(-3.5, 0.53, 5.5, 0.29, 0.53, 0.36);
 
@@ -201,6 +201,8 @@ export function buildDecor(P, add, M, solid, H) {
   const gx0 = PX(40) - 0.09;
   add(M.tarmac, uvBox((gx0 + X0) / 2, 2.62, (zMid + zF) / 2, X0 - gx0 + 0.1, 0.12, zF - zMid + 0.3, 3));
   for (let i = 0; i < 9; i++) { const x = gx0 + 0.1 + i * 0.19; const l = 0.08 + (i % 3) * 0.07; glow.cyl(0.004, 0.012, l, '#e8f4ff', x, 2.5 - l / 2, zF + 0.15); }
+  // the kitchen extension's flat roof + icicles
+  { const k0 = X1, k1 = KX(1222) + 0.09; add(M.tarmac, uvBox((k0 + k1) / 2 + 0.05, 2.62, (zMid + zF) / 2, k1 - k0 + 0.1, 0.12, zF - zMid + 0.3, 3)); for (let i = 0; i < 5; i++) { const l = 0.08 + (i % 3) * 0.07; glow.cyl(0.004, 0.012, l, '#e8f4ff', k0 + 0.1 + i * 0.18, 2.5 - l / 2, zF + 0.15); } }
   // bay window lead roof
   P.box(BAY[3][0] - BAY[0][0] + 0.2, 0.1, 1.2, '#4a4a50', (BAY[0][0] + BAY[3][0]) / 2, 2.6, (BAY[0][1] + BAY[1][1]) / 2 - 0.05, -0.25);
   // front porch canopy, lantern, house number, wheelie bins, outdoor trees with lights

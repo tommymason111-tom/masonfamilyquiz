@@ -233,33 +233,33 @@ export const PLACEMENTS = [
   // ---- under the stairs / garage ----
   ['hoover', -3.45, 0, 2.7], ['deco_box', -6.0, 0, 4.4], ['outfit_box', -2.2, 1.43, -0.1],
   ['folding_chair', -5.4, 0, 5.5, 0.2, 2, 0.05, 0.06, 0.05],
-  ['paint_tin', -7.19, 0.52, 1.6, 0, 2, 0, 0.3], ['deco_box', -7.15, 1.02, 2.4], ['toolbox', -3.45, 0.93, 3.85, Math.PI / 2], ['traffic_cone', -6.1, 0, 5.4], ['mop_bucket', -7.0, 0, 3.6], ['mop', -6.7, 0, 3.4], ['cool_box', -5.6, 0, 3.9],
+  ['paint_tin', -7.19, 0.52, 3.8, 0, 2, 0, 0.3], ['deco_box', -7.15, 1.02, 4.7], ['toolbox', -3.45, 0.93, 3.85, Math.PI / 2], ['traffic_cone', -6.1, 0, 5.4], ['mop_bucket', -6.3, 0, 3.4], ['mop', -6.2, 0, 3.2], ['cool_box', -5.6, 0, 3.9],
   ['sledge', -4.6, 0, 5.4, 0.1], ['football', -4.5, 0, 3.0], ['torch', -3.45, 0.93, 4.6],
-  ['beer_crate', -5.5, 0, 0.0, 0], ['beer_crate', -5.5, 0, 0.5, 0],
-  ['lager', -5.62, 0.04, 0.0, 0, 4, 0.08, 0], ['lager', -5.62, 0.04, 0.5, 0, 4, 0.08, 0],
+  ['beer_crate', -6.95, 0, 2.45, 0], ['beer_crate', -6.95, 0, 2.9, 0],
+  ['lager', -7.07, 0.04, 2.45, 0, 4, 0.08, 0], ['lager', -7.07, 0.04, 2.9, 0, 4, 0.08, 0],
   // garage fridge contents (fridge centre -4.63, 0.1; shelves y=0.12/0.57/1.02)
   ['lager', -4.78, 0.13, 0.1, 0, 3, 0.1, 0], ['cider', -4.78, 0.58, 0.1, 0, 2, 0.12, 0], ['bitter', -4.75, 1.03, 0.12, 0, 2, 0.12, 0], ['prosecco', -4.45, 1.03, 0.12], ['pork_pie', -4.5, 0.58, 0.1],
   // ---- kitchen: the buffet along the front worktop (either side of the sink) and down the right-hand run ----
   ['paper_plate', 1.7, 0.91, 5.45, 0, 4, 0, 0, 0.014], ['napkins', 1.95, 0.91, 5.75],
   ['sausage_roll', 2.0, 0.92, 5.4, 0, 5, 0.07, 0],
-  ['pig_tray', 4.15, 0.91, 5.45, 0], ['pig_blanket', 4.04, 0.935, 5.43, 0, 3, 0.06, 0],
-  ['platter', 4.3, 0.91, 5.7], ['tongs', 3.95, 0.95, 5.75, 0.3],
-  ['coleslaw', 2.3, 0.91, 5.72], ['potato_salad', 4.55, 0.91, 5.5],
-  ['trifle', 5.05, 0.91, 4.1], ['serving_spoon', 4.88, 0.91, 3.95, 0.4],
-  ['cheeseboard', 5.08, 0.91, 3.68], ['brie', 5.1, 0.95, 3.6], ['cracker_bis', 5.0, 0.91, 3.85, 0, 3, 0, 0, 0.007],
-  ['scotch_egg', 4.9, 0.95, 0.75, 0, 3, 0, 0.1], ['crisps_bowl', 5.2, 0.91, 0.85],
-  ['sprout', 5.0, 0.95, 3.25, 0, 4, 0.0, -0.04], ['roasting_tin', 5.1, 0.92, 2.6], ['turkey', 5.1, 0.96, 2.6], ['frying_pan', 5.0, 0.92, 3.1],
-  // drinks station (right-hand run by the fridge) + kettle corner
-  ['kettle', 5.1, 0.91, 4.85], ['mug', 5.18, 0.91, 4.6, 0, 3, 0, -0.12], ['tea_caddy', 5.25, 0.91, 5.05],
-  ['wine_glass', 4.92, 0.925, 1.2, 0, 2, 0, 0.14], ['pint_glass', 5.12, 0.925, 1.2, 0, 2, 0, 0.14], ['coaster', 4.95, 0.925, 1.6],
-  ['squash', 5.3, 0.925, 1.2], ['juice', 5.3, 0.925, 1.45], ['baileys', 5.2, 0.925, 1.65],
-  ['toaster', 2.0, 0.91, 5.78], ['tea_towel', 3.9, 0.91, 5.5], ['kitchen_roll', 4.65, 0.91, 5.78], ['oven_glove', 4.92, 0.91, 2.15],
-  ['chopping_board', 4.95, 0.91, 4.35, 1.5],
-  ['fruit_bowl', 5.15, 0.925, 0.6], ['satsuma', 5.15, 0.96, 0.6, 0, 2, 0.06, 0], ['banana', 5.05, 0.96, 0.62, 1.2],
+  ['pig_tray', 4.15, 0.91, 5.45, 0], ['pig_blanket', 4.15, 0.94, 5.4, Math.PI / 2, 3, 0, 0.06, 0, Math.PI / 2],
+  ['platter', 5.2, 0.91, 5.7], ['tongs', 3.95, 0.95, 5.75, 0.3],
+  ['coleslaw', 2.3, 0.91, 5.72], ['potato_salad', 5.45, 0.91, 5.5],
+  ['trifle', 5.95, 0.91, 4.1], ['serving_spoon', 5.78, 0.91, 3.95, 0.4],
+  ['cheeseboard', 5.98, 0.91, 3.68], ['brie', 6.0, 0.95, 3.6], ['cracker_bis', 5.9, 0.91, 3.85, 0, 3, 0, 0, 0.007],
+  ['scotch_egg', 5.8, 0.95, 0.75, 0, 3, 0, 0.1], ['crisps_bowl', 6.1, 0.91, 0.85],
+  ['sprout', 5.9, 0.95, 3.25, 0, 4, 0.0, -0.04], ['roasting_tin', 6.0, 0.92, 2.6], ['turkey', 6.0, 0.96, 2.6], ['frying_pan', 5.9, 0.92, 3.1],
+  // kettle corner + the drinks on the breakfast bar
+  ['kettle', 6.0, 0.91, 4.85], ['mug', 6.08, 0.91, 4.6, 0, 3, 0, -0.12], ['tea_caddy', 6.15, 0.91, 5.05],
+  ['wine_glass', 3.1, 1.035, 0.85, 0, 3, 0.14, 0], ['pint_glass', 3.6, 1.035, 0.85, 0, 2, 0.14, 0], ['coaster', 3.3, 1.025, 1.1, 0, 3, 0.14, 0],
+  ['squash', 4.1, 1.025, 0.85], ['juice', 4.3, 1.025, 0.85], ['baileys', 4.5, 1.025, 0.85],
+  ['toaster', 2.0, 0.91, 5.78], ['tea_towel', 3.9, 0.91, 5.5], ['kitchen_roll', 5.55, 0.91, 5.78], ['oven_glove', 5.82, 0.91, 2.15],
+  ['chopping_board', 5.85, 0.91, 4.35, 1.5],
+  ['fruit_bowl', 6.05, 0.925, 0.6], ['satsuma', 6.05, 0.96, 0.6, 0, 2, 0.06, 0], ['banana', 5.95, 0.96, 0.62, 1.2],
   ['spray', 3.85, 0.91, 5.8], ['bin', 2.35, 0, -0.05],
-  // kitchen fridge contents (fridge x=4.61, z≈0.1; shelves y=0.12, 0.57, 1.02, 1.42)
-  ['prosecco', 4.35, 0.13, 0.12], ['white_wine', 4.55, 0.13, 0.12], ['red_wine', 4.75, 0.13, 0.08], ['lager', 4.85, 0.58, 0.05, 0, 3, -0.07, 0.0],
-  ['milk', 4.3, 0.58, 0.15], ['juice', 4.45, 0.58, 0.15], ['foil', 4.6, 1.03, 0.12], ['squash', 4.35, 1.43, 0.12], ['baileys', 4.55, 1.43, 0.12],
+  // kitchen fridge contents (fridge x=5.51, z≈0.1; shelves y=0.12, 0.57, 1.02, 1.42)
+  ['prosecco', 5.25, 0.13, 0.12], ['white_wine', 5.45, 0.13, 0.12], ['red_wine', 5.65, 0.13, 0.08], ['lager', 5.75, 0.58, 0.05, 0, 3, -0.07, 0.0],
+  ['milk', 5.2, 0.58, 0.15], ['juice', 5.35, 0.58, 0.15], ['foil', 5.5, 1.03, 0.12], ['squash', 5.25, 1.43, 0.12], ['baileys', 5.45, 1.43, 0.12],
   // ---- dining room ----
   ['dining_table', 3.0, 0, -3.3], ['dining_chair', 2.25, 0, -3.7, Math.PI / 2], ['dining_chair', 2.25, 0, -2.9, Math.PI / 2], ['dining_chair', 3.75, 0, -3.7, -Math.PI / 2], ['dining_chair', 3.75, 0, -2.9, -Math.PI / 2], ['dining_chair', 3.0, 0, -4.45, 0], ['dining_chair', 3.0, 0, -2.15, Math.PI],
   ['office_chair', 4.62, 0, -1.3, Math.PI / 2], ['highchair', 3.75, 0, -4.6, 0.4], ['bouncer', 4.0, 0, -0.95, 1.2],
@@ -330,10 +330,10 @@ export function buildHinged() {
     const up = door.update.bind(door); door.update = (dt) => { up(dt); light.intensity = door.closed ? 0 : 2.5; };
     return door;
   };
-  const kf = fridge('Kitchen fridge', 4.61, 0.1, 1, 0.95, 1.85, 0.68, '#d4d8dc', [0.1, 0.55, 1.0, 1.4]); kf.kitchen = true;
+  const kf = fridge('Kitchen fridge', 5.51, 0.1, 1, 0.95, 1.85, 0.68, '#d4d8dc', [0.1, 0.55, 1.0, 1.4]); kf.kitchen = true;
   const gf = fridge('Garage fridge', -4.63, 0.1, 1, 0.62, 1.4, 0.6, '#f2f2f2', [0.1, 0.55, 1.0]); gf.garage = true;
   // chest freezer lid
-  hinge({ name: 'Chest freezer lid', size: [1.2, 0.06, 0.7], center: V(-6.6, 0.88, 0.12), hinge: V(-6.6, 0.88, -0.23), axis: { x: 1, y: 0, z: 0 }, limits: [-1.6, 0.02], mass: 4, geo: new Prop().rbox(1.2, 0.06, 0.7, 0.02, '#f4f4f4').box(0.25, 0.03, 0.04, '#bbb', 0, 0.02, 0.33).build(), kind: 'lid' });
+  hinge({ name: 'Chest freezer lid', size: [0.7, 0.06, 1.2], center: V(-7.1, 0.88, 1.55), hinge: V(-7.45, 0.88, 1.55), axis: { x: 0, y: 0, z: 1 }, limits: [-0.02, 1.6], mass: 4, geo: new Prop().rbox(0.7, 0.06, 1.2, 0.02, '#f4f4f4').box(0.04, 0.03, 0.25, '#bbb', 0.33, 0.02, 0).build(), kind: 'lid' });
   // toilet lid
   { const tl = G.house.spots.toiletLid; hinge({ name: 'Toilet seat lid', size: [0.36, 0.025, 0.42], center: V(tl.x, 0.43, tl.z), hinge: V(tl.x, 0.43, tl.z + 0.21), axis: { x: 1, y: 0, z: 0 }, limits: [-0.02, 1.6], mass: 1, geo: new Prop().rbox(0.36, 0.025, 0.42, 0.01, '#f8f8f8').build(), kind: 'lid' }); }
   return out;

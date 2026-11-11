@@ -13,6 +13,8 @@ const WALL_H = 2.5, WT = 0.18;
 // The layout follows Martin & Julie's floor plan exactly: plan pixels -> metres (90 px = 1 m).
 // x grows to the right of the plan (garage on the left, kitchen on the right), z grows towards the front door.
 export const PX = (px) => (px - 722) / 90, PZ = (py) => 6 + (py - 1887) / 90;
+// the kitchen is a single-storey extension a bit wider than the plan: everything on its right-hand side shifts by KW
+export const KW = 0.9, KX = (px) => PX(px) + KW;
 export const ROOMS = {
   hall: { x0: -1.13, x1: 1.33, z0: -0.39, z1: 5.92, label: 'Hallway' },
   hallTop: { x0: 1.33, x1: 1.92, z0: -0.39, z1: 0.72, label: 'Hallway' },
@@ -20,7 +22,7 @@ export const ROOMS = {
   stairs: { x0: -2.88, x1: -1.31, z0: 0.62, z1: 3.26, label: 'Stairs' },
   toilet: { x0: -2.88, x1: -1.31, z0: 3.43, z1: 5.92, label: 'Bathroom' },
   garage: { x0: -7.49, x1: -3.06, z0: -0.3, z1: 5.92, label: 'Garage' },
-  kitchen: { x0: 1.51, x1: 5.47, z0: -0.3, z1: 5.92, label: 'Kitchen' },
+  kitchen: { x0: 1.51, x1: 6.37, z0: -0.3, z1: 5.92, label: 'Kitchen' },
   living: { x0: -5.78, x1: 0.81, z0: -5.93, z1: -0.39, label: 'Living room' },
   bay: { x0: -3.8, x1: -1.13, z0: -6.97, z1: -5.93, label: 'Bay window' },
   dining: { x0: 0.99, x1: 5.47, z0: -5.93, z1: -0.48, label: 'Dining room' },
@@ -151,7 +153,7 @@ export function buildHouse() {
   const win = (a, b, bottom = 0.9, top = 2.1) => ({ a, b, bottom, top, glass: true });
   const opening = (a, b, top = 2.1) => ({ a, b, bottom: 0, top });
   // key wall lines (plan centre-lines)
-  const xGL = PX(40), xGS = PX(455), xHW = PX(612), xLW = PX(194), xLD = PX(803), xHE = PX(850), xNT = PX(903), xR = PX(1222);
+  const xGL = PX(40), xGS = PX(455), xHW = PX(612), xLW = PX(194), xLD = PX(803), xHE = PX(850), xNT = PX(903), xR = PX(1222), xK = KX(1222);
   const zF = PZ(1887), zMid = PZ(1312), zUS = PZ(1410), zBT = PZ(1648), zNT = PZ(1420), zBack = PZ(805), zCB = PZ(502);
   // Front wall: garage (up-and-over door) | bathroom | hall (front door) | kitchen (sink window)
   wallX(zF, xGL, xGS, M.garageWall, M.brick, [{ a: PX(103), b: PX(390), bottom: 0, top: 2.1 }]);
@@ -159,10 +161,13 @@ export function buildHouse() {
   for (let i = 0; i < 6; i++) props.box(PX(390) - PX(103) - 0.05, 0.02, 0.02, '#d8d8d8', (PX(103) + PX(390)) / 2, 0.2 + i * 0.35, zF - 0.04);
   wallX(zF, xGS, xHW, M.paintToilet, M.brick, [win(PX(500), PX(570), 1.4, 2.0)]);
   wallX(zF, xHW, xHE, M.paintHall, M.brick, [door(PX(683), PX(762))]);
-  wallX(zF, xHE, xR, M.tileWall, M.brick, [win(PX(912), PX(1072), 1.05, 2.1)]);
+  wallX(zF, xHE, xK + WT / 2, M.tileWall, M.brick, [win(PX(912), PX(1072), 1.05, 2.1)]);
   // garage: outer west wall, north wall (window onto the side patio)
   wallZ(xGL, zMid, zF, M.brick, M.garageWall);
-  wallX(zMid, xGL, xLW, M.brick, M.garageWall, [win(PX(88), PX(162), 1.2, 2.0)]);
+  wallX(zMid, xGL, xLW, M.brick, M.garageWall, [door(-7.2, -6.35)]);
+  // the side door from the patio into the garage, left open (swung back against the inside)
+  props.box(0.05, 2.0, 0.82, '#5a4632', -7.17, 1.0, zMid + 0.5).box(0.06, 0.02, 0.1, '#c0a050', -7.14, 1.0, zMid + 0.85).box(0.01, 0.55, 0.3, '#bcd0d8', -7.145, 1.5, zMid + 0.5);
+  solid(-7.17, 1.0, zMid + 0.5, 0.025, 1.0, 0.41);
   // the long east-west wall: living room above, garage + under-stairs below
   wallX(zMid, xLW, xGS, M.paintLiving, M.garageWall);
   wallX(zMid, xGS, xHW, M.paintLiving, M.paintHall);
@@ -187,9 +192,10 @@ export function buildHouse() {
   // dining room: wall down to the hall (door at the bottom-left), wall to the kitchen
   wallX(zMid, xLD, xNT, M.paintDining, M.paintHall, [door(PX(822), PX(880))]);
   wallX(zMid, xNT, xR, M.paintDining, M.tileWall);
+  wallX(zMid, xR, xK + WT / 2, M.brick, M.tileWall); // the extension's back wall
   wallZ(xLD, zBack, zMid, M.paintLiving, M.paintDining);
   // outside east wall: kitchen + dining
-  wallZ(xR, zMid, zF, M.tileWall, M.brick);
+  wallZ(xK, zMid, zF, M.tileWall, M.brick);
   wallZ(xR, zBack, zMid, M.paintDining, M.brick);
   // living room: west wall (chimney breast), back wall with two windows and the bay
   wallZ(xLW, zBack, zMid, M.brick, M.paintLiving);
@@ -256,15 +262,15 @@ export function buildHouse() {
   H.interact.push({ id: 'garageLight', pos: new THREE.Vector3(xGS - 0.12, 1.3, 0.8), r: 0.25, label: 'Light switch (broken)' });
   props.box(0.03, 0.12, 0.08, '#eee', xGS - 0.1, 1.3, 0.8);
   // ---------- Garage: the fridge at the back, shelving, workbench, chest freezer (beer) ----------
-  props.box(0.5, 1.9, 2.4, '#5a5a5a', PX(48) + 0.3, 0.95, 2.4).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 0.5, 2.4).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 1.0, 2.4).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 1.5, 2.4);
-  for (let i = 0; i < 8; i++) props.cyl(0.1, 0.1, 0.18, ['#ddd', '#a33', '#36a', '#eee'][i % 4], PX(48) + 0.3, 0.6 + (i % 3) * 0.5, 1.45 + i * 0.25);
-  solid(PX(48) + 0.3, 0.95, 2.4, 0.25, 0.95, 1.2);
+  props.box(0.5, 1.9, 2.4, '#5a5a5a', PX(48) + 0.3, 0.95, 4.55).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 0.5, 4.55).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 1.0, 4.55).box(0.48, 0.03, 2.35, '#7a6a50', PX(48) + 0.3, 1.5, 4.55);
+  for (let i = 0; i < 8; i++) props.cyl(0.1, 0.1, 0.18, ['#ddd', '#a33', '#36a', '#eee'][i % 4], PX(48) + 0.3, 0.6 + (i % 3) * 0.5, 3.6 + i * 0.25);
+  solid(PX(48) + 0.3, 0.95, 4.55, 0.25, 0.95, 1.2);
   props.box(0.6, 0.06, 1.6, '#6a5030', -3.45, 0.9, 4.2).box(0.05, 0.85, 1.6, '#4a3a28', -3.17, 0.45, 4.2).box(0.02, 0.6, 1.4, '#a08868', -3.14, 1.3, 4.2);
   solid(-3.45, 0.45, 4.2, 0.3, 0.45, 0.8);
   H.spots.workbench = new THREE.Vector3(-3.45, 0.93, 4.2);
-  props.rbox(1.2, 0.85, 0.7, 0.03, '#f2f2f2', -6.6, 0.425, 0.12);
-  solid(-6.6, 0.42, 0.12, 0.6, 0.42, 0.35);
-  H.spots.freezer = new THREE.Vector3(-6.6, 0, 0.12);
+  props.rbox(0.7, 0.85, 1.2, 0.03, '#f2f2f2', -7.1, 0.425, 1.55);
+  solid(-7.1, 0.42, 1.55, 0.35, 0.42, 0.6);
+  H.spots.freezer = new THREE.Vector3(-7.1, 0, 1.55);
   // ---------- Kitchen / Living / Dining / Conservatory ----------
   kitchen(props, add, M, solid, H);
   living(props, add, M, solid, H, BAY);
@@ -330,14 +336,14 @@ function stairs(P, add, M, solid) {
 }
 function kitchen(P, add, M, solid, H) {
   // Plan: fridge top-right, worktop down the right wall (hob halfway), worktop along the front wall with the sink under the window.
-  const xR = PX(1212), zF = PZ(1880), xL = PX(858);
-  const fx = PX(1137), fz = PZ(1356);
-  const rx = (PX(1148) + xR) / 2, rd = xR - PX(1148), rz0 = PZ(1388), rz1 = PZ(1815);
+  const xR = KX(1212), zF = PZ(1880), xL = PX(858), xW = KX(1148); // right-hand run shifted by KW (wider kitchen)
+  const fx = KX(1137), fz = PZ(1356);
+  const rx = (xW + xR) / 2, rd = xR - xW, rz0 = PZ(1388), rz1 = PZ(1815);
   const bz = (PZ(1815) + zF) / 2, bd = zF - PZ(1815);
   const door = (x, z, w, rot) => { if (rot) P.box(0.02, 0.7, w - 0.06, '#f4f1ea', x, 0.47, z).box(0.02, 0.02, 0.16, '#999', x - 0.015, 0.75, z); else P.box(w - 0.06, 0.7, 0.02, '#f4f1ea', x, 0.47, z).box(0.16, 0.02, 0.02, '#999', x, 0.75, z + 0.015 * Math.sign(-z)); };
   // carcasses
-  P.box(rd - 0.04, 0.86, rz1 - rz0, '#e6e2d8', rx + 0.02, 0.43, (rz0 + rz1) / 2); for (let z = rz0 + 0.3; z < rz1; z += 0.6) door(PX(1148) - 0.005, z, 0.6, true);
-  P.box(xR - xL, 0.86, bd - 0.04, '#e6e2d8', (xL + xR) / 2, 0.43, bz + 0.02); for (let x = xL + 0.3; x < PX(1148); x += 0.6) P.box(0.54, 0.7, 0.02, '#f4f1ea', x, 0.47, PZ(1815) - 0.005).box(0.16, 0.02, 0.02, '#999', x, 0.75, PZ(1815) - 0.02);
+  P.box(rd - 0.04, 0.86, rz1 - rz0, '#e6e2d8', rx + 0.02, 0.43, (rz0 + rz1) / 2); for (let z = rz0 + 0.3; z < rz1; z += 0.6) door(xW - 0.005, z, 0.6, true);
+  P.box(xR - xL, 0.86, bd - 0.04, '#e6e2d8', (xL + xR) / 2, 0.43, bz + 0.02); for (let x = xL + 0.3; x < xW; x += 0.6) P.box(0.54, 0.7, 0.02, '#f4f1ea', x, 0.47, PZ(1815) - 0.005).box(0.16, 0.02, 0.02, '#999', x, 0.75, PZ(1815) - 0.02);
   add(M.worktop, uvBox(rx, 0.89, (rz0 + rz1) / 2, rd + 0.02, 0.04, rz1 - rz0, 1)); add(M.worktop, uvBox((xL + xR) / 2, 0.89, bz, xR - xL, 0.04, bd + 0.02, 1));
   solid(rx, 0.45, (rz0 + rz1) / 2, rd / 2, 0.46, (rz1 - rz0) / 2); solid((xL + xR) / 2, 0.45, bz, (xR - xL) / 2, 0.46, bd / 2);
   // splashbacks
@@ -350,23 +356,26 @@ function kitchen(P, add, M, solid, H) {
   const hz = (PZ(1555) + PZ(1650)) / 2;
   P.box(0.52, 0.01, PZ(1650) - PZ(1555), '#111', rx, 0.915, hz); for (const [dx, dz] of [[-0.12, -0.2], [0.12, -0.2], [-0.12, 0.2], [0.12, 0.2]]) P.torus(0.07, 0.008, '#444', rx + dx, 0.925, hz + dz, Math.PI / 2);
   P.box(0.5, 0.12, 0.7, '#bbb', rx + 0.05, 1.95, hz).box(0.25, 0.6, 0.25, '#bbb', rx + 0.18, 2.3, hz);
-  P.box(0.03, 0.6, 0.58, '#111', PX(1148) - 0.01, 0.45, hz);
+  P.box(0.03, 0.6, 0.58, '#111', xW - 0.01, 0.45, hz);
   H.spots.hob = new THREE.Vector3(rx, 0.93, hz);
   // wall cupboards: right wall (not over the hob), front wall either side of the window
   for (let z = rz0 + 0.35; z < rz1 - 0.2; z += 0.6) { if (Math.abs(z - hz) < 0.6) continue; P.box(0.33, 0.7, 0.58, '#e6e2d8', xR - 0.18, 1.85, z).box(0.02, 0.02, 0.12, '#999', xR - 0.36, 1.55, z); }
-  for (const x of [xL + 0.3, PX(1112), PX(1112) + 0.6]) P.box(0.58, 0.7, 0.33, '#e6e2d8', x, 1.85, zF - 0.18).box(0.12, 0.02, 0.02, '#999', x, 1.55, zF - 0.36);
-  // tall larder unit next to the fridge
-  P.box(0.55, 2.1, 0.62, '#e6e2d8', PX(1040), 1.05, PZ(1356)).box(0.02, 1.9, 0.5, '#f4f1ea', PX(1040), 1.05, PZ(1356) + 0.31).box(0.02, 0.3, 0.02, '#999', PX(1040) + 0.2, 1.05, PZ(1356) + 0.33);
-  solid(PX(1040), 1.05, PZ(1356), 0.275, 1.05, 0.31);
+  for (const x of [xL + 0.3, KX(1112), KX(1112) + 0.6]) P.box(0.58, 0.7, 0.33, '#e6e2d8', x, 1.85, zF - 0.18).box(0.12, 0.02, 0.02, '#999', x, 1.55, zF - 0.36);
+  // breakfast bar to the left of the fridge, with three stools
+  const bx0 = 2.9, bx1 = fx - 0.62, bzc = 0.95, bdz = 0.62, bh = 1.0, bcx = (bx0 + bx1) / 2;
+  P.box(bx1 - bx0, 0.05, bdz, '#5a3a24', bcx, bh, bzc).box(bx1 - bx0 - 0.1, bh - 0.05, 0.35, '#e6e2d8', bcx, (bh - 0.05) / 2, bzc - 0.1).box(bx1 - bx0 - 0.1, 0.03, 0.04, '#c0c0c0', bcx, 0.25, bzc + 0.2);
+  solid(bcx, bh / 2, bzc, (bx1 - bx0) / 2, bh / 2, bdz / 2);
+  H.spots.bar = { x0: bx0, x1: bx1, z: bzc, y: bh + 0.025 };
+  for (const x of [bx0 + 0.35, bcx, bx1 - 0.35]) { const z = bzc + 0.62; P.cyl(0.19, 0.19, 0.06, '#2a2a2a', x, 0.72, z, 0, 0, 0, 16).cyl(0.025, 0.03, 0.7, '#9a9a9a', x, 0.36, z).torus(0.15, 0.012, '#9a9a9a', x, 0.3, z, Math.PI / 2).cyl(0.18, 0.2, 0.02, '#9a9a9a', x, 0.01, z, 0, 0, 0, 16); staticCyl(x, 0.37, z, 0.37, 0.19); }
   // smoke alarm + clock
-  P.cyl(0.07, 0.07, 0.03, '#f4f4f4', 3.4, 2.48, 2.8).sph(0.008, '#f22', 3.42, 2.46, 2.8);
-  H.interact.push({ id: 'smokeAlarm', pos: new THREE.Vector3(3.4, 2.45, 2.8), r: 0.5, label: 'Smoke alarm' });
+  P.cyl(0.07, 0.07, 0.03, '#f4f4f4', 3.9, 2.48, 2.8).sph(0.008, '#f22', 3.92, 2.46, 2.8);
+  H.interact.push({ id: 'smokeAlarm', pos: new THREE.Vector3(3.9, 2.45, 2.8), r: 0.5, label: 'Smoke alarm' });
   P.cyl(0.18, 0.18, 0.03, '#fff', PX(858) + 0.02, 1.9, 4.2, 0, 0, Math.PI / 2).cyl(0.17, 0.17, 0.035, '#222', PX(858) + 0.01, 1.9, 4.2, 0, 0, Math.PI / 2, 20);
   H.spots.fridgeBox = { x: fx, z: fz };
   H.spots.kettle = new THREE.Vector3(rx, 0.93, PZ(1780));
   H.spots.fridge = new THREE.Vector3(fx, 0, PZ(1470));
   H.spots.drinks = { x: rx, z0: PZ(1420), z1: PZ(1530) };
-  H.spots.buffet = [new THREE.Vector3(2.3, 0, 4.6), new THREE.Vector3(3.3, 0, 4.6), new THREE.Vector3(4.3, 0, 4.4), new THREE.Vector3(4.2, 0, 3.6), new THREE.Vector3(4.2, 0, 1.7)];
+  H.spots.buffet = [new THREE.Vector3(2.3, 0, 4.6), new THREE.Vector3(3.3, 0, 4.6), new THREE.Vector3(4.3, 0, 4.4), new THREE.Vector3(5.1, 0, 3.6), new THREE.Vector3(5.1, 0, 1.9)];
   H.spots.kitchen = [new THREE.Vector3(2.6, 0, 1.2), new THREE.Vector3(2.4, 0, 3.0), new THREE.Vector3(3.2, 0, 2.2)];
   H.spots.kitchenMid = new THREE.Vector3(3.0, 0, 2.6);
 }
@@ -492,6 +501,7 @@ function dining(P, add, M, solid, H) {
   H.spots.bayOutside = { pos: new THREE.Vector3(-0.95, 0, -6.75), yaw: -1.08 };
   H.spots.garage = new THREE.Vector3(-5.2, 0, 3.0);
   H.spots.garageFridge = new THREE.Vector3(-4.6, 0, 1.1);
+  H.spots.garageSideDoor = new THREE.Vector3(-6.78, 0, -0.39);
   H.spots.garageIn = new THREE.Vector3(-3.7, 0, 0.25);
   H.spots.hallDoor = new THREE.Vector3(0, 0, 5.3);
   H.spots.hallway = new THREE.Vector3(0.1, 0, 2.8);
@@ -505,14 +515,14 @@ export function setDaylight() { setNight(); }
 function buildNav(H) {
   const N = {
     hallFront: [0.1, 5.0], hallMid: [0.1, 2.9], hallBack: [0.1, 0.9], hallTop: [0.3, 0.0], livingDoor: [-0.3, -0.9], living: [-2.4, -3.0], livingL: [-3.4, -1.7], livingR: [-1.0, -2.0], livingBack: [-2.5, -5.2], livingTV: [-4.3, -4.5], livingFire: [-4.4, -2.6],
-    kitchenDoor: [1.85, 2.06], kitchen: [2.8, 2.0], kitchenE: [4.0, 1.4], kitchenN: [3.8, 4.4], kitchenW: [2.2, 4.4],
+    kitchenDoor: [1.85, 2.06], kitchen: [2.8, 2.0], kitchenE: [5.1, 2.1], kitchenNE: [5.0, 4.4], kitchenN: [3.8, 4.4], kitchenW: [2.2, 4.4],
     diningDoorH: [1.45, 0.25], diningDoor: [1.45, -0.9], dining: [1.5, -2.6], diningE: [4.15, -2.0], diningN: [4.4, -5.2], diningBack: [2.0, -5.35], consDoor: [2.9, -6.6], cons: [2.0, -7.0], consW: [1.5, -8.05], patioCons: [0.2, -8.05], patio: [-0.4, -7.2], patioE: [-0.6, -9.7], patioW: [-4.6, -9.6], garden: [-2.5, -11.6], gardenFar: [1.5, -12.5], bayOut: [-0.9, -6.9], patioSide: [-6.7, -3.0], bbq: [-6.2, -8.2], hallK: [0.9, 2.06],
-    toiletDoor: [-0.7, 4.7], toilet: [-1.9, 4.7], cupDoor: [-0.7, 0.25], cupboard: [-2.1, 0.25], garageDoor: [-3.6, 0.25], garage: [-5.2, 2.6], garageFridge: [-4.6, 1.1], stairFoot: [-0.75, 2.9],
+    toiletDoor: [-0.7, 4.7], toilet: [-1.9, 4.7], cupDoor: [-0.7, 0.25], cupboard: [-2.1, 0.25], garageDoor: [-3.6, 0.25], garage: [-5.2, 2.6], garageFridge: [-4.6, 1.1], stairFoot: [-0.75, 2.9], sideDoorOut: [-6.78, -1.2], sideDoorIn: [-6.6, 0.6],
   };
   const E = [['hallFront', 'hallMid'], ['hallMid', 'hallBack'], ['hallBack', 'hallTop'], ['hallTop', 'livingDoor'], ['livingDoor', 'living'], ['livingDoor', 'livingR'], ['living', 'livingL'], ['living', 'livingR'], ['living', 'livingBack'], ['livingBack', 'livingTV'], ['living', 'livingFire'], ['livingFire', 'livingTV'], ['livingL', 'livingFire'],
-    ['hallMid', 'hallK'], ['hallK', 'kitchenDoor'], ['kitchenDoor', 'kitchen'], ['kitchen', 'kitchenE'], ['kitchen', 'kitchenW'], ['kitchenE', 'kitchenN'], ['kitchenW', 'kitchenN'], ['kitchen', 'kitchenN'],
+    ['hallMid', 'hallK'], ['hallK', 'kitchenDoor'], ['kitchenDoor', 'kitchen'], ['kitchen', 'kitchenE'], ['kitchen', 'kitchenW'], ['kitchenE', 'kitchenN'], ['kitchenW', 'kitchenN'], ['kitchen', 'kitchenN'], ['kitchenE', 'kitchenNE'], ['kitchenN', 'kitchenNE'],
     ['hallTop', 'diningDoorH'], ['hallBack', 'diningDoorH'], ['diningDoorH', 'diningDoor'], ['diningDoor', 'dining'], ['diningDoor', 'diningE'], ['dining', 'diningBack'], ['diningE', 'diningN'], ['diningN', 'diningBack'], ['diningBack', 'consDoor'], ['consDoor', 'cons'], ['cons', 'consW'], ['consW', 'patioCons'], ['patioCons', 'patio'], ['patio', 'bayOut'], ['patioCons', 'patioE'], ['patio', 'patioE'], ['patioE', 'garden'], ['garden', 'gardenFar'], ['patioE', 'patioW'], ['patioW', 'garden'], ['patioW', 'bbq'], ['bbq', 'patioSide'],
-    ['hallFront', 'toiletDoor'], ['toiletDoor', 'toilet'], ['hallBack', 'cupDoor'], ['hallTop', 'cupDoor'], ['cupDoor', 'cupboard'], ['cupboard', 'garageDoor'], ['garageDoor', 'garage'], ['garageDoor', 'garageFridge'], ['garage', 'garageFridge'], ['hallMid', 'stairFoot']];
+    ['hallFront', 'toiletDoor'], ['toiletDoor', 'toilet'], ['hallBack', 'cupDoor'], ['hallTop', 'cupDoor'], ['cupDoor', 'cupboard'], ['cupboard', 'garageDoor'], ['garageDoor', 'garage'], ['garageDoor', 'garageFridge'], ['garage', 'garageFridge'], ['hallMid', 'stairFoot'], ['patioSide', 'sideDoorOut'], ['sideDoorOut', 'sideDoorIn'], ['sideDoorIn', 'garage'], ['sideDoorIn', 'garageFridge']];
   const nodes = {}; for (const k in N) nodes[k] = { id: k, p: new THREE.Vector3(N[k][0], 0, N[k][1]), n: [] };
   for (const [a, b] of E) { nodes[a].n.push(b); nodes[b].n.push(a); }
   H.nav = nodes;

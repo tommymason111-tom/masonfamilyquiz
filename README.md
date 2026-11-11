@@ -35,7 +35,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 - **Martin's ground floor, built to the family's floor plan** (plan pixels → metres, 90 px = 1 m; see `PX`/`PZ` in
   `src/world/house.js`): hallway from the front door, bathroom (basin + toilet) and the stairs (three steps up to a quarter
   landing, then the flight up to a closed-off upstairs landing) on the left with a cupboard beside them, the under-stairs
-  cupboard leading through to the garage (fridge, chest freezer of beer, broken light), the kitchen on the right (fridge
+  cupboard leading through to the garage (fridge, chest freezer with the beer by it, broken light, and an open side door out to the patio), the kitchen on the right (a little wider than the plan, as a single-storey extension: breakfast bar with stools beside the fridge
   top-right, worktop down the side with the hob, sink under the front window), the living room at the top of the hall
   (TV in the corner, fireplace on the left wall, the tree in the bay window, L-shaped sofa, sofa along the bottom wall,
   round coffee table on the rug and Martin's armchair), the dining room through the door beside it (table for six,

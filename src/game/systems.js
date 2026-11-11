@@ -16,7 +16,7 @@ export class Systems {
     this.banterV = 15; this.banterReds = 0; this.havoc = 0; this.tvDamage = 0; this.hostPoints = 0; this.coasterWarnings = 0;
     this.dignity = 50; this.powerOut = false; this.paulCalmUsed = -1; this.nextRoast = G.time + rand(50, 80); this.roastCount = 0; this.nextJoke = G.time + rand(70, 110); this.nextOrder = G.time + rand(40, 70);
     this.orders = []; this.decals = []; this.events = []; this.noseprints = []; this.stats = { kidsThrows: 0, hidden: 0, tvHits: 0, ceasefires: 0, eyeRolls: 0, laughFits: 0, jokes: 0, coaster: 0, calmed: 0, chipStole: 0 };
-    this.kitchenBeer = () => (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 4.1 && t.x < 5.1 && t.z < 0.5; }).length;
+    this.kitchenBeer = () => (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 5.0 && t.x < 6.0 && t.z < 0.5; }).length;
     this.buildBanterLights();
     this.wire();
     G.updaters.push((dt) => this.update(dt));
@@ -208,7 +208,7 @@ export class Systems {
   sweetsLeft() { return (G.items.byType.celebration?.length || 0) + (G.items.byType.sweet?.length || 0); }
   refillBuffet() {
     if (G.quiz && G.quiz.round >= 4) { if (!this.noMore) { this.noMore = true; G.ai.say('Julie', 'That\'s it, there\'s no more.', 1); } return; }
-    const want = { sausage_roll: [2.1, 5.4], mince_pie: [5.15, -3.7], pig_blanket: [4.1, 5.43], scotch_egg: [4.9, 0.85] };
+    const want = { sausage_roll: [2.1, 5.4], mince_pie: [5.15, -3.7], pig_blanket: [4.1, 5.43], scotch_egg: [5.8, 0.85] };
     for (const id in want) { if ((G.items.byType[id]?.length || 0) < 3) { for (let i = 0; i < 3; i++) G.items.spawn(id, new THREE.Vector3(want[id][0] + rand(-0.1, 0.1), 0.93, want[id][1] + rand(-0.08, 0.08)), null, { surface: true }); } }
   }
   // ---------------- rounds & the Chaos Director ----------------
@@ -243,7 +243,7 @@ export class Systems {
       case 'channelChange': this.cbeebiesEvent(); break;
       case 'volume100': playMusic('jingle', false, 0.2); sfx('bark', G.dog?.pos); T('Mason sat on the remote: the TV is at volume 100. Chip howls along.', 4); break;
       case 'doorbell': sfx('ding', new THREE.Vector3(0.65, 1.3, 5.95), 1); this.doorbell(); break;
-      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 4.1 && t.x < 5.1 && t.z < 0.5; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (through the under-stairs cupboard). Phone torch: T.', 6); break;
+      case 'beerRun': for (const b of (G.items.byType.lager || []).filter(i => { const t = i.body.translation(); return t.x > 5.0 && t.x < 6.0 && t.z < 0.5; })) G.items.remove(b); G.ai.say('Martin', 'Fridge is out of beer. Tommy, garage. Crates by the freezer.', 1); T('BEER RUN: the kitchen fridge is empty. Fetch beer from the dark garage (through the under-stairs cupboard). Phone torch: T.', 6); break;
       case 'puddingFire': { const pu = G.items.byType.pudding?.[0]; if (pu) this.puddingFire(pu); break; }
       case 'siriBetrayal': say(null, 'Here\'s what I found on the web for: ' + (G.quiz?.cur?.q || 'Grand National winner'), { prio: 2 }); T('A phone just shouted the question out loud. Who was that?!', 3); this.cheater = pick([G.charByName.Kirsty, G.charByName.Hollie]); break;
       case 'toiletTrip': { const c = pick([G.charByName.James, G.charByName.Hollie, G.charByName.Kirsty]); if (c) { this.cheater = c; G.ai.sendTo(c.name, G.house.spots.toilet.pos, () => { c.brain.state = 'scripted'; c.brain.timer = 25; c.gesture = 'phone'; }); T(`${c.name} has gone to the loo for "five minutes" during the hard round. Follow them in?`, 5); } break; }

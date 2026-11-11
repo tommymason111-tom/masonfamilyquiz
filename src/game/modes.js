@@ -89,7 +89,7 @@ export class Modes {
   hideSetup() { this.limit = 240; this.found = 0;
     const spots = shuffle([
       ['in the Christmas tree', -2.12, 1.05, -6.1], ['under a sofa cushion', -2.9, 0.62, -1.0], ['in the bathroom', -2.2, 0.5, 4.8], ['in Chip\'s bed', -4.75, 0.08, -1.0],
-      ['on the garage shelf', -7.19, 1.55, 3.0], ['behind the TV', -5.45, 0.6, -5.7], ['in the conservatory plant pot', 5.15, 0.5, -6.45], ['on top of the fridge', 4.61, 1.92, 0.1],
+      ['on the garage shelf', -7.19, 1.55, 3.0], ['behind the TV', -5.45, 0.6, -5.7], ['in the conservatory plant pot', 5.15, 0.5, -6.45], ['on top of the fridge', 5.51, 1.92, 0.1],
       ['under the stairs', -2.7, 0.1, 0.4], ['behind the trampoline', 3.4, 0.1, -14.0], ['in the fireplace', -5.0, 0.15, -3.05], ['in the kitchen bin', 2.35, 0.65, -0.05], ['on the landing', -2.1, 2.5, 0.1], ['under the BBQ', -7.0, 0.1, -7.4],
     ]).slice(0, 6);
     const ids = shuffle(['remote', 'keys', 'phone', 'cup_turkey', 'red_nose', 'rubber_duck']);
