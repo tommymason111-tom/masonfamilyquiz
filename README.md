@@ -50,11 +50,15 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   mince pies…), drinks (lager, cider, bitter, Prosecco with a cork that fires at Martin, wine, Baileys, squash…),
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
+- **Teams:** Martin hosts. Team Paul — Tommy (you), Charli, Paul, Karen · Team Julie — Sophie, James, Julie ·
+  Team Debbie — Debbie, Gary, Jodie, Harry, Mason (and Kirsty) · Team Hollie — Hollie, Dan, Bradley, Harrison. Chip isn't on
+  a team; he's just chaos. Name tags show only the name, edged in the team colour.
+- **Jobs in the banter:** Dan's a teacher, Kirsty works in a nursery, Sophie edits films, Martin promotes them.
 - **Where everyone is:** living room — Paul (who does the rounds between his family, Martin and Debbie), Karen, Charli, Martin (armchair), Debbie, Kirsty, Gary, Mason;
   kitchen — Julie, Jodie, Hollie & Dan; dining room — Sophie & James, Harry; conservatory — Bradley with Harrison.
 - **The quiz:** five rounds (Sport, Telly/Film/Music, News & Nonsense, Picture round drawn on the TV, the Family Round),
   Martin reads from the armchair, Charli whispers the right answer, Paul overrules you (stop him with a mince pie, a
-  cushion or a shove), sheets swapped and marked by Team Martin (harshly), the Dispute Wheel (Allow / Half / Deny /
+  cushion or a shove), sheets swapped and marked by Team Julie (harshly — Martin hosts and Julie's his wife), the Dispute Wheel (Allow / Half / Deny /
   Google it / Ask Karen), the answer-sheet heist (don't let Debbie see), jokers, Host Points, TV and PC scoreboards that
   disagree by 2, tie-break, the Mason Cup ceremony, awards, and a roll of honour that persists between games.
 - **Systems from the doc:** Sibling Banter Meter (fairy lights on the ceiling; Debbie storms out on red; Sibling

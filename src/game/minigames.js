@@ -39,9 +39,9 @@ export class MiniGames {
     // tidy away anything the mini-game added, so the house doesn't fill up
     setTimeout(() => { for (const it of G.items.instances.slice()) if (!a.before.has(it) && !it.held && ['sprout', 'celebration', 'present_s', 'present_m', 'paper_ball', 'cracker', 'paper_crown', 'satsuma'].includes(it.id)) G.items.remove(it); }, 6000);
     const q = G.quiz; const pts = skipped ? 0 : Math.min(3, Math.round(a.score * (a.id === 'sproutPong' ? 0.5 : 1)));
-    const others = { martin: Math.floor(rand(0, 3)), debbie: Math.floor(rand(0, 3)) };
-    q.bonus.paul += pts; q.bonus.martin += others.martin; q.bonus.debbie += others.debbie;
-    G.ui?.toast(skipped ? 'Mini-game skipped.' : `${NAMES[a.id]} over! Team Paul +${pts}, Team Martin +${others.martin}, Team Debbie +${others.debbie}.`, 5);
+    const others = { julie: Math.floor(rand(0, 3)), debbie: Math.floor(rand(0, 3)), hollie: Math.floor(rand(0, 3)) };
+    q.bonus.paul += pts; for (const t in others) q.bonus[t] += others[t];
+    G.ui?.toast(skipped ? 'Mini-game skipped.' : `${NAMES[a.id]} over! Team Paul +${pts}, Team Julie +${others.julie}, Team Debbie +${others.debbie}, Team Hollie +${others.hollie}.`, 5);
     for (const n of ['Charli', 'Hollie', 'Kirsty', 'Martin']) G.ai?.release(n);
     setTimeout(() => this.done && this.done(), 3000);
   }
@@ -88,7 +88,7 @@ export class MiniGames {
   // ---------- Pass the Parcel ----------
   setup_parcel(a) { a.limit = 60; a.layers = 6; a.parcel = G.items.byType.parcel?.[0]; if (a.parcel) a.parcel.body.setTranslation({ x: 4.6, y: 0.95, z: -3.3 }, true); }
   begin_parcel(a) { this.parcelMusic(a); a.useHandler = () => this.tear(a); on('parcelUse', a.useHandler); }
-  parcelMusic(a) { a.playing = true; playMusic('wewish', true, 0.3); clearTimeout(a.stopT); a.stopT = setTimeout(() => { stopMusic(); a.playing = false; a.stopAt = G.time; const pl = Object.values(G.player.holders).some(h => h && h.ref === a.parcel); if (!pl) { G.ui?.toast('Music stops... and Martin "accidentally" stops it on Team Martin. They tear a layer.', 3); a.layers--; sfx('rip'); if (a.layers <= 0) return this.finish(false); setTimeout(() => this.parcelMusic(a), 3000); } else G.ui?.toast('Music stopped! You\'re holding it — TEAR A LAYER (USE / pinch)!', 3); }, rand(5000, 10000)); }
+  parcelMusic(a) { a.playing = true; playMusic('wewish', true, 0.3); clearTimeout(a.stopT); a.stopT = setTimeout(() => { stopMusic(); a.playing = false; a.stopAt = G.time; const pl = Object.values(G.player.holders).some(h => h && h.ref === a.parcel); if (!pl) { G.ui?.toast('Music stops... and Martin "accidentally" stops it on Team Julie. They tear a layer.', 3); a.layers--; sfx('rip'); if (a.layers <= 0) return this.finish(false); setTimeout(() => this.parcelMusic(a), 3000); } else G.ui?.toast('Music stopped! You\'re holding it — TEAR A LAYER (USE / pinch)!', 3); }, rand(5000, 10000)); }
   tear(a) {
     if (!a.parcel) return; if (a.playing) { a.score = Math.max(0, a.score - 1); G.ui?.toast('You tore it while the music was playing! Penalty.', 2); G.ai.say('Martin', 'Penalty! The music\'s still going!', 1); return; }
     a.layers--; a.score++; sfx('rip', a.parcel.body.translation(), 1); const b = G.items.spawn('paper_ball', new THREE.Vector3().copy(a.parcel.body.translation()).add(new THREE.Vector3(0, 0.2, 0)), null); b?.body.setLinvel({ x: rand(-1, 1), y: 2, z: rand(-1, 1) }, true);

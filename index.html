@@ -55,7 +55,7 @@
   .ribbon { position:relative; background:linear-gradient(#b3141c,#7a0d12); color:#fff; padding:7px 26px; font: 600 clamp(11px,1.6vw,15px)/1.2 system-ui; border-radius:4px; box-shadow:0 6px 16px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25); text-align:center; }
   .ribbon:before, .ribbon:after { content:""; position:absolute; top:6px; border:14px solid #5a0a0e; z-index:-1; }
   .ribbon:before { left:-18px; border-left-color:transparent; } .ribbon:after { right:-18px; border-right-color:transparent; }
-  .teams { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; width:min(1100px,100%); margin-top:6px; }
+  .teams { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; width:min(1100px,100%); margin-top:6px; }
   .team { background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04)); border:2px solid var(--tc); border-radius:16px; padding:10px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow:0 10px 26px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.08); position:relative; }
   .team h4 { margin:0 0 8px; font: 700 15px Georgia, serif; color:#fff; display:flex; align-items:center; gap:8px; } .team h4:before { content:""; width:12px; height:12px; border-radius:50%; background:var(--tc); box-shadow:0 0 10px var(--tc); }
   .faces { display:flex; flex-wrap:wrap; gap:6px; }

@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { G, on, emit, rand, pick, shuffle, clamp } from '../core.js';
 import { say, sfx, playMusic, stopMusic } from '../engine/audio.js';
-import { TEAMS, OUTFITS } from '../chars/cast.js';
+import { TEAMS, TEAM_IDS, OUTFITS } from '../chars/cast.js';
 import { BUILTIN } from './questions.js';
 import { tvFrame, wrapText, drawWheel } from './screens.js';
 import { canvasTex } from '../engine/textures.js';
@@ -19,7 +19,8 @@ const ROUNDS = [
   { id: 'family', name: 'Round 5: The Family Round' },
 ];
 const LETTERS = ['A', 'B', 'C', 'D'];
-const SKILL = { martin: { sport: 0.55, telly: 0.8, news: 0.6, picture: 0.6, family: 0.55 }, debbie: { sport: 0.65, telly: 0.6, news: 0.55, picture: 0.55, family: 0.7 } };
+const SKILL = { julie: { sport: 0.5, telly: 0.85, news: 0.6, picture: 0.65, family: 0.6 }, debbie: { sport: 0.65, telly: 0.6, news: 0.55, picture: 0.55, family: 0.7 }, hollie: { sport: 0.6, telly: 0.7, news: 0.65, picture: 0.6, family: 0.55 } };
+const RIVALS = ['julie', 'debbie', 'hollie'];
 
 export function parseBank(txt) {
   const out = [];
@@ -37,11 +38,11 @@ export class Quiz {
     G.quiz = this;
     this.bank = parseBank(BUILTIN);
     fetch('questions.txt', { cache: 'no-store' }).then(r => r.ok ? r.text() : null).then(t => { if (t) { const b = parseBank(t); if (b.length > 10) this.bank = b; } }).catch(() => {});
-    this.scores = { paul: 0, martin: 0, debbie: 0 }; this.bonus = { paul: 0, martin: 0, debbie: 0 };
+    this.scores = Object.fromEntries(TEAM_IDS.map(t => [t, 0])); this.bonus = Object.fromEntries(TEAM_IDS.map(t => [t, 0]));
     this.phase = 'arrival'; this.round = -1; this.qi = -1; this.t = 0; this.questionLive = false;
-    this.jokers = { paul: null, martin: 1, debbie: 3 };
+    this.jokers = { paul: null, julie: 1, debbie: 3, hollie: 2 };
     this.history = []; this.stats = { argued: 0, biased: 0, whistles: 0, disputes: 0, disputesWon: 0, changed: 0, toldYou: loadStore('toldYou', 0) };
-    this.paulPcBias = pick(['paul', 'martin', 'debbie']);
+    this.paulPcBias = pick(TEAM_IDS);
     this.qPer = G.settings.questionsPerRound || 6;
     // Team Paul's answer sheet = a clipboard with its own canvas
     this.sheetItem = G.items.byType.answer_sheet?.[0];
@@ -62,7 +63,7 @@ export class Quiz {
   }
   teamName(t) { return TEAMS[t].name; } teamColor(t) { return TEAMS[t].color; }
   total(t) { return this.scores[t] + this.bonus[t]; }
-  pcScores() { const s = {}; for (const t of ['paul', 'martin', 'debbie']) s[t] = this.total(t) + (t === this.paulPcBias && this.round >= 0 ? 2 : 0); return s; }
+  pcScores() { const s = {}; for (const t of TEAM_IDS) s[t] = this.total(t) + (t === this.paulPcBias && this.round >= 0 ? 2 : 0); return s; }
   martin() { return G.charByName.Martin; }
   mSay(text, prio = 2) { const m = this.martin(); if (m && !m.isDown()) return m.say(text, { prio }); return say(null, text, { prio }); }
   penWorks(inst) { return inst === this.goodPen; }
@@ -180,22 +181,22 @@ export class Quiz {
   endQuestion() {
     const q = this.cur; this.questionLive = false;
     // other teams answer
-    for (const t of ['martin', 'debbie']) {
+    for (const t of RIVALS) {
       let sk = SKILL[t][q.round] ?? 0.6; if (t === 'debbie' && G.garyOutfit?.noPen) sk -= 0.1; if (t === 'debbie' && G.systems?.debbieOut) { q.answers[t] = null; continue; }
-      if (t === 'martin' && G.systems?.weddingTakeover) sk -= 0.15;
+      if (t === 'julie' && G.systems?.weddingTakeover) sk -= 0.15; // Sophie's wedding chat distracts her team
       q.answers[t] = Math.random() < sk ? q.correct : (q.correct + 1 + Math.floor(Math.random() * 3)) % 4;
     }
     // Mason shouts the right answer sometimes
-    if (Math.random() < 0.12) { const m = G.charByName.Mason; if (m) { m.say(q.opts[q.correct].toUpperCase() + '!', { prio: 1 }); setTimeout(() => { this.mSay('Did Mason just... Team Martin, he\'s on your sofa, that\'s your point.', 1); }, 2000); q.masonShout = true; } }
+    if (Math.random() < 0.12) { const m = G.charByName.Mason; if (m) { m.say(q.opts[q.correct].toUpperCase() + '!', { prio: 1 }); setTimeout(() => { this.mSay('Did Mason just... Team Debbie, he\'s yours, that\'s your point.', 1); }, 2000); q.masonShout = true; } }
     if (q.answers.paul !== null && q.answers.paul !== q.correct && q.charli === q.correct) { this.stats.toldYou++; saveStore('toldYou', this.stats.toldYou); setTimeout(() => G.charByName.Charli?.bark('toldyou', { prio: 1 }), 1500); q.toldYou = true; }
     this.history.push(q);
     this.phase = 'between'; this.cur = null; this.drawSheet();
     setTimeout(() => this.nextQuestion(), 1800);
   }
   collect() {
-    this.phase = 'collect'; this.mSay('Pens down! Swap your sheets. Team Martin marks Team Paul, Team Debbie marks Team Martin, Team Paul marks Team Debbie.');
+    this.phase = 'collect'; this.mSay('Pens down! Swap your sheets. Team Julie marks Team Paul, Team Debbie marks Team Julie, Team Hollie marks Team Debbie, Team Paul marks Team Hollie.');
     sfx('whistle', this.martin()?.headPos(new THREE.Vector3()), 1);
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'PENS DOWN — SWAP SHEETS'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'Team Martin is marking YOUR sheet. Watch them like a hawk. Put your hand up (Q / raise your hand) to challenge a mark.', 60, 170, 900, 42); this.drawScoresMini(g, W, H); });
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'PENS DOWN — SWAP SHEETS'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'Team Julie is marking YOUR sheet (and the quizmaster is married to their captain). Watch them like a hawk. Put your hand up (Q / raise your hand) to challenge a mark.', 60, 170, 900, 42); this.drawScoresMini(g, W, H); });
     // the answer-sheet heist (sometimes): Martin turns away for 30 seconds
     if (Math.random() < 0.55 || G.systems?.forceHeist) setTimeout(() => this.startHeist(), 4000);
     else setTimeout(() => this.marking(), 5000);
@@ -223,14 +224,14 @@ export class Quiz {
   }
   marking() {
     this.phase = 'marking'; this.t = 0; this.markIdx = -1; this.marks = [];
-    // Team Martin marks Team Paul (harshly); Team Debbie marks Team Martin (fairly); you mark Team Debbie (fairly, automatically)
+    // Team Julie marks Team Paul (harshly); the others mark each other fairly; Martin is generous to his wife's team
     const reasons = ['written in capitals', 'spelling', 'not specific enough', 'illegible', 'that\'s not what\'s on my sheet', 'you crossed it out', 'Martin "didn\'t see it"'];
     for (const q of this.questions) {
       const mine = q.answers.paul; let mark = mine === q.correct ? 1 : 0; let reason = '';
       if (mark === 1 && Math.random() < 0.18) { mark = 0; reason = pick(reasons); this.stats.biased++; }
       if (mine === null) { mark = 0; reason = 'blank'; }
       this.marks.push({ q, mark, reason, disputed: false });
-      for (const t of ['martin', 'debbie']) { let m = q.answers[t] === q.correct ? 1 : 0; if (t === 'martin' && m === 0 && Math.random() < 0.25) { m = 0.5; this.stats.biased++; } if (q.masonShout && t === 'martin') m = Math.max(m, 1); q['mark_' + t] = m; }
+      for (const t of RIVALS) { let m = q.answers[t] === q.correct ? 1 : 0; if (t === 'julie' && m === 0 && Math.random() < 0.25) { m = 0.5; this.stats.biased++; } if (q.masonShout && t === 'debbie') m = Math.max(m, 1); q['mark_' + t] = m; }
     }
     this.mSay('Marking time. Let\'s see Team Paul\'s effort...');
     this.revealNext();
@@ -248,7 +249,7 @@ export class Quiz {
   }
   drawMarkingTV() {
     G.screens.setTV((g, W, H) => {
-      tvFrame(g, W, H, `MARKING — TEAM PAUL (marked by Team Martin)`, '#1d3557');
+      tvFrame(g, W, H, `MARKING — TEAM PAUL (marked by Team Julie)`, '#1d3557');
       this.marks.forEach((mk, i) => { if (i > this.markIdx) return; const y = 115 + i * 44; const q = mk.q; g.font = '22px sans-serif'; g.fillStyle = i === this.markIdx ? '#fff' : '#9ab';
         g.fillText(`${i + 1}. ${q.q.slice(0, 48)}${q.q.length > 48 ? '…' : ''}`, 30, y); g.fillText(`You: ${q.answers.paul === null ? '—' : q.opts[q.answers.paul]}`, 600, y);
         g.font = 'bold 30px sans-serif'; g.fillStyle = mk.mark === 1 ? '#5f5' : mk.mark === 0.5 ? '#fd5' : '#f55'; g.fillText(mk.mark === 1 ? '✓' : mk.mark === 0.5 ? '½' : '✗', 880, y); if (mk.reason) { g.font = '16px sans-serif'; g.fillStyle = '#fbb'; g.fillText(mk.reason, 910, y); } if (mk.disputed) { g.fillStyle = '#ffd700'; g.font = '16px sans-serif'; g.fillText(mk.disputed, 910, y + 16); } });
@@ -281,14 +282,14 @@ export class Quiz {
     }, 4300);
   }
   finishMarking() {
-    let gained = { paul: 0, martin: 0, debbie: 0 };
+    let gained = Object.fromEntries(TEAM_IDS.map(t => [t, 0]));
     for (const mk of this.marks) gained.paul += mk.mark;
-    for (const q of this.questions) { gained.martin += q.mark_martin || 0; gained.debbie += q.mark_debbie || 0; }
+    for (const q of this.questions) for (const t of RIVALS) gained[t] += q['mark_' + t] || 0;
     for (const t in gained) { if (this.jokers[t] === this.round) gained[t] *= 2; this.scores[t] += gained[t]; }
-    // Team Martin's joker is "remembered" on round 2 (index 1); Debbie on 4
+    // the other teams' jokers are "remembered" on rounds 2, 3 and 4
     this.phase = 'roundEnd'; this.t = 0;
-    const lead = ['paul', 'martin', 'debbie'].sort((a, b) => this.total(b) - this.total(a))[0];
-    this.mSay(`End of round. Team Paul ${gained.paul}, Team Martin ${gained.martin}, Team Debbie ${gained.debbie}.${lead === 'martin' ? ' Team Martin leading, as is right and proper.' : ''}`, 2);
+    const lead = TEAM_IDS.slice().sort((a, b) => this.total(b) - this.total(a))[0];
+    this.mSay(`End of round. Team Paul ${gained.paul}, Team Julie ${gained.julie}, Team Debbie ${gained.debbie}, Team Hollie ${gained.hollie}.${lead === 'julie' ? ' Team Julie leading. I\'m saying nothing.' : ''}`, 2);
     if (this.jokers.paul === null && this.round >= 1 && Math.random() < 0.7) setTimeout(() => G.charByName.Paul?.say('JOKER! We were playing the joker on that! ...Weren\'t we?'), 3000);
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < this.lastRound ? 'Next: mini-game in the dining room (or press NEXT)' : 'Final scores are in...', 60, 520); });
     emit('roundEnd', this.round);
@@ -332,18 +333,18 @@ export class Quiz {
   }
   drawScoresMini(g, W, H) {
     g.font = 'bold 22px sans-serif'; let x = W - 560; const y = H - 20;
-    for (const t of ['paul', 'martin', 'debbie']) { g.fillStyle = this.teamColor(t); g.fillRect(x, y - 22, 14, 26); g.fillStyle = '#fff'; g.fillText(`${this.teamName(t).replace('Team ', '')} ${this.total(t)}`, x + 20, y); x += 180; }
+    for (const t of TEAM_IDS) { g.fillStyle = this.teamColor(t); g.fillRect(x, y - 22, 14, 26); g.fillStyle = '#fff'; g.fillText(`${this.teamName(t).replace('Team ', '')} ${this.total(t)}`, x + 20, y); x += 150; }
     const s = G.systems; if (s) { g.fillStyle = '#9f9'; g.fillText('🦖 ' + ['Calm', 'Busy', 'Wild', 'CHAOS'][s.havocLevel()], 20, y); g.fillStyle = '#fff'; g.fillText('TV dmg ' + (s.tvDamage || 0), 200, y); }
   }
   drawBigScores(g, W, H) {
-    const order = ['paul', 'martin', 'debbie'];
-    order.forEach((t, i) => { const y = 170 + i * 100; g.fillStyle = this.teamColor(t); g.fillRect(60, y - 60, 20, 80); g.fillStyle = '#fff'; g.font = 'bold 54px sans-serif'; g.fillText(this.teamName(t), 100, y); g.fillText(String(this.total(t)), 700, y); });
-    g.font = '18px sans-serif'; g.fillStyle = '#9ab'; g.fillText('(The PC in the dining room disagrees by 2. Nobody knows which is right.)', 60, 470);
+    const order = TEAM_IDS.slice();
+    order.forEach((t, i) => { const y = 160 + i * 80; g.fillStyle = this.teamColor(t); g.fillRect(60, y - 50, 20, 64); g.fillStyle = '#fff'; g.font = 'bold 46px sans-serif'; g.fillText(this.teamName(t), 100, y); g.fillText(String(this.total(t)), 700, y); });
+    g.font = '18px sans-serif'; g.fillStyle = '#9ab'; g.fillText('(The PC in the dining room disagrees by 2. Nobody knows which is right.)', 60, 478);
   }
   // ---------------- the end ----------------
   final() {
     this.phase = 'final'; const t = (x) => this.total(x);
-    const order = ['paul', 'martin', 'debbie'].sort((a, b) => t(b) - t(a));
+    const order = TEAM_IDS.slice().sort((a, b) => t(b) - t(a));
     if (t(order[0]) === t(order[1])) {
       this.mSay('We have a TIE. Tie-break: closest guess. How many sprouts did Julie cook?', 2); G.charByName.Paul && setTimeout(() => G.charByName.Paul.say('A million.'), 3500);
       G.ui?.askNumber('Tie-break: how many sprouts did Julie cook?', (n) => { const real = 87; const other = Math.round(rand(40, 140)); const winTie = Math.abs(n - real) <= Math.abs(other - real); this.bonus[winTie && order.includes('paul') ? 'paul' : order[0] === 'paul' ? order[1] : order[0]] += 1; this.mSay(`It was ${real} sprouts. ${winTie ? 'Team Paul are closer. Unbelievable.' : 'Closest guess wins it.'}`); setTimeout(() => this.ceremony(), 4000); });
@@ -352,11 +353,11 @@ export class Quiz {
     this.ceremony();
   }
   ceremony() {
-    this.phase = 'ceremony'; const order = ['paul', 'martin', 'debbie'].sort((a, b) => this.total(b) - this.total(a)); this.winner = order[0];
+    this.phase = 'ceremony'; const order = TEAM_IDS.slice().sort((a, b) => this.total(b) - this.total(a)); this.winner = order[0];
     sfx('drum', null, 1); this.mSay('The final scores...', 2);
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FINAL SCORES'); this.drawBigScores(g, W, H); });
     setTimeout(() => { G.charByName.Paul?.say('RECOUNT! The PC says different!'); G.charByName.Kirsty?.say('My tally says different too!'); }, 4000);
-    setTimeout(() => { this.mSay('And the Mason Cup goes to... Team Martin! ...Oh. Sorry, sorry, misread it. ' + this.teamName(this.winner) + '!', 2); }, 9000);
+    setTimeout(() => { this.mSay('And the Mason Cup goes to... Team Julie! ...Oh. Sorry, love, misread it. ' + this.teamName(this.winner) + '!', 2); }, 9000);
     setTimeout(() => G.ceremony?.run(this.winner), 15000);
   }
 }

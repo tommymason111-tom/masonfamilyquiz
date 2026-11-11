@@ -40,7 +40,7 @@ function baubles() {
   const xs = [4, 10, 17, 83, 90, 96, 23, 77]; el.innerHTML = xs.map((x, i) => `<div class="bauble" style="left:${x}%;--len:${30 + (i * 37) % 70}px;--sz:${26 + (i * 13) % 20}px;--c:${cols[i % cols.length]};--a:${3 + (i % 3) * 2}deg;animation-delay:-${i * 0.4}s"><i></i></div>`).join('');
 }
 function honour() {
-  const el = $('honour'); if (!el) return; const w = loadStore('winners', [{ year: 2025, team: 'Team Martin', note: '(disputed)' }]);
+  const el = $('honour'); if (!el) return; const w = loadStore('winners', [{ year: 2025, team: 'Team Julie', note: '(disputed)' }]);
   el.innerHTML = w.slice(-6).reverse().map(r => `<div><span>${r.year}</span><b>${r.team}</b></div>`).join('') + `<div style="opacity:.7"><span>${new Date().getFullYear()}</span><b>???</b></div>`;
 }
 function countdown() {
@@ -53,7 +53,9 @@ function countdown() {
 export function teamCards(withPortraits, portraits = {}) {
   const el = $('teams'); if (!el) return;
   const emoji = { Mason: '🦖', Harrison: '👶', Tommy: '🧑', Dan: '🍺' };
-  el.innerHTML = Object.entries(TEAMS).map(([k, t]) => `<div class="team" style="--tc:${t.color}"><h4>${t.name}</h4><div class="faces">${CAST.filter(c => c.team === k).map(c => `<div class="face">${portraits[c.name] ? `<img src="${portraits[c.name]}" alt="${c.name}">` : `<div class="ph">${emoji[c.name] || '🎄'}</div>`}<span>${c.name === 'Tommy' ? 'You' : c.name}</span></div>`).join('')}${k === 'debbie' ? '<div class="face"><div class="ph">🐶</div><span>Chip</span></div>' : ''}</div></div>`).join('');
+  const face = (c) => `<div class="face">${portraits[c.name] ? `<img src="${portraits[c.name]}" alt="${c.name}">` : `<div class="ph">${emoji[c.name] || '🎄'}</div>`}<span>${c.name === 'Tommy' ? 'You' : c.name}</span></div>`;
+  el.innerHTML = Object.entries(TEAMS).map(([k, t]) => `<div class="team" style="--tc:${t.color}"><h4>${t.name}</h4><div class="faces">${CAST.filter(c => c.team === k).map(face).join('')}</div></div>`).join('')
+    + `<div class="team" style="--tc:#c8a050"><h4>Quizmaster &amp; chaos</h4><div class="faces">${CAST.filter(c => c.team === 'host').map(face).join('')}<div class="face"><div class="ph">🐶</div><span>Chip</span></div></div></div>`;
 }
 // render a little portrait of each person from the live scene
 export function renderPortraits() {

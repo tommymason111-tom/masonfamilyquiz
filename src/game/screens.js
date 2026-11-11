@@ -2,6 +2,7 @@
 // wheel, the dispute wheel, CBeebies, blue screens — and a render-target for the instant replay.
 import * as THREE from 'three';
 import { G } from '../core.js';
+import { TEAM_IDS } from '../chars/cast.js';
 import { canvasTex } from '../engine/textures.js';
 
 export class Screens {
@@ -44,7 +45,7 @@ export class Screens {
     const q = G.quiz; g.fillStyle = '#0b1830'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#ffd700'; g.font = 'bold 26px sans-serif'; g.fillText('MASON QUIZ — OFFICIAL SCORES', 20, 40);
     g.font = '13px monospace'; g.fillStyle = '#8ab'; g.fillText('scores.xlsx (last saved by Martin)', 20, 62);
-    if (q) { const s = q.pcScores(); let y = 110; for (const t of ['paul', 'martin', 'debbie']) { g.fillStyle = q.teamColor(t); g.fillRect(20, y - 28, 12, 36); g.fillStyle = '#fff'; g.font = 'bold 30px sans-serif'; g.fillText(q.teamName(t), 44, y); g.fillText(String(s[t]), 420, y); y += 60; } }
+    if (q) { const s = q.pcScores(); let y = 96; for (const t of TEAM_IDS) { g.fillStyle = q.teamColor(t); g.fillRect(20, y - 26, 12, 32); g.fillStyle = '#fff'; g.font = 'bold 28px sans-serif'; g.fillText(q.teamName(t), 44, y); g.fillText(String(s[t]), 420, y); y += 50; } }
     this.pcTex.needsUpdate = true;
   }
   showOverlay(fn) { if (!fn) { this.overlay.visible = false; return; } const g = this.overlayTex.userData.ctx; g.clearRect(0, 0, 1024, 576); fn(g, 1024, 576); this.overlayTex.needsUpdate = true; this.overlay.visible = true; }

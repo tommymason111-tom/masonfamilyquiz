@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { G, on, emit, clamp, pick } from '../core.js';
 import { canvasTex } from '../engine/textures.js';
 import { saveSettings, loadStore, saveStore } from './settings.js';
-import { OUTFITS } from '../chars/cast.js';
+import { OUTFITS, TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { Ceremony } from './ceremony.js';
 import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../engine/audio.js';
 
@@ -70,7 +70,7 @@ class UI {
     let b = this.bubbles.find(b => b.who === who) || this.bubbles.reduce((a, c) => (a.until < c.until ? a : c));
     b.who = who; b.until = G.time + Math.min(7, 1.8 + text.length * 0.06);
     const g = b.t.userData.ctx; g.clearRect(0, 0, 512, 128); g.fillStyle = 'rgba(255,255,255,0.93)'; roundRect(g, 4, 4, 504, 104, 22); g.fill(); g.beginPath(); g.moveTo(230, 106); g.lineTo(256, 126); g.lineTo(270, 106); g.fill();
-    g.fillStyle = who.team === 'paul' ? '#b02a2a' : who.team === 'martin' ? '#1d4f9a' : '#1f7a40'; g.font = 'bold 22px sans-serif'; g.fillText(who.name, 18, 30);
+    g.fillStyle = TEAMS[who.team]?.color || '#c8a050'; g.font = 'bold 22px sans-serif'; g.fillText(who.name, 18, 30);
     g.fillStyle = '#111'; g.font = '24px sans-serif'; wrap(g, text, 18, 60, 476, 26, 2); b.t.needsUpdate = true;
   }
   // ---------------- per-frame HUD ----------------
@@ -80,7 +80,7 @@ class UI {
     if (G.frame % 6) return;
     const s = G.systems, q = G.quiz;
     if (s) { const bv = s.banterV; $('banterBar').style.width = bv + '%'; $('banterBar').style.background = bv < 45 ? '#2c2' : bv < 75 ? '#fa2' : '#f22'; $('banterLbl').textContent = s.banterLevel(); $('havocBar').style.width = s.havoc + '%'; $('havocBar').style.background = '#8c4'; $('havocLbl').textContent = ['Calm', 'Busy', 'Wild', 'CHAOS'][s.havocLevel()]; }
-    if (q) { $('scores').innerHTML = ['paul', 'martin', 'debbie'].map(t => `<div><span style="color:${q.teamColor(t)}">■</span> ${q.teamName(t)} <b>${q.total(t)}</b></div>`).join('') + `<div style="opacity:.7;font-size:12px">Host points ${s?.hostPoints || 0} · TV dmg ${s?.tvDamage || 0}</div>`;
+    if (q) { $('scores').innerHTML = TEAM_IDS.map(t => `<div><span style="color:${q.teamColor(t)}">■</span> ${q.teamName(t)} <b>${q.total(t)}</b></div>`).join('') + `<div style="opacity:.7;font-size:12px">Host points ${s?.hostPoints || 0} · TV dmg ${s?.tvDamage || 0}</div>`;
       $('phaseLbl').textContent = ({ arrival: 'Arrival — press Enter to start', wheel: 'Gary\'s Outfit Wheel', roundIntro: 'Round starting', question: `Question ${q.qi + 1} — ${Math.max(0, Math.ceil(q.qTime - q.t))}s`, between: '', collect: 'Sheets swapped', heist: 'HEIST!', marking: 'Marking — Q to dispute', roundEnd: 'Round over', minigame: 'Mini-game', final: 'Final', ceremony: 'The Mason Cup', end: 'Same time next year' })[q.phase] || ''; }
     // focus prompt
     const f = G.player.focus; const held = G.player.heldItem('D'); let txt = '';
@@ -89,7 +89,7 @@ class UI {
       else if (held && this.touchMode) txt = `${held.type.name} — tap to throw${held.type.food || held.type.drink ? ' · DRINK' : ''}`;
       else if (held) txt = `${held.type.name} — RMB throw · R use${held.type.food || held.type.drink ? ' · G eat/drink' : ''} · LMB drop`;
       else if (G.player.holders.D) txt = `Holding ${G.player.holders.D.ref.name || 'it'} — hold RMB to throw`;
-      else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `${this.touchMode ? 'Tap to pick up' : 'LMB grab'} ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name}${f.ref.heavy ? ' (heavy!)' : ''} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
+      else if (f) { if (f.kind === 'item') txt = f.ref.type.fixed ? `${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}` : `${this.touchMode ? 'Tap to pick up' : 'LMB grab'} ${f.ref.type.name}${f.ref.type.use ? ' · R use' : ''}`; else if (f.kind === 'char') txt = f.protected || f.ref.protected ? `${f.ref.name} (can't be grabbed)` : `LMB grab ${f.ref.name} · F punch · R talk`; else if (f.kind === 'dog') txt = 'Chip — R to stroke'; else if (f.kind === 'hinged') txt = `${f.ref.name} — LMB grab & pull · R open/close`; else if (f.kind === 'spot') txt = `R: ${f.ref.label}`; else if (f.kind === 'tree') txt = 'The Christmas tree (grab the baubles)'; else if (f.kind === 'tv') txt = 'Martin\'s TV (do not touch)'; }
       if (!txt && !held && !G.player.seated && G.player.freeSeat()) txt = 'R: sit down';
       if (!txt && G.player.seated) txt = 'Move to stand up';
       const who = f && (f.kind === 'char' || f.kind === 'dog') ? f.ref : null;
@@ -102,13 +102,12 @@ class UI {
   }
   showTag(p, prot) {
     if (!p) { this.tag.visible = false; this.tagFor = null; this.tagPerson = null; return; }
-    const key = p.name + (prot ? 'p' : '') + (p.heavy ? 'h' : '');
+    const key = p.name;
     if (this.tagFor !== key) { this.tagFor = key; const g = this.tagTex.userData.ctx; g.clearRect(0, 0, 512, 160);
-      const team = p.isDog ? '#c8a050' : p.team === 'paul' ? '#d23b3b' : p.team === 'martin' ? '#2f74c0' : '#2fa35a';
-      const sub = p.isDog ? 'The dog · R to stroke' : prot ? 'Too little to grab' : (p.spec?.role || '') + (p.heavy ? ' · heavy' : '');
-      g.font = 'bold 54px Georgia, serif'; const w = Math.max(g.measureText(p.name).width, (g.font = '26px sans-serif', g.measureText(sub).width)) + 60;
-      g.fillStyle = 'rgba(14,12,22,0.82)'; roundRect(g, 256 - w / 2, 8, w, 132, 26); g.fill(); g.fillStyle = team; roundRect(g, 256 - w / 2, 8, 14, 132, 7); g.fill();
-      g.textAlign = 'center'; g.fillStyle = '#fff'; g.font = 'bold 54px Georgia, serif'; g.fillText(p.name, 263, 72); g.fillStyle = '#ffd98a'; g.font = '26px sans-serif'; g.fillText(sub, 263, 116); g.textAlign = 'left';
+      const team = TEAMS[p.team]?.color || '#c8a050'; // just the name, edged in their team colour
+      g.font = 'bold 58px Georgia, serif'; const w = g.measureText(p.name).width + 64;
+      g.fillStyle = 'rgba(14,12,22,0.82)'; roundRect(g, 256 - w / 2, 36, w, 92, 26); g.fill(); g.fillStyle = team; roundRect(g, 256 - w / 2, 36, 14, 92, 7); g.fill();
+      g.textAlign = 'center'; g.fillStyle = '#fff'; g.fillText(p.name, 263, 102); g.textAlign = 'left';
       this.tagTex.needsUpdate = true; }
     this.tagPerson = p; this.placeTag();
   }
@@ -129,7 +128,7 @@ class UI {
   askNumber(title, cb) { this.modal('pickModal', `<h2>${title}</h2><input id="numIn" type="number" value="100" style="font-size:22px;width:140px;padding:6px"> <button class="btn" id="numOk">Guess</button>`, (el) => { el.querySelector('#numOk').onclick = () => { const n = +el.querySelector('#numIn').value || 0; this.closeModal('pickModal'); cb(n); }; }); if (G.xr) cb(Math.round(60 + Math.random() * 60)); }
   showAwards(list) { this.modal('scoreModal', `<h2>🏆 Family Awards</h2><table>${list.map(([a, b]) => `<tr><td>${a}</td><td style="text-align:right;color:#ffd700">${b}</td></tr>`).join('')}</table><p style="opacity:.7">The cup stays on the mantelpiece with the winners' names for next time.</p><button class="btn" data-close>Close</button> <button class="btn alt" id="photoBtn">📸 Save team photo</button>`, (el) => { el.querySelector('#photoBtn').onclick = () => this.photo(); }); }
   photo() { G.renderer.render(G.scene, G.camera); const a = document.createElement('a'); a.href = G.renderer.domElement.toDataURL('image/png'); a.download = 'mason-quiz-team-photo.png'; a.click(); this.toast('Team photo saved.'); }
-  scoreboard(v) { const q = G.quiz; if (!v) return this.closeModal('scoreModal'); const s = G.systems; const pc = q.pcScores(); this.modal('scoreModal', `<h2>Scoreboard</h2><table><tr><td></td><td>TV</td><td>PC</td></tr>${['paul', 'martin', 'debbie'].map(t => `<tr><td style="color:${q.teamColor(t)}">${q.teamName(t)}</td><td>${q.total(t)}</td><td>${pc[t]}</td></tr>`).join('')}</table><p style="font-size:13px;opacity:.75">The TV and the PC disagree by 2. Nobody knows which is right.</p><div class="grid2"><div>Told You So (Charli)</div><div>${q.stats.toldYou}</div><div>Paul argued vs reality</div><div>${q.stats.argued}</div><div>Biased rulings</div><div>${q.stats.biased}</div><div>Your throws</div><div>${G.player.stats.throws}</div><div>Coaster warnings</div><div>${s.stats.coaster}</div><div>Gary dignity</div><div>${Math.round(s.dignity)}</div><div>Eye-rolls</div><div>${s.stats.eyeRolls}</div></div>`); }
+  scoreboard(v) { const q = G.quiz; if (!v) return this.closeModal('scoreModal'); const s = G.systems; const pc = q.pcScores(); this.modal('scoreModal', `<h2>Scoreboard</h2><table><tr><td></td><td>TV</td><td>PC</td></tr>${TEAM_IDS.map(t => `<tr><td style="color:${q.teamColor(t)}">${q.teamName(t)}</td><td>${q.total(t)}</td><td>${pc[t]}</td></tr>`).join('')}</table><p style="font-size:13px;opacity:.75">The TV and the PC disagree by 2. Nobody knows which is right.</p><div class="grid2"><div>Told You So (Charli)</div><div>${q.stats.toldYou}</div><div>Paul argued vs reality</div><div>${q.stats.argued}</div><div>Biased rulings</div><div>${q.stats.biased}</div><div>Your throws</div><div>${G.player.stats.throws}</div><div>Coaster warnings</div><div>${s.stats.coaster}</div><div>Gary dignity</div><div>${Math.round(s.dignity)}</div><div>Eye-rolls</div><div>${s.stats.eyeRolls}</div></div>`); }
   modal(id, html, after) { const m = $(id); m.firstElementChild.innerHTML = html; m.classList.add('open'); this.modalOpen = true; document.exitPointerLock?.(); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => this.closeModal(id)); after && after(m); m.onpointerdown = (e) => e.stopPropagation(); }
   closeModal(id) { $(id).classList.remove('open'); this.modalOpen = [...document.querySelectorAll('.modal.open')].length > 0; if (!this.modalOpen && !this.touchMode && this.started && !G.xr) G.renderer.domElement.requestPointerLock?.(); }
   // ---------------- menu & settings ----------------
@@ -231,7 +230,7 @@ class UI {
   drawWrist() {
     const g = this.wristTex.userData.ctx, W = 512, H = 336; const q = G.quiz;
     g.fillStyle = 'rgba(20,16,30,0.92)'; roundRect(g, 0, 0, W, H, 24); g.fill(); g.strokeStyle = '#ffd700'; g.lineWidth = 4; roundRect(g, 2, 2, W - 4, H - 4, 22); g.stroke();
-    if (q) { g.font = 'bold 22px sans-serif'; let x = 16; for (const t of ['paul', 'martin', 'debbie']) { g.fillStyle = q.teamColor(t); g.fillText(`${q.teamName(t).replace('Team ', '')} ${q.total(t)}`, x, 34); x += 168; }
+    if (q) { g.font = 'bold 22px sans-serif'; let x = 16; for (const t of TEAM_IDS) { g.fillStyle = q.teamColor(t); g.fillText(`${q.teamName(t).replace('Team ', '')} ${q.total(t)}`, x, 34); x += 124; }
       g.fillStyle = '#fff'; g.font = '18px sans-serif'; const s = G.systems; g.fillText(`Banter ${s.banterLevel()} · Havoc ${['Calm', 'Busy', 'Wild', 'CHAOS'][s.havocLevel()]} · ${q.phase === 'question' ? 'Q' + (q.qi + 1) + ' ' + Math.ceil(q.qTime - q.t) + 's' : q.phase}`, 16, 62);
       if (this.vrToast && G.time < this.vrToast.until) { g.fillStyle = '#ffd700'; g.font = '16px sans-serif'; wrap(g, this.vrToast.text, 16, 84, 480, 18, 1); } }
     for (const b of this.wristButtons()) { g.fillStyle = b.hot ? '#d23b3b' : '#1d3557'; roundRect(g, b.x * W, b.y * H, b.w * W, b.h * H, 12); g.fill(); g.fillStyle = '#fff'; g.font = 'bold 20px sans-serif'; g.textAlign = 'center'; g.fillText(b.label, (b.x + b.w / 2) * W, (b.y + b.h / 2) * H + 7); g.textAlign = 'left'; }

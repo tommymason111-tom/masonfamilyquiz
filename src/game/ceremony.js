@@ -1,4 +1,4 @@
-// The Mason Cup ceremony: final scores, recount, cup presented (to Martin's team first, "by mistake"),
+// The Mason Cup ceremony: final scores, recount, cup presented (to Julie's team first, "by mistake"),
 // confetti cannons, Replay of the Night, individual awards, team photo, the plaque, and "same time next year".
 import * as THREE from 'three';
 import { G, on, emit, rand, pick } from '../core.js';
@@ -6,13 +6,13 @@ import { sfx, playMusic, stopMusic } from '../engine/audio.js';
 import { tvFrame, wrapText } from './screens.js';
 import { loadStore, saveStore } from './settings.js';
 import { canvasTex } from '../engine/textures.js';
-import { OUTFITS } from '../chars/cast.js';
+import { OUTFITS, TEAM_IDS } from '../chars/cast.js';
 
 export class Ceremony {
   constructor() { G.ceremony = this; this.buildPlaque(); }
   buildPlaque() {
     // past winners board on the chimney breast, above the mantel (the cup "stays won" between playthroughs)
-    const winners = loadStore('winners', [{ year: 2025, team: 'Team Martin', note: '(disputed)' }]);
+    const winners = loadStore('winners', [{ year: 2025, team: 'Team Julie', note: '(disputed)' }]);
     const tex = canvasTex(512, 320, (g) => {
       g.fillStyle = '#2a1a10'; g.fillRect(0, 0, 512, 320); g.strokeStyle = '#d4af37'; g.lineWidth = 8; g.strokeRect(6, 6, 500, 308);
       g.fillStyle = '#d4af37'; g.font = 'bold 34px Georgia'; g.fillText('THE MASON CUP', 120, 50); g.font = '22px Georgia'; g.fillText('Roll of honour', 185, 80);
@@ -37,11 +37,11 @@ export class Ceremony {
     // the turkey falls off the cup during the presentation; Chip runs off with it
     setTimeout(() => { if (cup) { const t = cup.body.translation(); const tk = G.items.spawn('cup_turkey', new THREE.Vector3(t.x, t.y + 0.3, t.z), null); tk?.body.setLinvel({ x: 0.5, y: 1, z: 0.5 }, true); G.ui?.toast('The little turkey has fallen off the Mason Cup. Chip has it.', 4); G.dog?.goTo(new THREE.Vector3(t.x, 0, t.z), 3); } }, 9000);
     // losers' prizes
-    setTimeout(() => { const lose = ['paul', 'martin', 'debbie'].sort((a, b) => q.total(a) - q.total(b))[0]; G.items.spawn('wooden_spoon_prize', new THREE.Vector3(-1.5, 0.6, -3.6), null); G.items.spawn('certificate', new THREE.Vector3(-1.3, 0.6, -3.6), null); G.ui?.toast(`Wooden spoon and a gravy-stained certificate for ${q.teamName(lose)}.`, 4); }, 12000);
+    setTimeout(() => { const lose = TEAM_IDS.slice().sort((a, b) => q.total(a) - q.total(b))[0]; G.items.spawn('wooden_spoon_prize', new THREE.Vector3(-1.5, 0.6, -3.6), null); G.items.spawn('certificate', new THREE.Vector3(-1.3, 0.6, -3.6), null); G.ui?.toast(`Wooden spoon and a gravy-stained certificate for ${q.teamName(lose)}.`, 4); }, 12000);
     // Replay of the Night on the TV, then awards
     setTimeout(() => { q.mSay('And now... the Replay of the Night.', 2); G.replay.playHighlights(() => this.awards(winner)); }, 15000);
     // record the win
-    const winners = loadStore('winners', [{ year: 2025, team: 'Team Martin', note: '(disputed)' }]); winners.push({ year: new Date().getFullYear(), team: name, note: winner === 'paul' ? '(Tommy, captain)' : '' }); saveStore('winners', winners);
+    const winners = loadStore('winners', [{ year: 2025, team: 'Team Julie', note: '(disputed)' }]); winners.push({ year: new Date().getFullYear(), team: name, note: winner === 'paul' ? '(Tommy, captain)' : '' }); saveStore('winners', winners);
     // unlock outfits by winning
     if (winner === 'paul') { const un = loadStore('unlockedOutfits', OUTFITS.map(o => o.id)); saveStore('unlockedOutfits', un); saveStore('pickNextOutfit', true); }
   }
