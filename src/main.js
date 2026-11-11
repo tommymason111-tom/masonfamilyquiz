@@ -45,9 +45,9 @@ async function boot() {
   document.getElementById('app').appendChild(renderer.domElement);
   G.renderer = renderer;
   const scene = new THREE.Scene(); G.scene = scene;
-  scene.background = new THREE.Color('#070a16');
+  scene.background = new THREE.Color('#0d1530');
   scene.fog = new THREE.Fog('#0b1022', 28, 110);
-  const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 120); G.camera = camera;
+  const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 600); G.camera = camera;
   G.clock = new THREE.Clock();
   status('Building Martin\'s house…', 0.12);
   buildHouse();

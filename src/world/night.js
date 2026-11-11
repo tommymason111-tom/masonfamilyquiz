@@ -43,28 +43,48 @@ export function buildLights(H) {
   try { const pm = new THREE.PMREMGenerator(G.renderer); G.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; G.scene.environmentIntensity = 0.18; } catch (e) {}
 }
 export function setNight() {
-  const sky = new THREE.Color('#070a16'); G.scene.background = sky;
-  G.scene.fog = new THREE.Fog('#0b1022', 28, 110);
+  const sky = new THREE.Color('#0d1530'); G.scene.background = sky;
+  G.scene.fog = new THREE.Fog('#121a34', 35, 130);
 }
 
 export function buildNight(H) {
   const s = G.scene; const rnd = mulberry(77);
   // ---------- sky dome: deep blue with a faint orange town glow at the horizon ----------
-  const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { t: { value: 0 } },
-    vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: { t: { value: 0 } },
+    vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); vec4 p = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position = p.xyww; }',
     fragmentShader: `varying vec3 vp; uniform float t;
-      void main(){ float h = vp.y; vec3 zen = vec3(0.012,0.018,0.05); vec3 mid = vec3(0.035,0.05,0.11); vec3 hor = vec3(0.16,0.10,0.10);
-        vec3 c = mix(mid, zen, smoothstep(0.05, 0.6, h)); c = mix(hor, c, smoothstep(-0.02, 0.18, h));
-        float moonDir = max(0.0, dot(normalize(vp), normalize(vec3(-0.45,0.55,-0.7)))); c += vec3(0.06,0.08,0.13) * pow(moonDir, 12.0);
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
+      float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * n(p); p *= 2.03; a *= 0.5; } return v; }
+      void main(){
+        vec3 d = normalize(vp); float y = d.y;
+        // winter night gradient: inky zenith, deep blue mid-sky, lighter blue towards the horizon
+        vec3 zen = vec3(0.010,0.016,0.045), mid = vec3(0.035,0.060,0.150), low = vec3(0.090,0.120,0.240);
+        vec3 c = mix(low, mid, smoothstep(0.0, 0.25, y)); c = mix(c, zen, smoothstep(0.25, 0.85, y));
+        // sodium glow of the town along the horizon
+        c += vec3(0.32,0.16,0.07) * exp(-max(y, 0.0) * 9.0) * 0.8;
+        // milky way band
+        vec3 ax = normalize(vec3(0.6, 0.35, 0.72)); float band = exp(-pow(dot(d, ax) * 4.5, 2.0));
+        vec2 uv = d.xz * 5.0 + d.yy * 3.0; c += vec3(0.07,0.07,0.10) * band * (0.4 + fbm(uv * 1.8)) * smoothstep(0.02, 0.3, y);
+        // moon glow
+        vec3 md = normalize(vec3(-0.45,0.55,-0.7)); float m = max(0.0, dot(d, md));
+        c += vec3(0.10,0.13,0.20) * pow(m, 8.0) + vec3(0.25,0.28,0.35) * pow(m, 90.0);
+        // slow moonlit clouds
+        vec2 cp = d.xz / (y + 0.35) * 1.3 + vec2(t * 0.004, t * 0.002);
+        float cl = smoothstep(0.52, 0.85, fbm(cp)); cl *= smoothstep(0.0, 0.2, y) * (1.0 - smoothstep(0.55, 0.9, y));
+        vec3 cloudCol = mix(vec3(0.05,0.06,0.10), vec3(0.20,0.22,0.30), pow(m, 3.0)) + vec3(0.10,0.06,0.03) * exp(-y * 6.0);
+        c = mix(c, cloudCol, cl * 0.85);
+        // below the horizon: fade into the dark of the land
+        c = mix(c, vec3(0.03,0.035,0.06), smoothstep(0.0, -0.08, y));
         gl_FragColor = vec4(c, 1.0); }` });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(180, 32, 16), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; s.add(sky); H.sky = sky;
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(180, 32, 16), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; s.add(sky); H.sky = sky; G.updaters.push((dt) => { skyMat.uniforms.t.value += dt; });
   // stars
   const N = 1800, sp = new Float32Array(N * 3), sc = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) { const u = rnd(), v = rnd() * 0.95 + 0.05; const th = u * Math.PI * 2, ph = Math.acos(1 - v); const r = 170;
     sp[i * 3] = Math.sin(ph) * Math.cos(th) * r; sp[i * 3 + 1] = Math.cos(ph) * r; sp[i * 3 + 2] = Math.sin(ph) * Math.sin(th) * r; const b = 0.4 + rnd() * 0.6; const tint = rnd();
     sc[i * 3] = b * (tint > 0.8 ? 1 : 0.85); sc[i * 3 + 1] = b * 0.9; sc[i * 3 + 2] = b * (tint < 0.3 ? 1.1 : 1); }
   const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.BufferAttribute(sc, 3));
-  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, fog: false, transparent: true, depthWrite: false })); stars.renderOrder = -9; s.add(stars); H.stars = stars;
+  const stars = new THREE.Points(sg, new THREE.PointsMaterial({ size: 2.0, sizeAttenuation: false, vertexColors: true, fog: false, transparent: true, depthWrite: false })); stars.renderOrder = -9; s.add(stars); H.stars = stars;
   // the moon (with a soft halo)
   const mc = document.createElement('canvas'); mc.width = mc.height = 256; const g = mc.getContext('2d');
   const halo = g.createRadialGradient(128, 128, 20, 128, 128, 128); halo.addColorStop(0, 'rgba(220,230,255,0.55)'); halo.addColorStop(0.25, 'rgba(160,180,230,0.18)'); halo.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = halo; g.fillRect(0, 0, 256, 256);
