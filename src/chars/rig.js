@@ -108,6 +108,15 @@ export class Person {
     for (const b of this.bodies) b.setBodyType(kin ? R.RigidBodyType.KinematicPositionBased : R.RigidBodyType.Dynamic, true);
   }
 
+  // switch between being you (no physics body; driven by the player controller) and being an AI relative
+  setPlayer(on) {
+    if (on === this.isPlayer) return;
+    if (on) {
+      if (this.bodies) { for (const c of this.colliders || []) { G.colliderMap.delete(c.handle); G.selfOwner.delete(c.handle); } for (const b of this.bodies) G.world.removeRigidBody(b); }
+      this.bodies = undefined; this.colliders = []; this.joints = []; this.state = 'anim'; this.heldBy?.clear(); this.isPlayer = true;
+      activeRagdolls = activeRagdolls.filter(p => p !== this);
+    } else { this.isPlayer = false; this.state = 'anim'; this.buildPhysics(); this.root.visible = true; }
+  }
   // was this person hit/thrown/grabbed by the player in the last few seconds? (comic FX only fire then)
   byPlayer(s = 4) { return G.time - (this.playerHitT ?? -99) < s; }
   // Knock into ragdoll. impulse applied to part (or chest)
@@ -324,6 +333,16 @@ export class Person {
         case 'dance': { const w2 = Math.sin(t * 5); E(1, 0.05, w2 * 0.3, w2 * 0.1); E(3, -1.2 + w2 * 0.6, 0, 0.6); E(5, -1.2 - w2 * 0.6, 0, -0.6); E(4, -1.2); E(6, -1.2); E(7, -Math.max(0, w2) * 0.4); E(9, -Math.max(0, -w2) * 0.4); rootY += Math.abs(w2) * 0.02; break; }
         case 'coatOn': E(3, -2.2, 0, 0.6); E(5, -0.3 + osc * 0.3, 0, -0.9); E(4, -1.0); E(6, -1.4); break;
         case 'stretch': E(3, -2.9, 0, 0.2); E(5, -2.9, 0, -0.2); E(1, -0.2); break;
+        // activities: reaching into a fridge, overarm throws, eating, warming hands by the fire, stroking Chip, pulling a cracker, toasting, selfies
+        case 'reach': E(5, -1.45, 0, -0.1); E(6, -0.15); E(1, 0.18); E(2, 0.15); break;
+        case 'throwOver': { const k = Math.min(1, gt / 0.9); if (k < 0.55) { E(5, -2.6, 0, -0.5); E(6, -1.9); E(1, -0.15, 0.3); } else { E(5, -1.1, 0, -0.1); E(6, -0.1); E(1, 0.25, -0.25); } break; }
+        case 'eat': { const up = Math.sin(gt * 2.2) > 0; E(5, up ? -0.5 : -0.3, -0.3, 0.15); E(6, up ? -2.3 : -1.5); E(2, up ? -0.12 : 0.05); break; }
+        case 'warm': E(3, -1.25, 0, 0.12 + osc * 0.04); E(5, -1.25, 0, -0.12 - osc * 0.04); E(4, -0.35); E(6, -0.35); E(1, 0.12); break;
+        case 'pet': E(1, 0.85); E(2, 0.3); E(5, -1.1 + osc * 0.15, 0, -0.1); E(6, -0.2); E(7, -0.9); E(9, -0.9); E(8, 1.3); E(10, 1.3); rootY -= 0.22 * H; break;
+        case 'pull': { const tug = Math.sin(t * 7) * 0.08; E(3, -1.35, 0, 0.05); E(5, -1.35, 0, -0.05); E(4, -0.25 + tug); E(6, -0.25 + tug); E(1, -0.22 - tug); E(7, -0.15); E(9, 0.1); break; }
+        case 'toast': E(5, -2.4, 0, -0.2); E(6, -0.6); E(2, -0.15); break;
+        case 'selfie': E(5, -2.0, 0.6, -0.5); E(6, -0.4); E(2, -0.1, 0.25); break;
+        case 'hips': E(3, -0.2, 0, 0.55); E(5, -0.2, 0, -0.55); E(4, -1.5, 0.9); E(6, -1.5, -0.9); break;
       }
     } else if (talking && b !== 'sleep') {
       const osc = Math.sin(t * 4.5);

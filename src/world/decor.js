@@ -146,7 +146,8 @@ export function buildDecor(P, add, M, solid, H) {
   // ---------- dining room ----------
   const tx = 4.99, tz = -3.9;
   P.box(0.5, 0.01, 1.6, '#c1121f', tx, 0.775, tz).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz - 0.72).box(0.48, 0.012, 0.05, '#d4af37', tx, 0.776, tz + 0.72);
-  P.torus(0.16, 0.05, '#1f5a2a', tx, 0.8, tz, Math.PI / 2); for (let i = 0; i < 3; i++) { P.cyl(0.025, 0.025, 0.2, '#f4f1ea', tx + (i - 1) * 0.06, 0.88, tz + (i - 1) * 0.05); glow.cone(0.012, 0.03, '#ffcf60', tx + (i - 1) * 0.06, 1.0, tz + (i - 1) * 0.05); }
+  // the wreath and candles live on the sideboard, so the table is clear for sprout throwing
+  { const sx = 1.2, sz = -3.85, sy = 0.105; P.torus(0.16, 0.05, '#1f5a2a', sx, 0.8 + sy, sz, Math.PI / 2); for (let i = 0; i < 3; i++) { P.cyl(0.025, 0.025, 0.2, '#f4f1ea', sx + (i - 1) * 0.04, 0.88 + sy, sz + (i - 1) * 0.06); glow.cone(0.012, 0.03, '#ffcf60', sx + (i - 1) * 0.04, 1.0 + sy, sz + (i - 1) * 0.06); } }
   const word = 'MERRY XMAS'; for (let i = 0; i < word.length; i++) { const t = i / (word.length - 1); const x = 1.3 + t * 3.0, y = 2.35 - Math.sin(t * Math.PI) * 0.18; P.cone(0.1, 0.18, i % 2 ? '#c1121f' : '#1f6a3a', x, y - 0.09, -0.52, Math.PI, 0, 0, 3); }
   P.box(3.1, 0.005, 0.005, '#d4af37', 2.8, 2.35, -0.52);
   string([[1.05, 2.4, -5.88], [5.42, 2.4, -5.88], [5.42, 2.4, -0.55]], 36, FAIRY, 0.06);
@@ -175,7 +176,7 @@ export function buildDecor(P, add, M, solid, H) {
   for (const [x, z] of [[1.3, -6.45], [5.15, -6.45], [4.8, -9.1]]) P.cyl(0.18, 0.14, 0.35, '#e8e0d0', x, 0.175, z).sph(0.35, '#3a7a32', x, 0.75, z, 0.7, 1.4, 0.7, 8).sph(0.25, '#4a8a3a', x + 0.1, 1.1, z, 0.6, 1.2, 0.6, 8);
   if (H.consTV) glow.box(0.008, 0.62, 1.12, '#24406a', H.consTV.x - 0.03, H.consTV.y, H.consTV.z);
 
-  // ---------- outside: upper floor, pitched roof, chimney, porch, icicle lights, garden lights, snowman, light-up reindeer ----------
+  // ---------- outside: upper floor, pitched roof, chimney, porch, icicle lights, garden lights, snowman ----------
   const brick = M.brick;
   const X0 = xLW, X1 = xR, Z0 = zBack, Z1 = zF, F1 = WALL_H, F2 = 5.0, T = 0.18;
   add(brick, uvBox((X0 + X1) / 2, (F1 + F2) / 2, Z1, X1 - X0 + T, F2 - F1, T, 1.5));
@@ -216,14 +217,12 @@ export function buildDecor(P, add, M, solid, H) {
   P.box(0.2, 0.12, 0.01, '#1a1a1a', -0.7, 1.95, 6.1); glow.box(0.04, 0.08, 0.005, '#d4af37', -0.73, 1.95, 6.11).box(0.04, 0.08, 0.005, '#d4af37', -0.67, 1.95, 6.11);
   for (const [x, c] of [[-2.6, '#2a2a2a'], [-2.0, '#1d5a2a'], [-1.4, '#1d3a6a']]) P.rbox(0.55, 1.05, 0.65, 0.04, c, x, 0.53, 6.65).box(0.57, 0.04, 0.7, c, x, 1.07, 6.65);
   for (const [x, z] of [[3.2, 8.4], [-2.2, 8.8]]) { P.cyl(0.08, 0.1, 0.8, '#4a3420', x, 0.4, z); for (let k = 0; k < 4; k++) P.cone(0.9 - k * 0.18, 0.8, '#1f4a22', x, 1.0 + k * 0.45, z, 0, 0, 0, 10); for (let i = 0; i < 40; i++) { const t = i / 40; const a = t * Math.PI * 9; const r2 = 0.85 * (1 - t) + 0.08; bulbs.push([x + Math.cos(a) * r2, 0.75 + t * 1.8, z + Math.sin(a) * r2, pick(FAIRY)]); } }
-  // garden: path lights along the lawn edge, snowman, light-up reindeer, trampoline, fence fairy lights
+  // garden: path lights along the lawn edge, snowman, trampoline (kept clear of the fling lane), fence fairy lights
   for (let i = 0; i < 8; i++) { const t = i / 7; const x = PX(795) + (PX(48) - PX(795)) * t, z = PZ(405) + (PZ(550) - PZ(405)) * (t * t * 0.55 + t * 0.45) - 0.25; P.cyl(0.02, 0.02, 0.4, '#222', x, 0.2, z); glow.sph(0.04, '#fff0c0', x, 0.42, z); }
-  P.sph(0.42, '#f6f8fa', -5.2, 0.4, -12.2, 1, 0.95, 1, 14).sph(0.3, '#f6f8fa', -5.2, 1.0, -12.2, 1, 1, 1, 12).sph(0.2, '#f6f8fa', -5.2, 1.45, -12.2, 1, 1, 1, 12).cone(0.035, 0.18, '#f77f00', -5.2, 1.45, -12.0, Math.PI / 2, 0, 0, 8).sph(0.025, '#111', -5.27, 1.52, -12.03).sph(0.025, '#111', -5.13, 1.52, -12.03).torus(0.2, 0.04, '#c1121f', -5.2, 1.22, -12.2, Math.PI / 2).cyl(0.16, 0.16, 0.22, '#111', -5.2, 1.7, -12.2).cyl(0.22, 0.22, 0.03, '#111', -5.2, 1.6, -12.2);
-  solid(-5.2, 0.7, -12.2, 0.4, 0.7, 0.4);
-  for (const [x, z, r2] of [[-1.0, -13.4, 0.4], [0.1, -13.8, -0.3]]) { const c = Math.cos(r2), s = Math.sin(r2);
-    glow.box(0.05, 0.3, 0.7, '#f8f0d8', x, 0.75, z, 0, r2).box(0.05, 0.25, 0.25, '#f8f0d8', x + 0.6 * s, 1.0, z + 0.6 * c, 0, r2).box(0.03, 0.4, 0.03, '#f8f0d8', x + 0.3 * s, 0.3, z + 0.3 * c).box(0.03, 0.4, 0.03, '#f8f0d8', x - 0.25 * s, 0.3, z - 0.25 * c).box(0.03, 0.25, 0.2, '#f8f0d8', x + 0.62 * s, 1.3, z + 0.62 * c, 0, r2); }
-  P.cyl(1.3, 1.3, 0.08, '#1a1a1a', 3.4, 0.85, -12.6, 0, 0, 0, 28).torus(1.35, 0.05, '#2a6aa8', 3.4, 0.88, -12.6, Math.PI / 2); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; P.cyl(0.03, 0.03, 0.85, '#888', 3.4 + Math.cos(a) * 1.3, 0.42, -12.6 + Math.sin(a) * 1.3); }
-  staticBox(3.4, 0.86, -12.6, 1.2, 0.05, 1.2);
+  P.sph(0.42, '#f6f8fa', -6.60, 0.4, -13.80, 1, 0.95, 1, 14).sph(0.3, '#f6f8fa', -6.60, 1.0, -13.80, 1, 1, 1, 12).sph(0.2, '#f6f8fa', -6.60, 1.45, -13.80, 1, 1, 1, 12).cone(0.035, 0.18, '#f77f00', -6.60, 1.45, -13.60, Math.PI / 2, 0, 0, 8).sph(0.025, '#111', -6.67, 1.52, -13.63).sph(0.025, '#111', -6.53, 1.52, -13.63).torus(0.2, 0.04, '#c1121f', -6.60, 1.22, -13.80, Math.PI / 2).cyl(0.16, 0.16, 0.22, '#111', -6.60, 1.7, -13.80).cyl(0.22, 0.22, 0.03, '#111', -6.60, 1.6, -13.80);
+  solid(-6.6, 0.7, -13.8, 0.4, 0.7, 0.4);
+  P.cyl(1.1, 1.1, 0.08, '#1a1a1a', 3.9, 0.85, -13.5, 0, 0, 0, 28).torus(1.15, 0.05, '#2a6aa8', 3.9, 0.88, -13.5, Math.PI / 2); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; P.cyl(0.03, 0.03, 0.85, '#888', 3.9 + Math.cos(a) * 1.1, 0.42, -13.5 + Math.sin(a) * 1.1); }
+  staticBox(3.9, 0.86, -13.5, 1.0, 0.05, 1.0);
   const gL = PX(36) + 0.06, gR = PX(1228) - 0.06, gT = PZ(16) + 0.06;
   string([[gL, 1.8, gT], [gR, 1.8, gT]], 80, FAIRY, 0.15); string([[gR, 1.8, gT], [gR, 1.8, PZ(502)]], 30, FAIRY, 0.12); string([[gL, 1.8, gT], [gL, 1.8, zMid]], 80, FAIRY, 0.12);
 

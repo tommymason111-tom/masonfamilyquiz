@@ -221,21 +221,20 @@ export const PLACEMENTS = [
   ['nutcracker', -5.05, 1.25, -2.75], ['snow_globe', -5.55, 2.0, -1.3],
   ['tv_guide', CF[0], 0.42, CF[1], 0.2], ['tissues', 0.6, 0.565, -1.95],
   ['present_s', -3.1, 0, -6.2, 0.3, 2, 0.0, 0.4], ['present_m', -1.85, 0, -6.25, -0.4], ['present_l', -2.45, 0, -5.75, 0.2],
-  ['duplo', -2.6, 0.012, -2.6, 0, 3, 0.08, 0.03], ['toy_car', -2.9, 0.012, -4.4, 0.5], ['toy_dino', -2.2, 0.012, -2.2, 2], ['teddy', -4.6, 0.0, -0.75, Math.PI],
-  ['dog_toy', -4.45, 0.02, -1.35], ['tennis_ball', -4.2, 0.02, -1.6], ['celebration', CF[0] + 0.05, 0.6, CF[1] - 0.1, 0, 3, 0.01, 0.0, 0.03],
+  ['teddy', -4.6, 0.0, -0.75, Math.PI],
+  ['dog_toy', -4.45, 0.02, -1.35], ['celebration', CF[0] + 0.05, 0.6, CF[1] - 0.1, 0, 3, 0.01, 0.0, 0.03],
   ['phone', CF[0] + 0.05, 0.42, CF[1] + 0.15, 1.2],
   ['gamepad', 0.2, 0.5, -3.4, -1.5],
   // ---- hallway ----
-  ['shoe', -0.4, 0, 5.55, 0.3, 4, 0.18, -0.04], ['shoe', 0.3, 0, 5.3, -0.6, 2, 0.1, 0.12], ['slipper', 0.6, 0, 5.0, 2.5],
+  ['shoe', -0.4, 0, 5.55, 0.3, 2, 0.18, -0.04], 
   ['no_shoes_sign', 1.2, 0.87, 2.95, -Math.PI / 2], ['keys', 1.2, 0.87, 3.4], ['handbag', 1.2, 0.87, 3.62, -Math.PI / 2],
   ['photo_frame', 1.25, 0.87, 3.15, -Math.PI / 2],
   // ---- bathroom ----
   ['toilet_roll', -1.55, 0, 5.75], ['air_freshener', -2.5, 0.93, 3.6], ['rubber_duck', -2.05, 0.93, 3.6],
   // ---- under the stairs / garage ----
-  ['hoover', -3.45, 0, 2.7], ['deco_box', -6.0, 0, 4.4], ['outfit_box', -2.2, 1.43, -0.1],
-  ['folding_chair', -5.4, 0, 5.5, 0.2, 2, 0.05, 0.06, 0.05],
-  ['paint_tin', -7.19, 0.52, 3.8, 0, 2, 0, 0.3], ['deco_box', -7.15, 1.02, 4.7], ['toolbox', -3.45, 0.93, 3.85, Math.PI / 2], ['traffic_cone', -6.1, 0, 5.4], ['mop_bucket', -6.3, 0, 3.4], ['mop', -6.2, 0, 3.2], ['cool_box', -5.6, 0, 3.9],
-  ['sledge', -4.6, 0, 5.4, 0.1], ['football', -4.5, 0, 3.0], ['torch', -3.45, 0.93, 4.6],
+  ['hoover', -3.45, 0, 2.7], ['outfit_box', -2.2, 1.43, -0.1],
+  ['paint_tin', -7.19, 0.52, 3.8, 0, 2, 0, 0.3], ['deco_box', -7.15, 1.02, 4.7], ['toolbox', -3.45, 0.93, 3.85, Math.PI / 2], 
+  ['torch', -3.45, 0.93, 4.6],
   ['beer_crate', -6.95, 0, 2.45, 0], ['beer_crate', -6.95, 0, 2.9, 0],
   ['lager', -7.07, 0.04, 2.45, 0, 4, 0.08, 0], ['lager', -7.07, 0.04, 2.9, 0, 4, 0.08, 0],
   // garage fridge contents (fridge centre -4.63, 0.1; shelves y=0.12/0.57/1.02)
@@ -277,7 +276,7 @@ export const PLACEMENTS = [
   // ---- garden / patio ----
   ['patio_table', -2.47, 0, -8.36], ['patio_chair', -3.08, 0, -9.08, 0], ['patio_chair', -2.44, 0, -9.08, 0], ['patio_chair', -1.78, 0, -9.08, 0], ['patio_chair', -3.08, 0, -7.63, Math.PI], ['patio_chair', -2.44, 0, -7.63, Math.PI], ['patio_chair', -1.78, 0, -7.63, Math.PI],
   ['patio_chair', -3.71, 0, -8.36, Math.PI / 2], ['patio_chair', -1.23, 0, -8.36, -Math.PI / 2],
-  ['gnome', -6.8, 0, -10.5, 0.4], ['football', 0.5, 0, -12.0], ['wheelbarrow', -6.4, 0, -13.7, 0.6], ['plant_pot', -5.6, 0, -6.35], ['bird_feeder', -6.7, 0, -12.6],
+  ['plant_pot', -5.6, 0, -6.35], 
 ];
 
 // ---------------- hinged things (doors, fridge doors, lids, stair gate) ----------------

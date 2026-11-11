@@ -1,7 +1,7 @@
 # The Mason Family Boxing Day Quiz 🎄
 
 A physics comedy party game for **Meta Quest 3** (WebXR, hand tracking) that also plays on **PC, iPad, phone and gamepad**.
-You are Tommy, arriving at Uncle Martin's on Boxing Day for the annual quiz. Win it for Team Paul, survive the
+Play as anyone in the family (Tommy by default), arriving at Uncle Martin's on Boxing Day for the annual quiz. Win it for Team Paul, survive the
 mini-games, stop Dad taking the banter too far, keep Auntie Debbie from walking out — or throw Uncle Gary into the tree.
 
 Built to the design doc *The Mason Family Boxing Day Quiz* (same no-PC WebXR route as Ronnie Simulator and Lewis Simulator):
@@ -50,8 +50,8 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   mince pies…), drinks (lager, cider, bitter, Prosecco with a cork that fires at Martin, wine, Baileys, squash…),
   crackers, crowns, baubles, presents, toys, Duplo, cushions, coasters, the TV remote, kitchen kit, garage junk, garden
   furniture, mini-game props.
-- **Gary's outfit of the year** (random each game, or pick one in the menu): mankini, Christmas fairy (wings, wand, tutu), Minion, Smurf, Father Christmas, Elf on the Shelf. The costume is painted onto his real scan from the neck down (keeping the scan's folds and shading), plus hats/wings/wand where needed — his face is never changed, so it's always recognisably Gary.
-- **Teams:** Martin hosts. Team Paul — Tommy (you), Charli, Paul, Karen · Team Julie — Sophie, James, Julie ·
+- **Gary's outfit of the year** (random each game, or pick one in the menu): mankini, Christmas fairy (layered tutu, veined wings, wand, tiara), Minion (goggles over his eyes, dungarees), Father Christmas (padded belly, fur trim, sack), Elf on the Shelf (Gary shrunk to just above Mason's height). The costume is painted onto his real scan from the neck down (keeping the scan's folds and shading), plus hats/wings/wand where needed — his face is never changed, so it's always recognisably Gary.
+- **Teams:** Martin hosts. Team Paul — Tommy, Charli, Paul, Karen · Team Julie — Sophie, James, Julie ·
   Team Debbie — Debbie, Gary, Jodie, Harry, Mason · Team Hollie — Hollie, Dan, Kirsty, Bradley, Harrison. Chip isn't on
   a team; he's just chaos. Name tags show only the name, edged in the team colour.
 - **Jobs in the banter:** Dan's a teacher, Kirsty works in a nursery, Sophie edits films, Martin promotes them.
@@ -72,24 +72,29 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
   Martin's TV from the corner camera — slow-mo, second angle, score out of 10, VAR, and the Replay of the Night.
 - **Mini-games:** Sprout Pong, Cracker Pull Duel, Pass the Parcel, Stack the Celebrations, Gift Grab.
 
-## Game modes
+## Starting a game
 
-Pick one on the home screen (or Menu → Change game mode). Personal bests are saved on each device.
+1. **Title** → press PLAY. Gary's outfit of the year is picked on a spinning wheel.
+2. **Pick who you are**, grouped by family (Martin's family *The Masons* — Martin, Julie, Chip and the kids; Paul's family *The Masons*; Debbie's family *The Hoopers*) → DONE.
+   - Play as **Martin** and Julie becomes quizmaster. Play as **Chip** (dog height, "Paw punch", "Pounce", "Sniff"), **Mason** or **Harrison** (their own heights) and you just roam and cause trouble — no game mode.
+3. **Pick a game mode** (and keep the default teams or randomise them) → NEXT.
+4. A summary of the teams, the mode and who you are shows for 3 seconds, then you're in.
+
+## Game modes
 
 | Mode | What it is |
 |---|---|
-| 🏆 The Boxing Day Quiz | The full night: 5 rounds, marking, disputes, mini-games, the Mason Cup |
-| ⚡ Quick Quiz | Two rounds, no mini-games, straight to the cup (~10 min) |
-| 💥 Family Chaos | 3 minutes to punch, kick, throw and pile up the relatives; chained hits build a combo (up to x5); a chaos event every ~15 s |
-| 🚀 Fling the Family | 10 throws, each scored for distance/height (out of 10) plus bonuses for pile-ups, window splats and TV hits |
-| 🍺 Beer Run | 3 minutes of drink orders; right drink to the right person before they give up; the fridges restock |
-| 🔍 Mason's Hide & Seek | Find 6 things Mason hid around the house and garden in 4 minutes (sparkle hints after a minute) |
-| 🎲 Games Room Marathon | All five mini-games back to back |
+| ⚡ Quick Quiz | In the living room: two rounds of five on big tap-to-answer question cards, then the Mason Cup |
+| 🎲 Mini Games | Dining room and conservatory: sprout throwing, cracker pulls (3 opponents), pass the parcel, Celebrations stacking, gift grab — each with a title card, timer and a leaderboard against the other teams |
+| 🚀 Fling the Relative | Garden only: the family queue on the patio, you grab and launch them down the lawn; a measuring tape on the grass marks the distance. Only GRAB / JUMP / THROW buttons |
+| 🍺 Drinks Run | Pop-ups say who wants what and where it is; the drinks are already poured; each person has an anger meter and it gets busier as time goes on |
 | 🎄 Free Roam | No quiz, no timer |
+
+(`?mode=quiz` still runs the full five-round evening with mini-games between rounds.)
 
 ## Real family models
 
-The 15 family members and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
+The 16 family members (Tommy included) and Chip are the real 3D scans in `assets/models/` (decimated from ~480k to 22k triangles each,
 with the colour re-baked from the originals so they still look the same; 256 MB -> 15 MB). They're auto-rigged at
 load time onto the ragdoll skeleton (`src/chars/glbrig.js`), so they fall, get thrown and get up exactly like
 everyone else. Mason and Harrison (no scans yet) use the procedural models. Chip runs on his own dog skeleton

@@ -140,18 +140,19 @@ export class Player {
     if (c.btn('grab').pressed) {
       if (held) this.release('D', null);
       else if (this.focus) this.tryGrab('D', this.focus);
+      else if (G.modes?.id === 'fling') this.grabNearest(); // Fling: GRAB takes whoever is in front of you
     }
     if (this.controls.wheel && held) this.holdDist = clamp(this.holdDist - this.controls.wheel * 0.1, 0.5, 2.0);
     // throw: hold right mouse to charge, release to throw
-    if (c.btn('throw').down && held) this.charge = Math.min(1, this.charge + dt * 1.2);
+    if (c.btn('throw').down && held) this.charge = Math.min(1, this.charge + dt * 2.0);
     if (c.btn('throw').released && held) {
       const dir = this.forward(new THREE.Vector3()); dir.y += 0.12; dir.normalize();
       const k = held.kind === 'char' ? (held.ref.heavy ? 0.6 : 0.85) : 1;
-      const sp = (held.kind === 'char' ? 2.5 + this.charge * 8 : 3 + this.charge * 13) * k;
+      const sp = (held.kind === 'char' ? 4 + this.charge * 13 : 6 + this.charge * 20) * k; // throws fly properly fast
       this.release('D', dir.multiplyScalar(sp)); this.charge = 0;
     } else if (!held) this.charge = 0;
     // gamepad: releasing the trigger with a right-stick flick throws
-    if (c.btn('grab').released && held && this.controls.padFlick) { const dir = this.forward(new THREE.Vector3()); dir.y += 0.15; this.release('D', dir.normalize().multiplyScalar(held.kind === 'char' ? 7 : 11)); }
+    if (c.btn('grab').released && held && this.controls.padFlick) { const dir = this.forward(new THREE.Vector3()); dir.y += 0.15; this.release('D', dir.normalize().multiplyScalar(held.kind === 'char' ? 11 : 17)); }
     if (c.btn('punch').pressed) this.punch(this.headPos(new THREE.Vector3()), this.forward(new THREE.Vector3()), 1);
     if (c.btn('kick').pressed) this.kick(this.forward(new THREE.Vector3()).setY(0).normalize());
     if (c.btn('use').pressed) this.use();
@@ -166,6 +167,7 @@ export class Player {
     if (c.btn('score').pressed) emit('scoreboard', true); if (c.btn('score').released) emit('scoreboard', false);
   }
 
+  grabNearest(maxD = 2.6) { const o = this.headPos(new THREE.Vector3()); let best = null, bd = maxD; for (const p of G.chars) { if (p.isPlayer || p.protected || !p.bodies) continue; const d = p.chestPos(new THREE.Vector3()).distanceTo(o); if (d < bd) { bd = d; best = p; } } if (best) this.tryGrab('D', { kind: 'char', ref: best, part: 1, point: best.chestPos(new THREE.Vector3()), dist: Math.min(1.1, bd) }); return best; }
   // ---------------- grabbing ----------------
   holdingAny() { return Object.values(this.holders).some(Boolean); }
   heldItem(key) { const h = key ? this.holders[key] : (this.holders.D || this.holders.R || this.holders.L); return h && h.kind === 'item' ? h.ref : null; }
@@ -277,7 +279,7 @@ export class Player {
     const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, G.camera);
     const o = rc.ray.origin.clone(), d = rc.ray.direction.clone();
     const held = this.holders.D;
-    if (held) { const dir = d.clone(); dir.y += 0.12; dir.normalize(); this.release('D', dir.multiplyScalar(held.kind === 'char' ? 7 : 10)); return; }
+    if (held) { const dir = d.clone(); dir.y += 0.12; dir.normalize(); this.release('D', dir.multiplyScalar(held.kind === 'char' ? 11 : 16)); return; }
     const hit = raycast(o, d, 4.5, RAY_GROUPS, this.body);
     let e = hit?.entry;
     if (!e || (e.kind !== 'char' && e.kind !== 'item')) { const p = this.personInView(o, d, 4.5, true, 0.5); if (p) e = { kind: p.isDog ? 'dog' : 'char', ref: p, part: 1 }; }
@@ -285,6 +287,7 @@ export class Player {
     if (e.kind === 'dog') { emit('pet', e.ref); return; }
     if (e.kind === 'char') {
       const p = e.ref; if (p.protected) { emit('protectedTouch', p); return; }
+      if (G.modes?.id === 'fling') { this.tryGrab('D', { kind: 'char', ref: p, part: e.part ?? 1, point: hit ? hit.point : p.chestPos(new THREE.Vector3()), dist: 1 }); return; }
       p.playerHitT = G.time; this.fp.punch('R'); this.stats.punches++;
       const imp = d.clone().setY(Math.max(0.3, d.y)).normalize();
       p.knock(imp.clone().multiplyScalar(p.mass * 2.6), e.part ?? 1);

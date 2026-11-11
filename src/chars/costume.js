@@ -9,6 +9,7 @@ const SKIN = 'skin';
 // zone(c) -> index into colours (0 = leave the scan as it is). c: { x, y, z, b, hand, foot, H, neckY, shY, hipY, kneeY }
 export const COSTUMES = {
   mankini: {
+    extras: ['mankini'],
     colours: [SKIN, '#2b8a2b'],
     zone(c) {
       const torso = c.b <= 1;
@@ -30,7 +31,7 @@ export const COSTUMES = {
       if (c.y > c.hipY - 0.12 * c.H) return 3;                              // tutu
       return 4;                                                             // white tights
     },
-    extras: ['wings', 'wand', 'tutu'],
+    extras: ['fairy'],
   },
   minion: {
     colours: ['#f5cf14', '#2f5d9e', '#151515'],
@@ -41,16 +42,7 @@ export const COSTUMES = {
       if (Math.abs(Math.abs(c.x) - 0.06 * c.H) < 0.017 * c.H) return 2;     // straps over the shoulders
       return 1;
     },
-    extras: ['goggleStrap'],
-  },
-  smurf: {
-    colours: ['#3d8ad8', '#f6f6f6'],
-    zone(c) {
-      if (c.foot) return 2;
-      if (c.b >= 7 || (c.b === 0 && c.y < c.hipY + 0.04 * c.H)) return 2;  // white trousers
-      return 1;                                                             // Smurf blue everywhere else (below the neck)
-    },
-    extras: ['smurfHat'],
+    extras: ['minion'],
   },
   santa: {
     colours: ['#c41e1e', '#f6f6f6', '#151515', SKIN],
@@ -65,7 +57,7 @@ export const COSTUMES = {
       }
       return 1;
     },
-    extras: ['santaHat'],
+    extras: ['santa'],
   },
   elf: {
     colours: ['#1f8a3a', '#c41e1e', '#f6f6f6', SKIN, '#6b3a1f'],
@@ -76,7 +68,7 @@ export const COSTUMES = {
       if (c.y > c.hipY + 0.04 * c.H && c.y < c.hipY + 0.075 * c.H) return 5; // belt
       return 1;
     },
-    extras: ['elfHat'],
+    extras: ['elf'],
   },
 };
 
@@ -142,25 +134,85 @@ export function paintCostume(p, outfit) {
   addExtras(p, def.extras || []);
 }
 
+// ---- the 3D costume pieces, sized from Gary's own scan (they don't have to follow his body: a costume is a costume) ----
+function measure(p) {
+  const g = p.mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, H = p.H, O = p.O; const v = new THREE.Vector3();
+  const band = (y, bones, dy = 0.02 * H) => { let hx = 0, z0 = 1e9, z1 = -1e9, n = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; const yy = P.getY(i); if (Math.abs(yy - y) > dy) continue; const x = P.getX(i), z = P.getZ(i); hx = Math.max(hx, Math.abs(x)); z0 = Math.min(z0, z); z1 = Math.max(z1, z); n++; } return n ? { hx, z0, z1, cz: (z0 + z1) / 2, rz: (z1 - z0) / 2 } : { hx: 0.17 * H / 1.8, z0: -0.12, z1: 0.12, cz: 0, rz: 0.12 }; };
+  const ends = (bones, far) => { const pts = []; let best = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; v.fromBufferAttribute(P, i); const d = far(v); if (d > best) best = d; } const out = new THREE.Vector3(); let n = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; v.fromBufferAttribute(P, i); if (far(v) > best - 0.06 * H / 1.8) { out.add(v); n++; } } return n ? out.divideScalar(n) : out; };
+  const hd = p.dims.head;
+  // face: the front of the head at eye level
+  let eyeY = hd.cy + hd.ry * 0.12, fz = -1e9; for (let i = 0; i < P.count; i++) { if (SI.getX(i) !== 2) continue; if (Math.abs(P.getY(i) - eyeY) > 0.012 || Math.abs(P.getX(i)) > 0.03) continue; fz = Math.max(fz, P.getZ(i)); } if (fz < -1e8) fz = hd.cz + hd.rz * 0.9;
+  return { H, O, hd, chest: band(O[3].y - 0.07 * H, [1]), belly: band(O[7].y + 0.1 * H, [0, 1]), hips: band(O[7].y, [0, 7, 9]), neck: band(O[2].y + 0.005 * H, [1, 2], 0.012 * H),
+    handL: ends([4], (q) => q.distanceTo(O[3])), handR: ends([6], (q) => q.distanceTo(O[5])), footL: ends([8], (q) => -q.y + q.z * 0.2), footR: ends([10], (q) => -q.y + q.z * 0.2), eyeY, faceZ: fz };
+}
 function addExtras(p, list) {
-  const H = p.H, O = p.O, hd = p.dims.head;
+  const M = measure(p), H = M.H, O = M.O, hd = M.hd, S = H / 1.8;
   const vc = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 });
+  const shiny = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.25, metalness: 0.6 });
   const mk = (build, mat = vc) => { const pr = new Prop(); build(pr); const m = new THREE.Mesh(pr.build(), mat); m.castShadow = true; return m; };
+  const at = (bone, y, x = 0, z = 0) => new THREE.Vector3(x, y - O[{ hips: 0, spine: 1, head: 2, lArmL: 4, lArmR: 6, shinL: 8, shinR: 10 }[bone]].y, z);
+  // hands: the scans hold their arms out, but the rig's rest pose is arms-down, so hang hand props straight below the elbow (as people.js does)
+  const rel = (bone, v) => { const i = { lArmL: 4, lArmR: 6, shinL: 8, shinR: 10 }[bone]; if (i === 4 || i === 6) return new THREE.Vector3(0, -(O[i].y - (p.dims.wristY - 0.065 * H)), 0.02); return v.clone().sub(O[i]); };
   const headTop = new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.92, hd.cz * 0.5);
-  const handR = new THREE.Vector3(0, -(O[6].y - (p.dims.wristY - 0.065 * H)), 0.025);
+  const ring = (P, rx, rz, y, cz, thick, col, n = 40, ry = 1) => { for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; P.sph(thick, typeof col === 'function' ? col(k) : col, Math.sin(a) * rx, y, cz + Math.cos(a) * rz, 1.4, ry, 1.4, 6); } };
+  const fur = (k) => ['#ffffff', '#f2f2f2', '#e8e8e8'][k % 3];
+  const gloves = (col, scale = 1) => { for (const [b, h] of [['lArmL', M.handL], ['lArmR', M.handR]]) p.attach(mk(P => P.sph(0.055 * S * scale, col, 0, 0, 0, 1.15, 0.8, 1, 12).sph(0.03 * S * scale, col, 0, -0.05 * S, 0.02, 1, 1, 1, 8)), b, rel(b, h)); };
+  const boots = (col, trim, curl) => { for (const [b, f] of [['shinL', M.footL], ['shinR', M.footR]]) p.attach(mk(P => { P.rbox(0.12 * S, 0.11 * S, 0.27 * S, 0.04, col, 0, 0.03, 0.04).cyl(0.07 * S, 0.075 * S, 0.12 * S, col, 0, 0.12 * S, -0.01); if (trim) ring(P, 0.075 * S, 0.075 * S, 0.19 * S, -0.01, 0.022 * S, trim, 18); if (curl) P.cone(0.04 * S, 0.16 * S, col, 0, 0.06, 0.2 * S, -1.2, 0, 0, 10).sph(0.022 * S, '#ffd700', 0, 0.12 * S, 0.26 * S); }), b, rel(b, f).add(new THREE.Vector3(0, 0.02, 0))); };
   for (const e of list) {
-    if (e === 'smurfHat') p.attach(mk(P => P.sph(hd.rx * 1.12, '#f6f6f6', 0, 0, -0.01, 1, 0.62, 1.12, 16).sph(hd.rx * 0.75, '#f6f6f6', 0, hd.ry * 0.5, 0.03, 1, 0.9, 1, 12).cone(hd.rx * 0.55, 0.16, '#f6f6f6', 0, hd.ry * 0.62, 0.1, 1.25, 0, 0, 12)), 'head', headTop.clone().add(new THREE.Vector3(0, -0.035, 0)));
-    if (e === 'santaHat') p.attach(mk(P => P.cone(hd.rx * 1.06, 0.3, '#c41e1e', 0, 0.12, -0.01, -0.35, 0, 0, 18).sph(0.035, '#ffffff', 0, 0.25, -0.1)), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
-    if (e === 'elfHat') p.attach(mk(P => P.cone(hd.rx * 1.04, 0.34, '#1f8a3a', 0, 0.14, -0.02, -0.45, 0, 0, 18).sph(0.028, '#ffd700', 0, 0.28, -0.15)), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
-    if (e === 'goggleStrap') { /* the Minion look is all in the dungarees: goggles would hide his face */ }
-    if (e === 'wings') { const wm = new THREE.MeshStandardMaterial({ color: '#e8f4ff', transparent: true, opacity: 0.55, roughness: 0.2, side: THREE.DoubleSide, emissive: '#8fb8ff', emissiveIntensity: 0.25 });
-      for (const s of [-1, 1]) { p.attach(mk(P => P.sph(0.16, '#ffffff', 0, 0.06, 0, 1, 1.5, 0.06, 14).sph(0.1, '#ffffff', 0.03 * s, -0.17, 0.0, 1, 1.2, 0.06, 12), wm), 'spine', new THREE.Vector3(s * 0.17, O[3].y - O[1].y - 0.05, -0.17), new THREE.Euler(0, s * 0.35, s * -0.35)); } }
-    if (e === 'wand') p.attach(mk(P => { P.cyl(0.006, 0.006, 0.34, '#f4f4f4', 0, 0.12, 0); for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; P.cone(0.022, 0.05, '#ffd700', Math.sin(a) * 0.025, 0.3 + Math.cos(a) * 0.025, 0, 0, 0, -a, 4); } P.sph(0.022, '#fff6a0', 0, 0.3, 0); }), 'lArmR', handR.clone().add(new THREE.Vector3(-0.02, 0.0, 0.03)));
-    if (e === 'tutu') { // a frilly skirt around the hips, sized from the scan
-      const g = p.mesh.geometry, P0 = g.attributes.position, SI = g.attributes.skinIndex; let r = 0, cz = 0, n = 0; const y0 = O[7].y;
-      for (let i = 0; i < P0.count; i++) { const b = SI.getX(i); if (b > 0 && b !== 7 && b !== 9) continue; const y = P0.getY(i); if (Math.abs(y - y0) > 0.03 * H) continue; r = Math.max(r, Math.hypot(P0.getX(i), P0.getZ(i))); cz += P0.getZ(i); n++; }
-      cz = n ? cz / n : 0; r = Math.max(r, 0.16);
-      p.attach(mk(P => { for (let k = 0; k < 22; k++) { const a = k / 22 * Math.PI * 2; for (const [rr, yy, s] of [[r + 0.05, 0, 0.09], [r + 0.1, -0.05, 0.08]]) P.sph(s, k % 2 ? '#ffc6e6' : '#ffb0dc', Math.sin(a) * rr, yy, Math.cos(a) * rr * 0.85, 1, 0.45, 1, 8); } }), 'hips', new THREE.Vector3(0, y0 - O[0].y + 0.02, cz));
+    if (e === 'mankini') { // proper 3D straps, the pouch, a gold medallion and flip-flops
+      const ch = M.chest, hp = M.hips; const strap = (s, front) => { const z = front ? ch.z1 + 0.012 : ch.z0 - 0.012, zb = front ? hp.z1 + 0.01 : hp.z0 - 0.01; const top = new THREE.Vector3(s * 0.09 * S, O[3].y + 0.035 * H, (ch.cz)), mid = new THREE.Vector3(s * 0.075 * S, O[3].y - 0.08 * H, z), bot = new THREE.Vector3(s * 0.02 * S, O[7].y - 0.02 * H, zb);
+        return P => { for (const [a, b] of [[top, mid], [mid, bot]]) { const len = a.distanceTo(b), c = a.clone().add(b).multiplyScalar(0.5); const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); const eu = new THREE.Euler().setFromQuaternion(q); P.box(0.035 * S, len, 0.012, '#2b8a2b', c.x, c.y - O[1].y, c.z, eu.x, eu.y, eu.z); } }; };
+      p.attach(mk(P => { for (const s of [-1, 1]) for (const f of [true, false]) strap(s, f)(P); P.sph(0.075 * S, '#2b8a2b', 0, O[7].y - 0.045 * H - O[1].y, hp.z1 + 0.01, 1, 0.9, 0.55, 12); }), 'spine', new THREE.Vector3());
+      p.attach(mk(P => P.cyl(0.03 * S, 0.03 * S, 0.006, '#ffd700', 0, 0, 0, Math.PI / 2, 0, 0, 16).torus(0.06 * S, 0.003, '#ffd700', 0, 0.055 * S, -0.01, -0.3), shiny), 'spine', at('spine', O[3].y - 0.06 * H, 0, ch.z1 + 0.01));
+      for (const [b, f] of [['shinL', M.footL], ['shinR', M.footR]]) p.attach(mk(P => P.rbox(0.11 * S, 0.015, 0.27 * S, 0.01, '#1d6fd8', 0, -0.03, 0.03).box(0.012, 0.03, 0.08, '#ffd700', 0, -0.012, 0.08)), b, rel(b, f));
+    }
+    if (e === 'fairy') {
+      // a big three-layer tutu with glitter, a sequinned bodice, four-lobed wings with veins, a wand with ribbons, slippers and a tiara
+      const hp = M.hips, bl = M.belly; const r = Math.max(hp.hx, hp.rz) + 0.03;
+      p.attach(mk(P => { for (const [rr, yy, sz, cols] of [[r + 0.06, 0.02, 0.1, ['#ffc6e6', '#ffb0dc']], [r + 0.13, -0.03, 0.11, ['#ff9ad0', '#ffc6e6']], [r + 0.2, -0.08, 0.1, ['#ffffff', '#ffd6ee']]]) for (let k = 0; k < 30; k++) { const a = k / 30 * Math.PI * 2; P.sph(sz * S, cols[k % 2], Math.sin(a) * rr, yy, hp.cz + Math.cos(a) * rr * 0.9, 1, 0.38, 1, 8); }
+        for (let k = 0; k < 40; k++) { const a = k * 2.4; P.sph(0.008, '#fff6a0', Math.sin(a) * (r + 0.15), 0.02, hp.cz + Math.cos(a) * (r + 0.15) * 0.9); } }), 'hips', at('hips', O[7].y + 0.015 * H));
+      p.attach(mk(P => { for (let k = 0; k < 60; k++) { const a = (k % 15) / 15 * Math.PI - Math.PI / 2, yy = (Math.floor(k / 15) - 1.5) * 0.06 * S; P.sph(0.009, k % 3 ? '#ffd6ee' : '#ffffff', Math.sin(a) * bl.hx * 0.95, yy, bl.cz + Math.cos(a) * (bl.rz + 0.01)); } }), 'spine', at('spine', O[7].y + 0.16 * H));
+      const wm = new THREE.MeshStandardMaterial({ color: '#e8f4ff', transparent: true, opacity: 0.5, roughness: 0.15, side: THREE.DoubleSide, emissive: '#9ec8ff', emissiveIntensity: 0.3 });
+      const vein = new THREE.MeshBasicMaterial({ color: '#d0b0ff' });
+      for (const s of [-1, 1]) { const grp = new THREE.Group(); grp.add(mk(P => P.sph(0.2 * S, '#ffffff', s * 0.05, 0.1, 0, 1, 1.5, 0.04, 16).sph(0.13 * S, '#ffffff', s * 0.07, -0.22 * S, 0, 1, 1.3, 0.04, 14), wm));
+        grp.add(mk(P => { for (let k = 0; k < 5; k++) P.box(0.004, 0.32 * S, 0.004, '#d0b0ff', s * (0.03 + k * 0.025), 0.12 - k * 0.02, 0, 0, 0, s * (0.2 + k * 0.18)); }, vein));
+        p.attach(grp, 'spine', at('spine', O[3].y - 0.04 * H, s * 0.1 * S, M.chest.z0 - 0.06), new THREE.Euler(0, s * 0.45, s * -0.3)); }
+      p.attach(mk(P => { P.cyl(0.006, 0.006, 0.38, '#f4f4f4', 0, 0.15, 0); for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; P.cone(0.026, 0.06, '#ffd700', Math.sin(a) * 0.03, 0.36 + Math.cos(a) * 0.03, 0, 0, 0, -a, 4); } P.sph(0.026, '#fff6a0', 0, 0.36, 0); for (const c of ['#ff6bd6', '#6bd6ff', '#ffd700']) for (let k = 0; k < 6; k++) P.box(0.008, 0.03, 0.004, c, Math.sin(k + c.length) * 0.02, 0.32 - k * 0.03, 0.01 + k * 0.004, 0, 0, Math.sin(k) * 0.6); }, shiny), 'lArmR', rel('lArmR', M.handR).add(new THREE.Vector3(0, 0.02, 0.03)));
+      p.attach(mk(P => { for (let k = 0; k < 7; k++) { const a = (k - 3) * 0.32; P.cone(0.012 + (k === 3 ? 0.012 : 0), 0.035 + (k === 3 ? 0.03 : 0), '#e8e8f0', Math.sin(a) * hd.rx * 0.8, Math.cos(a) * 0.02, Math.cos(a) * hd.rz * 0.25, 0, 0, -a * 0.6, 6); } P.sph(0.012, '#ff6bd6', 0, 0.045, hd.rz * 0.25); }, shiny), 'head', headTop.clone().add(new THREE.Vector3(0, -0.03, 0.03)), new THREE.Euler(-0.4, 0, 0));
+      boots('#ec6fb4', null, false);
+    }
+    if (e === 'minion') {
+      // round pear-shaped Minion body over his torso, dungaree bib with the logo, buttons, goggles over his eyes, gloves and boots
+      const bl = M.belly, ch = M.chest; const rx = Math.max(bl.hx, ch.hx) * 0.9 + 0.02, rz = Math.max(bl.rz, ch.rz) + 0.035;
+      p.attach(mk(P => { P.sph(1, '#f5cf14', 0, 0.08, 0, rx, 0.3 * S, rz, 18).sph(1, '#2f5d9e', 0, -0.07, 0.004, rx + 0.006, 0.2 * S, rz + 0.006, 18); // pear body: yellow top, denim lower half
+        P.rbox(0.2 * S, 0.17 * S, 0.03, 0.02, '#2f5d9e', 0, 0.02, rz + 0.01).cyl(0.035 * S, 0.035 * S, 0.006, '#111', 0, 0.02, rz + 0.028, Math.PI / 2, 0, 0, 16).box(0.012 * S, 0.035 * S, 0.004, '#f2f2f2', 0.006 * S, 0.02, rz + 0.032).box(0.02 * S, 0.01 * S, 0.004, '#f2f2f2', 0.012 * S, 0.012, rz + 0.032);
+        for (const s of [-1, 1]) { P.cyl(0.016 * S, 0.016 * S, 0.01, '#111', s * 0.085 * S, 0.1, rz + 0.012, Math.PI / 2, 0, 0, 12); P.box(0.035 * S, 0.3 * S, 0.012, '#2f5d9e', s * 0.085 * S, 0.24, (rz + ch.rz) / 2, 0.5 * (1), 0, 0); P.box(0.035 * S, 0.3 * S, 0.012, '#2f5d9e', s * 0.085 * S, 0.24, -(rz + ch.rz) / 2 + 0.02, -0.5, 0, 0); } }), 'spine', at('spine', O[7].y + 0.13 * H, 0, bl.cz));
+      const ez = M.faceZ - hd.cz; p.attach(mk(P => { for (const s of [-1, 1]) { P.torus(0.03 * S, 0.009 * S, '#b8c0c8', s * 0.034 * S, 0, 0, 0, 0, 0).torus(0.024 * S, 0.004 * S, '#7a828a', s * 0.034 * S, 0, 0.006, 0, 0, 0); }
+          P.box(0.016 * S, 0.01 * S, 0.012, '#7a828a', 0, 0, 0);
+          for (let k = 0; k < 34; k++) { const a = (k / 34) * Math.PI * 2; const x = Math.sin(a) * hd.rx * 1.05, z = -ez + Math.cos(a) * hd.rz * 1.05; if (Math.cos(a) > 0.82) continue; P.box(0.03, 0.026 * S, 0.012, '#151515', x, 0, z, 0, a, 0); } }, shiny), 'head', new THREE.Vector3(-O[2].x, M.eyeY - O[2].y, M.faceZ + 0.012 - O[2].z));
+      const lens = new THREE.MeshStandardMaterial({ color: '#c8e4ff', transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.2 });
+      p.attach(mk(P => { for (const s of [-1, 1]) P.cyl(0.026 * S, 0.026 * S, 0.004, '#ffffff', s * 0.034 * S, 0, 0, Math.PI / 2, 0, 0, 20); }, lens), 'head', new THREE.Vector3(-O[2].x, M.eyeY - O[2].y, M.faceZ + 0.016 - O[2].z));
+      gloves('#151515'); boots('#151515', null, false);
+    }
+    if (e === 'santa') {
+      // padded belly, fur trims, belt and buckle, fur cuffs, boots with fur tops, the hat with its fur band, and the sack on his back
+      const bl = M.belly; const rx = bl.hx * 0.92 + 0.02, rz = bl.rz + 0.05;
+      p.attach(mk(P => { P.sph(1, '#c41e1e', 0, 0, 0.04, rx, 0.18 * S, rz, 18); ring(P, rx * 0.98, rz * 0.98, -0.17 * S, 0.03, 0.03 * S, fur, 46); P.box(rx * 2.02, 0.06 * S, 0.02, '#151515', 0, 0.02, rz + 0.025); P.box(0.11 * S, 0.08 * S, 0.012, '#ffd700', 0, 0.02, rz + 0.04).box(0.07 * S, 0.045 * S, 0.014, '#151515', 0, 0.02, rz + 0.042);
+        for (let k = 0; k < 8; k++) P.sph(0.022 * S, fur(k), 0, 0.16 * S - k * 0.045 * S, rz + 0.01); }), 'spine', at('spine', O[7].y + 0.12 * H, 0, bl.cz));
+      for (const [b, h] of [['lArmL', M.handL], ['lArmR', M.handR]]) p.attach(mk(P => ring(P, 0.06 * S, 0.06 * S, 0, 0, 0.022 * S, fur, 16)), b, rel(b, h).add(new THREE.Vector3(0, 0.09 * S, 0)));
+      boots('#151515', fur, false);
+      p.attach(mk(P => { P.cone(hd.rx * 1.06, 0.32, '#c41e1e', 0, 0.13, -0.02, -0.4, 0, 0, 20); ring(P, hd.rx * 1.02, hd.rz * 1.02, -0.02, 0, 0.028, fur, 30); P.sph(0.045, '#ffffff', 0, 0.26, -0.13, 1, 1, 1, 10); }), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
+      p.attach(mk(P => P.sph(0.24 * S, '#8a5a2a', 0, 0, 0, 1, 1.2, 0.8, 14).cyl(0.04 * S, 0.06 * S, 0.12 * S, '#7a4a20', 0, 0.3 * S, 0).torus(0.05 * S, 0.012, '#c8a050', 0, 0.26 * S, 0, Math.PI / 2).box(0.08, 0.1, 0.01, '#c1121f', 0.06, 0.1, 0.19 * S)), 'spine', at('spine', O[3].y - 0.1 * H, 0.04, M.chest.z0 - 0.17 * S));
+    }
+    if (e === 'elf') {
+      // zig-zag tunic hem, pointy collar with bells, belt and buckle, curly shoes, the hat with a bell, pointy ears
+      const bl = M.belly, hp = M.hips, nk = M.neck; const r = Math.max(hp.hx, hp.rz) + 0.03;
+      p.attach(mk(P => { for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; P.cone(0.06 * S, 0.12 * S, k % 2 ? '#1f8a3a' : '#c41e1e', Math.sin(a) * r, -0.05, hp.cz + Math.cos(a) * r * 0.92, Math.PI, 0, 0, 4); }
+        P.box(r * 2.05, 0.05 * S, 0.02, '#6b3a1f', 0, 0.06, hp.cz + r * 0.9).box(0.07 * S, 0.06 * S, 0.012, '#ffd700', 0, 0.06, hp.cz + r * 0.92); }), 'hips', at('hips', O[7].y + 0.02 * H));
+      p.attach(mk(P => { for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; P.cone(0.035 * S, 0.08 * S, k % 2 ? '#c41e1e' : '#1f8a3a', Math.sin(a) * (nk.hx + 0.03), -0.02, nk.cz + Math.cos(a) * (nk.rz + 0.03), Math.PI / 2 + 0.6, a, 0, 4); P.sph(0.012 * S, '#ffd700', Math.sin(a) * (nk.hx + 0.07), -0.05, nk.cz + Math.cos(a) * (nk.rz + 0.07)); } }, shiny), 'spine', at('spine', O[2].y - 0.01 * H));
+      boots('#1f8a3a', null, true);
+      p.attach(mk(P => { P.cone(hd.rx * 1.04, 0.36, '#1f8a3a', 0, 0.15, -0.03, -0.55, 0, 0, 18); ring(P, hd.rx * 1.0, hd.rz * 1.0, -0.02, 0, 0.022, (k) => k % 2 ? '#c41e1e' : '#f6f6f6', 26); P.sph(0.032, '#ffd700', 0, 0.28, -0.2); }, vc), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
+      for (const s of [-1, 1]) p.attach(mk(P => P.cone(0.02 * S, 0.07 * S, '#e8b8a0', 0, 0.03, 0, 0, 0, s * -0.9, 8)), 'head', new THREE.Vector3(s * hd.rx * 0.98 - O[2].x, M.eyeY - O[2].y, hd.cz - 0.01 - O[2].z));
     }
   }
 }

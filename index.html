@@ -109,7 +109,7 @@
   #modeHud .mh-name { font:700 13px Georgia,serif; color:#ffe08a; } #modeHud .mh-row { display:flex; justify-content:center; gap:18px; align-items:baseline; } #modeHud .mh-row b { font:900 34px Georgia,serif; color:#ffd700; } #modeHud .mh-row span { font:700 22px system-ui; }
   #modeHud .mh-extra { font-size:12.5px; max-width:520px; } #modeHud .mh-best { font-size:11px; opacity:.7; } #modeHud .mh-line { font-size:12px; color:#9fe0ff; }
   body.touch #meters, body.touch #help { display:none; }
-  body.touch #scores { top:auto; bottom:12px; right:auto; left:12px; font-size:11px; padding:5px 8px; opacity:.85; }
+  body.touch #scores { top:96px; right:auto; left:10px; font-size:11px; padding:5px 8px; opacity:.85; }
   body.touch #modeHud { top:92px; min-width:0; padding:4px 10px; } body.touch #modeHud .mh-row b { font-size:24px; } body.touch #modeHud .mh-row span { font-size:16px; } body.touch #modeHud .mh-line { display:none; }
   body.touch #toasts { top:170px; }
   body.touch #subs { bottom:228px; font-size:13px; } /* above the touch buttons */
@@ -122,6 +122,13 @@
   @keyframes pulse { 50% { transform:scale(1.06); } }
   .tbtn.big { width:92px; height:92px; }
   #stick { position:absolute; width:120px; height:120px; border-radius:50%; border:2px solid rgba(255,255,255,.5); background:rgba(0,0,0,.2); display:none; pointer-events:none; }
+  #stick.idle { opacity:.55; } #stick.idle i { box-shadow:0 0 12px rgba(255,255,255,.4); }
+  .tbtn[data-id=grab] { display:none; } body.mode-fling .tbtn[data-id=grab] { display:flex; }
+  body.mode-fling .tbtn:not([data-id=grab]):not([data-id=jump]):not([data-id=throw]):not([data-id=menu]) { display:none; }
+  body.as-dog .tbtn[data-id=drink], body.as-dog .tbtn[data-id=use], body.as-dog .tbtn[data-id=handUp] { display:none; }
+  body:not(.mode-quick) #scores { display:none; }
+  #modeHud .ord { text-align:left; margin:6px 0; font-size:13px; } #modeHud .ord small { opacity:.75; font-size:11px; } #modeHud .ang { height:7px; border-radius:4px; background:rgba(255,255,255,.2); overflow:hidden; margin:2px 0; } #modeHud .ang i { display:block; height:100%; }
+  body.touch.mode-beer #modeHud { left:auto; right:8px; transform:none; top:158px; max-width:56vw; }
   #stick i { position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px; border-radius:50%; background:rgba(255,255,255,.6); }
   #grabThumb { position:absolute; bottom:4px; font-size:9px; max-width:80px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
   #vrbtn { position:fixed; right:12px; bottom:12px; z-index:20; display:none; }
@@ -143,13 +150,12 @@
     <div class="edition">✦ The 2026 Boxing Day Edition ✦</div>
     <h1 class="title"><span>The Mason Family</span><b>Boxing Day Quiz</b></h1>
     <div class="ribbon"><span>Boxing Day · 8pm · Back from the meal out · Uncle Martin's · Three families · One disputed answer sheet</span></div>
-    <div class="modes" id="modes"></div>
     <div class="teams" id="teams"></div>
     <div class="row3">
       <div class="panel" id="cupPanel"><h3>🏆 The Mason Cup</h3><div id="honour"></div></div>
       <div class="panel center">
         <div id="startBtns" style="display:none">
-          <button class="tag" id="btnPlay"><i>🎁</i><span id="playLbl">Play on this screen</span><small>mouse · touch · gamepad</small></button>
+          <button class="tag" id="btnPlay"><i>🎁</i><span id="playLbl">PLAY</span><small>choose who you are &amp; the game</small></button>
           <button class="tag vr" id="btnVR" style="display:none"><i>🥽</i>Enter VR<small>Meta Quest 3 · hand tracking</small></button>
         </div>
         <div class="cane"><i id="caneFill"></i></div>
@@ -183,6 +189,13 @@
 <div class="modal" id="menu"><div class="card" id="menuCard"></div></div>
 <div class="modal" id="scoreModal"><div class="card" id="scoreCard"></div></div>
 <div class="modal" id="pickModal"><div class="card" id="pickCard"></div></div>
+<script>
+  // always load the newest version: a network-first service worker (and a one-off reload the first time it takes over)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    if (!navigator.serviceWorker.controller && !sessionStorage.getItem('swReloaded')) navigator.serviceWorker.ready.then(() => { sessionStorage.setItem('swReloaded', '1'); location.reload(); }).catch(() => {});
+  }
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

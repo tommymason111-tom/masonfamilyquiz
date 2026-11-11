@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '11 Nov 2026 · sofa v9';
+export const BUILD = '11 Nov 2026 · modes v10';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -34,7 +34,6 @@ const status = (t, f) => { const el = document.getElementById('loadStatus'); if 
 async function boot() {
   G.settings = loadSettings();
   initHome();
-  buildModePicker((id) => { const l = document.getElementById('playLbl'); if (l) l.textContent = 'Play: ' + modeById(id).name; if (G.modes) { G.modes.id = id; } });
   status('Starting physics…', 0.05);
   await initPhysics();
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -75,7 +74,7 @@ async function boot() {
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
   status('Taking the family photo…', 0.95);
   renderer.compile(scene, camera);
-  try { teamCards(true, renderPortraits()); } catch (e) { console.warn(e); }
+  try { G.portraits = renderPortraits(); teamCards(true, G.portraits); } catch (e) { console.warn(e); }
   document.getElementById('loading').classList.add('live');
   const facts = document.getElementById('facts'); if (facts) facts.innerHTML = [`${G.chars.length - 1} relatives`, '1 dog', `${G.items.count()} things to throw`, `${G.quiz.bank.length + 12} questions`, '5 rounds', '25 things that go wrong'].map(t => `<span>${t}</span>`).join('');
   status('Ready! Everyone\'s here.', 1);

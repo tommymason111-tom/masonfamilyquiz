@@ -66,6 +66,7 @@ export class Dog {
   // ---------------- behaviour ----------------
   goTo(target, speed = 1.4, then) { this.path = G.house.path(this.pos, target); this.speed = speed; this.then = then; }
   think(dt) {
+    if (this.playerControlled) return; // you're Chip
     this.timer -= dt; this.followT -= dt;
     if (this.path || this.state === 'pickup' || this.state === 'dropping') return;
     if (this.followTarget && this.followT > 0) { const t = this.followTarget.pos; if (t.distanceTo(this.pos) > 1.2) this.goTo(t.clone(), 2.6); return; }
@@ -125,6 +126,11 @@ export class Dog {
   // ---------------- locomotion + animation ----------------
   update(dt) {
     let moving = false;
+    if (this.playerControlled) { // played by you: follow the player controller, keep the real gaits
+      const pl = G.player; this.path = null; if (this.state === 'sleep' || this.state === 'lie') this.state = 'idle';
+      this.pos.set(pl.pos.x, 0, pl.pos.z); this.yaw = pl.yaw + Math.PI; this.vel = pl.speedXZ || 0; moving = this.vel > 0.1;
+      this.rig.root.visible = pl.thirdPerson && !G.xr; // first person: don't see the inside of your own head
+    } else
     if (this.path && this.path.length && this.state !== 'pickup' && this.state !== 'dropping') {
       const tgt = this.path[0]; _v.copy(tgt).sub(this.pos); _v.y = 0; const d = _v.length();
       const stopping = this.path.length === 1 && d < 0.6;

@@ -41,7 +41,7 @@ export function roomAt(x, z) {
 
 export function buildHouse() {
   const H = { meshes: [], spots: {}, doors: [], lights: {}, screens: {}, interact: [] };
-  G.house = H;
+  G.house = H; H.roomAt = roomAt;
   const scene = G.scene;
   // ---------- materials ----------
   const M = {

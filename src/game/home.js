@@ -64,7 +64,8 @@ export function renderPortraits() {
   const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'); const buf = new Uint8Array(160 * 160 * 4); const img = g.createImageData(160, 160);
   const xr = r.xr.enabled; r.xr.enabled = false;
   for (const p of G.chars) {
-    if (p.isPlayer || p.name === 'Harrison') continue;
+    if (p.name === 'Harrison') continue; const wasVis = p.root.visible; p.root.visible = true; p._wasVis = wasVis;
+    if (p.isPlayer) { p._pp = [p.pos.clone(), p.yaw]; p.pos.set(-2.2, p.pos.y, -1.3); p.yaw = 0.67; try { p.update(1 / 60); } catch (e) { /* posing is best-effort */ } p.root.updateMatrixWorld(true); } // the player's body isn't animated while the menu is up
     const hp = p.headPos(new THREE.Vector3()); const fwd = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw));
     cam.position.copy(hp).addScaledVector(fwd, 0.62).add(new THREE.Vector3(0, 0.04, 0)); cam.lookAt(hp.x, hp.y - 0.02, hp.z);
     const hide = G.ui?.bubbles?.map(b => [b.s, b.s.visible]) || []; hide.forEach(([s]) => s.visible = false);
@@ -72,7 +73,8 @@ export function renderPortraits() {
     hide.forEach(([s, v]) => s.visible = v);
     r.readRenderTargetPixels(rt, 0, 0, 160, 160, buf);
     for (let y = 0; y < 160; y++) for (let x = 0; x < 160; x++) { const si = ((159 - y) * 160 + x) * 4, di = (y * 160 + x) * 4; img.data[di] = buf[si]; img.data[di + 1] = buf[si + 1]; img.data[di + 2] = buf[si + 2]; img.data[di + 3] = 255; }
-    g.putImageData(img, 0, 0); out[p.name] = c.toDataURL('image/jpeg', 0.85);
+    g.putImageData(img, 0, 0); out[p.name] = c.toDataURL('image/jpeg', 0.85); p.root.visible = p._wasVis;
+    if (p._pp) { p.pos.copy(p._pp[0]); p.yaw = p._pp[1]; p._pp = null; try { p.update(1 / 60); } catch (e) { /* best-effort */ } }
   }
   r.xr.enabled = xr; rt.dispose();
   return out;

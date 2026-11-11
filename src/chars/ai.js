@@ -5,6 +5,7 @@ import { G, on, emit, rand, pick, clamp, shuffle } from '../core.js';
 import { PERSONA } from './cast.js';
 import { roomAt } from '../world/house.js';
 import { sfx } from '../engine/audio.js';
+import { Prop } from '../engine/geo.js';
 
 const _v = new THREE.Vector3();
 const IDLE_GESTURE = { bellyPat: 'bellyPat', point: 'point', argue: 'argue', drink: 'sip', tidy: 'tidy', phone: 'phone', film: 'phone', laughPolite: 'laugh', whisper: null,
@@ -17,43 +18,50 @@ export class AI {
     const H = G.house.spots;
     const seat = (s) => ({ ...s, pos: s.pos.clone() });
     const V = (x, z) => new THREE.Vector3(x, 0, z);
-    const plan = {
-      // Living room: the quiz lot
-      Paul: seat(H.sofaL[0]), Karen: seat(H.sofaL[1]), Charli: { ...seat(H.sofaArmL) },
-      Martin: { ...seat(H.armchair), armchair: true },
-      Debbie: seat(H.sofaR[0]), Kirsty: seat(H.sofaR[1]),
-      Gary: { pos: V(-3.2, -5.25), yaw: 0.8, stand: true },
-      Mason: { ...seat(H.floor[2]), floor: true },
-      // Kitchen: Julie at the hob, Jodie by the kettle, Hollie & Dan leaning on the island by the drinks
-      Julie: { pos: V(5.25, 2.85), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Jodie: { pos: V(5.25, 4.7), yaw: Math.PI / 2, stand: true, room: 'kitchen' },
-      Hollie: { pos: V(3.68, 1.2), yaw: Math.PI + 0.35, stand: true, room: 'kitchen' },
-      Dan: { pos: V(4.32, 1.25), yaw: Math.PI - 0.35, stand: true, room: 'kitchen' },
-      // Games room: Sophie & James planning the wedding at the table, Harry by the PC
-      Sophie: { pos: V(4.1, -3.45), yaw: Math.PI / 2, stand: true, room: 'dining' },
-      James: { pos: V(4.1, -4.25), yaw: Math.PI / 2 - 0.3, stand: true, room: 'dining' },
-      Harry: { pos: V(4.25, -1.75), yaw: Math.PI / 2 + 0.3, stand: true, room: 'dining' },
-      // Kitchen: Bradley (carrying Harrison) with the rest of his team
-      Bradley: { pos: V(2.75, 1.3), yaw: 1.65, stand: true, room: 'kitchen' }, // with his team (Hollie & Dan) by the bar
-      Harrison: { carried: 'Bradley' },
-    };
+    const plan = this.planHomes(); this.plan = plan;
     for (const p of G.chars) {
-      if (p.isPlayer) continue;
       const home = plan[p.name] || { pos: new THREE.Vector3(0, 0, -3), yaw: 0, stand: true };
-      const b = { p, home, state: 'idle', path: null, nextIdle: rand(2, 8), persona: PERSONA[p.name] || {}, timer: 0, quiet: false };
+      const b = { p, home, state: p.isPlayer ? 'player' : 'idle', path: null, nextIdle: rand(2, 8), persona: PERSONA[p.name] || {}, timer: 0, quiet: false, nextAct: rand(4, 14) };
       this.brains.set(p, b);
       p.brain = b;
-      if (home.carried) continue;
+      if (home.carried || p.isPlayer) continue;
       this.sitAtHome(b, true);
     }
     // Harrison rides on Bradley's arm
     this.harrison = G.charByName.Harrison; this.bradley = G.charByName.Bradley;
     if (this.bradley) this.bradley.gesture = 'holdBaby';
     // Gary is in the living room from the start, already in his outfit of the year
+    // Tommy (when he isn't you) rolls his eyes at his dad
+    on('say', (who) => { const t = G.charByName.Tommy; if (!who || who.name !== 'Paul' || !t || t.isPlayer || t.isDown() || Math.random() > 0.3 || G.time < (this._tommyT || 0)) return; this._tommyT = G.time + 20; setTimeout(() => { t.say(pick(t.lines.idle || ['Dad.']), { prio: 0 }); t.gesture = 'armsFolded'; setTimeout(() => t.gesture === 'armsFolded' && (t.gesture = null), 2500); }, 2200); });
     on('recover', (p) => this.onRecover(p));
     on('ragdoll', (p) => this.onRagdoll(p));
     G.updaters.push((dt) => this.update(dt));
   }
+  // Where everyone starts: families/couples/teams stay together, but which room they're in is random each game.
+  planHomes() {
+    const H = G.house.spots; const V = (x, z) => new THREE.Vector3(x, 0, z);
+    const face = (x, z, cx, cz) => Math.atan2(cx - x, cz - z);
+    const zone = (name, cx, cz, seats, stands, w) => ({ name, w, slots: [...seats.map(s => ({ ...s, pos: s.pos.clone() })), ...stands.map(([x, z]) => ({ pos: V(x, z), yaw: face(x, z, cx, cz), stand: true }))] });
+    const zones = [
+      zone('living', -2.4, -3.2, [...H.sofaL, ...H.sofaR, H.sofaArmL], [[-3.6, -1.8], [-4.2, -4.6], [-0.9, -1.6], [-3.4, -5.4], [-2.6, -2.0]], 0.38),
+      zone('kitchen', 3.9, 2.4, [], [[5.25, 2.85], [3.55, 1.25], [4.25, 1.3], [5.25, 4.7], [2.75, 1.3], [2.6, 3.4], [3.6, 3.9]], 0.26),
+      zone('dining', 3.6, -3.6, [], [[4.1, -3.45], [4.1, -4.25], [4.25, -1.75], [2.2, -4.0], [2.4, -2.0]], 0.2),
+      zone('conservatory', 3.1, -7.8, H.consSofa, [[2.0, -7.4], [3.9, -6.8]], 0.16),
+    ];
+    const plan = { Martin: { ...H.armchair, pos: H.armchair.pos.clone(), armchair: true }, Harrison: { carried: 'Bradley' } };
+    const groups = shuffle([['Paul', 'Karen', 'Charli', 'Tommy'], ['Julie', 'Sophie', 'James'], ['Hollie', 'Dan', 'Kirsty'], ['Bradley'], ['Debbie', 'Gary'], ['Jodie', 'Harry', 'Mason']]);
+    for (const grp of groups) {
+      // pick a room (weighted), falling back to whichever still has space
+      let order = zones.slice().sort((a, b) => (b.w * Math.random()) - (a.w * Math.random()));
+      const z = order.find(z => z.slots.length >= grp.length) || order.sort((a, b) => b.slots.length - a.slots.length)[0];
+      for (const n of grp) { if (!z.slots.length) break; const k = n === 'Mason' ? z.slots.findIndex(s => s.stand) : 0; const s = z.slots.splice(Math.max(0, k), 1)[0];
+        if (n === 'Mason' && z.name === 'living') { plan[n] = { ...H.floor[2], pos: H.floor[2].pos.clone(), floor: true }; continue; }
+        plan[n] = { ...s, room: z.name }; }
+    }
+    return plan;
+  }
+  // a relative stops (or starts) being played by you
+  setPlayer(p, on) { const b = this.brains.get(p); if (!b) return; if (on) { b.state = 'player'; b.path = null; } else { b.state = 'idle'; if (b.home.carried) return; this.sitAtHome(b, true); } }
   sitAtHome(b, snap) {
     const h = b.home; const p = b.p;
     if (h.armchair) { const ac = G.items.byType.armchair?.[0]; if (ac) { const t = ac.body.translation(), r = ac.body.rotation(); const q = new THREE.Quaternion(r.x, r.y, r.z, r.w); const up = new THREE.Vector3(0, 1, 0).applyQuaternion(q); if (up.y > 0.8) { const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(q); h.pos.set(t.x + fwd.x * 0.05, 0, t.z + fwd.z * 0.05); h.yaw = Math.atan2(fwd.x, fwd.z); h.seatY = 0.55 + (t.y - 0.42); } } }
@@ -71,7 +79,7 @@ export class AI {
   update(dt) {
     const t = G.time;
     for (const [p, b] of this.brains) {
-      if (p.state !== 'anim') continue;
+      if (p.isPlayer || b.state === 'player' || p.state !== 'anim') continue;
       if (b.state === 'hidden' || b.state === 'carried') continue;
       if (p.name === 'Mason') { this.mason(b, dt); continue; }
       if (p.name === 'Paul') this.paulRounds(b, dt);
@@ -97,6 +105,7 @@ export class AI {
     }
     this.babyUpdate(dt);
     this.pairings(dt);
+    this.activities(dt);
   }
   // Paul doesn't sit still: he does the rounds between his own family, Martin and Debbie
   paulRounds(b, dt) {
@@ -205,8 +214,60 @@ export class AI {
   }
 
   // ---------- Harrison on Bradley's arm ----------
+  // ---------- activities: people go and DO things ----------
+  // Every so often an idle relative picks something to do that suits them and the room: Gary fetches a beer from the
+  // fridge, James flicks a sprout at the cups, Charli takes a selfie, two of them pull a cracker, a toast breaks out…
+  activities(dt) {
+    this.actAcc = (this.actAcc || 0) + dt; if (G.frame % 15) return; const step = this.actAcc; this.actAcc = 0; const live = G.quiz?.questionLive;
+    for (const [p, b] of this.brains) {
+      if (p.isPlayer || b.state !== 'idle' || p.state !== 'anim' || p.protected || b.home.carried || p.team === 'host' && live) continue;
+      b.nextAct = (b.nextAct ?? rand(5, 15)) - step * (live ? 0.3 : 1); if (b.nextAct > 0) continue; b.nextAct = rand(16, 38);
+      const W = { Gary: { beer: 5, snack: 2, toast: 1 }, James: { sprout: 5, beer: 1, chat: 2 }, Charli: { selfie: 4, chat: 2, dance: 1 }, Paul: { snack: 3, beer: 2, chat: 2 }, Martin: { stretch: 1, toast: 1 },
+        Julie: { warm: 2, look: 2, chat: 2 }, Karen: { toast: 2, chat: 3 }, Debbie: { dance: 3, toast: 2, chat: 2 }, Kirsty: { chat: 3, selfie: 2, cracker: 2 }, Sophie: { chat: 3, selfie: 2 }, Hollie: { selfie: 3, chat: 2 },
+        Dan: { beer: 3, sprout: 2, cracker: 2 }, Harry: { beer: 3, sprout: 2 }, Jodie: { chat: 3, snack: 2 }, Bradley: { look: 2, chat: 2 }, Tommy: { chat: 3, beer: 2, snack: 1 } }[p.name] || { chat: 2, snack: 1 };
+      const all = { ...{ snack: 1, warm: 1, pet: 1, cracker: 1, look: 1, stretch: 1, chat: 1 }, ...W }; let tot = 0; for (const k in all) tot += all[k]; let r = Math.random() * tot, act = 'chat'; for (const k in all) { r -= all[k]; if (r <= 0) { act = k; break; } }
+      this['act_' + act]?.(b); if (b.state !== 'idle') break; // one new activity per tick
+    }
+  }
+  hold(p, kind) { const P = new Prop(); if (kind === 'can') P.cyl(0.033, 0.033, 0.12, '#c41e1e').cyl(0.034, 0.034, 0.02, '#c8c8c8', 0, 0.06, 0); else if (kind === 'roll') P.cyl(0.022, 0.022, 0.1, '#c8862a', 0, 0, 0, 0, 0, Math.PI / 2, 10); else if (kind === 'phone') P.rbox(0.075, 0.15, 0.01, 0.01, '#111').box(0.065, 0.13, 0.002, '#4a8ad8', 0, 0, 0.006); else if (kind === 'glass') P.cyl(0.035, 0.03, 0.12, '#e8d8a0'); else if (kind === 'cracker') P.cyl(0.025, 0.025, 0.22, '#c1121f', 0, 0, 0, 0, 0, Math.PI / 2, 10).cyl(0.026, 0.026, 0.03, '#d4af37', 0, 0, 0, 0, 0, Math.PI / 2, 10);
+    const m = new THREE.Mesh(P.build(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4 })); const H = p.H, O = p.O, d = p.dims;
+    return p.attach(m, 'lArmR', new THREE.Vector3(0, -(O[6].y - (d.wristY - 0.065 * H)), 0.03)); }
+  drop(p, m) { if (m && m.parent) { m.parent.remove(m); p.accessories = p.accessories.filter(a => a !== m); } }
+  busy(b, secs, then) { b.state = 'act'; b.timer = secs; clearTimeout(b.actT); b.actT = setTimeout(() => { if (b.state === 'act') { b.state = 'idle'; b.p.gesture = b.p.gesture === 'holdBaby' ? 'holdBaby' : null; then && then(); this.goHome(b); } }, secs * 1000); }
+  ok(b) { return b.state === 'act' && !b.p.isDown(); }
+  face(p, x, z) { p.yaw = Math.atan2(x - p.pos.x, z - p.pos.z); }
+  act_beer(b) { const p = b.p; const garage = p.pos.x < -2.9; const spot = garage ? new THREE.Vector3(-4.6, 0, 1.0) : new THREE.Vector3(5.5, 0, 1.15);
+    const door = G.items.hinged?.find(h => h.name === (garage ? 'Garage fridge' : 'Kitchen fridge'));
+    this.goTo(b, spot, () => { this.face(p, spot.x, spot.z - 1); this.busy(b, 14); door?.body.wakeUp(); door?.body.applyTorqueImpulse({ x: 0, y: -5, z: 0 }, true); p.gesture = 'reach'; p.say(pick(['Who\'s had all the lager?', 'Ooh, there\'s one left.', 'Fridge raid.']), { prio: 0 });
+      setTimeout(() => { if (!this.ok(b)) return; b.prop = this.hold(p, 'can'); sfx('click', p.handPos('R', _v), 0.5); door?.body.applyTorqueImpulse({ x: 0, y: 5, z: 0 }, true); p.gesture = 'sip'; }, 1500);
+      setTimeout(() => this.drop(p, b.prop), 13000); }, 1.1); }
+  act_snack(b) { const p = b.p; const s = pick(G.house.spots.buffet); this.goTo(b, s, () => { this.face(p, s.x + (s.x > 4.5 ? 1 : 0), s.z + (s.x > 4.5 ? 0 : 1)); this.busy(b, 9); p.gesture = 'reach';
+    setTimeout(() => { if (!this.ok(b)) return; b.prop = this.hold(p, 'roll'); p.gesture = 'eat'; p.mouthFull = G.time + 6; p.say(pick(['Mmm.', 'These are lovely, Julie.', 'Just the one.']), { prio: 0 }); }, 1200); setTimeout(() => this.drop(p, b.prop), 8500); }); }
+  act_sprout(b) { const p = b.p; const spot = new THREE.Vector3(4.05, 0, -3.0 - Math.random() * 0.6); this.goTo(b, spot, () => { this.face(p, 4.99, -3.9); this.busy(b, 6); p.gesture = 'throwOver'; p.gestureT = 0;
+    setTimeout(() => { if (!this.ok(b)) return; const cups = (G.items.byType.pong_cup || []).filter(c => { const t = c.body.translation(); return t.x > 4.4 && t.z < -2.9 && t.z > -4.9 && t.y > 0.7; }); const tgt = cups.length ? new THREE.Vector3().copy(pick(cups).body.translation()).add(new THREE.Vector3(0, 0.06, 0)) : new THREE.Vector3(4.99, 0.85, -3.9);
+      const start = p.handPos('R', new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0)); const T = 0.55; const v = tgt.clone().add(new THREE.Vector3(rand(-0.06, 0.06), 0, rand(-0.06, 0.06))).sub(start).divideScalar(T); v.y += 0.5 * 9.81 * T;
+      const sp = G.items.spawn('sprout', start, null); if (sp) { sp.body.setLinvel(v, true); sp.thrownBy = p.name; }
+      setTimeout(() => { if (!sp?.alive) return; const q = sp.body.translation(); const inCup = cups.some(c => { const t = c.body.translation(); return Math.hypot(q.x - t.x, q.z - t.z) < 0.04 && q.y > t.y - 0.07; }); if (inCup) { p.gesture = 'cheer'; p.say(pick(['GET IN!', 'Sprout pong champion!', 'Did you see that?!']), { prio: 1 }); sfx('ding', q, 0.6); } else { p.gesture = 'facepalm'; p.say(pick(['Ahh!', 'So close.', 'The sprout\'s wonky.']), { prio: 0 }); } }, 1100); }, 520); }); }
+  act_warm(b) { const p = b.p; const s = new THREE.Vector3(-4.5, 0, -3.05 + rand(-0.4, 0.4)); this.goTo(b, s, () => { this.face(p, -5.3, s.z); this.busy(b, 9); p.gesture = 'warm'; if (Math.random() < 0.5) p.say(pick(['Lovely fire, Martin.', 'Freezing out there.', 'Ooh, that\'s better.']), { prio: 0 }); }); }
+  act_look(b) { const p = b.p; const w = pick([[3.0, 5.0, 0], [-2.47, -5.6, Math.PI], [-4.6, -5.4, Math.PI], [3.0, -6.4, Math.PI]]); this.goTo(b, new THREE.Vector3(w[0], 0, w[1]), () => { p.yaw = w[2]; this.busy(b, 7); p.gesture = 'hips'; if (Math.random() < 0.5) p.say(pick(['Is that snow?', 'Next door\'s lights are better than ours.', 'Steve\'s out in his dressing gown again.']), { prio: 0 }); }); }
+  act_selfie(b) { const p = b.p; this.busy(b, 6); b.prop = this.hold(p, 'phone'); p.gesture = 'selfie'; p.say(pick(['Everyone say Boxing Day!', 'One for the group chat.', 'Hold on, my good side.']), { prio: 0 });
+    setTimeout(() => { if (!this.ok(b)) return; const l = new THREE.PointLight('#ffffff', 6, 3); l.position.copy(p.handPos('R', new THREE.Vector3())); G.scene.add(l); sfx('click', l.position, 0.6); setTimeout(() => G.scene.remove(l), 120); for (const o of G.chars) if (o !== p && !o.isPlayer && o.state === 'anim' && o.pos.distanceTo(p.pos) < 2.5 && o.brain?.state === 'idle') { o.gesture = 'laugh'; setTimeout(() => o.gesture === 'laugh' && (o.gesture = null), 2000); } }, 2500);
+    setTimeout(() => this.drop(p, b.prop), 5800); }
+  act_dance(b) { const p = b.p; this.busy(b, 8); p.gesture = 'dance'; p.say(pick(['This is my song!', 'Come on, Martin, turn it up!', 'Shapes!']), { prio: 0 }); const o = this.partner(b, 3); if (o) { this.busy(o.brain, 8); o.gesture = 'dance'; } }
+  act_stretch(b) { this.busy(b, 3); b.p.gesture = 'stretch'; if (Math.random() < 0.4) b.p.say('Ooh, my back.', { prio: 0 }); }
+  act_pet(b) { const d = G.dog; if (!d || d.playerControlled || d.state === 'sleep') return this.act_chat(b); const p = b.p; this.goTo(b, d.pos.clone().add(new THREE.Vector3(0.55, 0, 0.35)), () => { this.face(p, d.pos.x, d.pos.z); this.busy(b, 5); p.gesture = 'pet'; d.wag = 3; p.say(pick(['Who\'s a good boy?', 'Chip! Hello!', 'He\'s after my sausage roll.']), { prio: 0 }); }); }
+  partner(b, maxD = 4) { const p = b.p; let best = null, bd = maxD; for (const [o, ob] of this.brains) { if (o === p || o.isPlayer || o.protected || ob.state !== 'idle' || o.state !== 'anim' || ob.home.carried) continue; const d = o.pos.distanceTo(p.pos) - (o.team === p.team ? 1 : 0); if (d < bd) { bd = d; best = o; } } return best; }
+  act_chat(b) { const p = b.p; const o = this.partner(b); if (!o) return; const mid = p.pos.clone().lerp(o.pos, 0.5); this.busy(b, 8); this.busy(o.brain, 8); this.face(p, o.pos.x, o.pos.z); this.face(o, p.pos.x, p.pos.z);
+    const moves = ['laugh', 'argue', 'point', 'shrug', 'slapArm']; let k = 0; const tick = () => { if (!this.ok(b) || k > 3) return; const who = k % 2 ? o : p; who.gesture = pick(moves); const l = who.lines?.idle; if (l?.length && Math.random() < 0.6) who.say(pick(l), { prio: 0 }); k++; setTimeout(tick, 2000); }; tick(); }
+  act_cracker(b) { const p = b.p; const o = this.partner(b, 3.5); if (!o) return this.act_chat(b); this.busy(b, 6); this.busy(o.brain, 6); this.face(p, o.pos.x, o.pos.z); this.face(o, p.pos.x, p.pos.z);
+    b.prop = this.hold(p, 'cracker'); p.gesture = o.gesture = 'pull'; p.say(pick(['Cracker! Grab the end.', 'Pull it, then!']), { prio: 0 });
+    setTimeout(() => { if (!this.ok(b)) return; this.drop(p, b.prop); sfx('crack', p.handPos('R', new THREE.Vector3()), 0.9); const win = Math.random() < 0.5 ? p : o; const c = G.items.spawn('paper_crown', win.headPos(new THREE.Vector3()).add(new THREE.Vector3(0, 0.15, 0)), null); c?.body.setLinvel({ x: 0, y: 1, z: 0 }, true);
+      win.gesture = 'cheer'; (win === p ? o : p).gesture = 'facepalm'; win.say(pick(['Yes! What\'s the joke?', 'Mine! Paper hat time.', 'Why did the turkey join the band? Drumsticks!']), { prio: 1 }); }, 2600); }
+  act_toast(b) { const p = b.p; const near = [...this.brains].filter(([o, ob]) => o !== p && !o.isPlayer && !o.protected && ob.state === 'idle' && o.state === 'anim' && o.pos.distanceTo(p.pos) < 3.2).slice(0, 4);
+    this.busy(b, 4); b.prop = this.hold(p, 'glass'); p.gesture = 'toast'; p.say(pick(['Cheers, everyone!', 'To Martin\'s quiz! Ish.', 'Merry Christmas!']), { prio: 1 });
+    for (const [o, ob] of near) { this.busy(ob, 4); o.gesture = 'toast'; setTimeout(() => o.say?.(pick(['Cheers!', 'Merry Christmas!', 'Cheers!']), { prio: 0 }), rand(400, 1200)); } setTimeout(() => this.drop(p, b.prop), 3900); }
   babyUpdate(dt) {
-    const hz = this.harrison, br = this.bradley; if (!hz || !br) return;
+    const hz = this.harrison, br = this.bradley; if (!hz || !br || hz.isPlayer || br.isPlayer) { if (br && hz?.isPlayer && br.gesture === 'holdBaby') br.gesture = null; return; }
     const hb = this.brains.get(hz);
     if (hb.inBouncer) return;
     if (br.state === 'anim' && br.gesture !== 'holdBaby' && !hb.inBouncer) br.gesture = 'holdBaby';
@@ -247,7 +308,7 @@ export class AI {
     // Chip joins in
     G.dog?.follow(b.p, 10);
     // trail of toys
-    if (Math.random() < 0.15) setTimeout(() => { G.items.spawn(pick(['duplo', 'toy_car']), b.p.pos.clone().setY(0.05), null); }, 2500);
+    if (Math.random() < 0.04) setTimeout(() => { G.items.spawn(pick(['duplo', 'toy_car']), b.p.pos.clone().setY(0.05), null); }, 2500);
   }
   masonThrow(b) {
     const m = b.p; m.base = 'stand'; m.gesture = 'cheer'; m.gestureT = 0;

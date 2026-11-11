@@ -1,152 +1,182 @@
-// Game modes: pick one on the home screen. Each mode sets up the house, runs its own rules/timer/score,
-// shows a live board on Martin's TV and a results screen with your personal best.
+// Game modes, picked on the start screens: Quick Quiz, Mini Games, Fling the Relative, Drinks Run, Free Roam.
+// (Playing as Chip, Mason or Harrison skips the mode and goes straight into roaming the house at their height.)
 import * as THREE from 'three';
 import { G, on, emit, rand, pick, clamp, shuffle } from '../core.js';
-import { sfx, say } from '../engine/audio.js';
+import { sfx } from '../engine/audio.js';
 import { tvFrame, wrapText } from './screens.js';
 import { loadStore, saveStore } from './settings.js';
-import { DRINK_ORDERS } from '../chars/cast.js';
+import { DRINK_ORDERS, TEAMS, TEAM_IDS } from '../chars/cast.js';
+import { card, board, timer } from './popup.js';
+import { canvasTex } from '../engine/textures.js';
 
 export const MODES = [
-  { id: 'quiz', icon: '🏆', name: 'The Boxing Day Quiz', desc: 'The full night: 5 rounds, marking, disputes, mini-games and the Mason Cup.', tag: 'Classic' },
-  { id: 'quick', icon: '⚡', name: 'Quick Quiz', desc: 'Two rounds, no mini-games, straight to the cup. About 10 minutes.', tag: '10 min' },
-  { id: 'chaos', icon: '💥', name: 'Family Chaos', desc: 'Three minutes. Punch, kick, throw and pile up the relatives. Chain hits for a combo.', tag: '3:00 · score' },
-  { id: 'fling', icon: '🚀', name: 'Fling the Family', desc: 'Ten throws. Every relative you launch gets a distance & style score out of 10.', tag: '10 throws' },
-  { id: 'beer', icon: '🍺', name: 'Beer Run', desc: 'Everyone wants a drink NOW. Get the right one to the right person before they give up.', tag: '3:00 · orders' },
-  { id: 'hide', icon: '🔍', name: 'Mason\'s Hide & Seek', desc: 'Mason has hidden six things all over the house. Find them before Martin notices.', tag: '4:00 · find 6' },
-  { id: 'games', icon: '🎲', name: 'Games Room Marathon', desc: 'All five mini-games back to back: Sprout Pong, Crackers, Parcel, Celebrations, Gift Grab.', tag: '5 games' },
-  { id: 'sandbox', icon: '🎄', name: 'Free Roam', desc: 'No quiz, no timer. Just the family, the house and 250 things to throw.', tag: 'Relax' },
+  { id: 'quick', icon: '⚡', name: 'Quick Quiz', desc: 'Into the living room: two quick rounds on the big question cards, marking, then the Mason Cup.', tag: '10 min' },
+  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Five games in the dining room and conservatory: sprout throwing, cracker pulls, pass the parcel, Celebrations stacking, gift grab.', tag: '5 games' },
+  { id: 'fling', icon: '🚀', name: 'Fling the Relative', desc: 'Out in the garden. The family line up, you grab and launch them down the lawn. There\'s a measuring tape.', tag: '10 throws' },
+  { id: 'beer', icon: '🍺', name: 'Drinks Run', desc: 'Everyone wants a drink and they\'re getting cross. The drinks are poured — find the right one and get it to them.', tag: '3:00 · orders' },
+  { id: 'sandbox', icon: '🎄', name: 'Free Roam', desc: 'No quiz, no timer. Just the family, the house and loads to throw.', tag: 'Relax' },
 ];
-export const modeById = (id) => MODES.find(m => m.id === id) || MODES[0];
-export function selectedMode() {
-  const q = new URLSearchParams(location.search).get('mode'); if (q && MODES.some(m => m.id === q)) return q;
-  return loadStore('mode', 'quiz');
-}
+export const ROAM = { id: 'roam', icon: '🐾', name: 'Free Roam', desc: 'Roam the house at your own height and bother everyone.', tag: '' };
+export const FULL = { id: 'quiz', icon: '🏆', name: 'The Full Quiz', desc: 'All the rounds, the mini games in between and the Mason Cup.', tag: '' };
+export const modeById = (id) => MODES.find(m => m.id === id) || (id === 'roam' ? ROAM : id === 'quiz' ? FULL : MODES[0]);
+export function selectedMode() { const q = new URLSearchParams(location.search).get('mode'); if (q && (MODES.some(m => m.id === q) || q === 'roam' || q === 'quiz')) return q; /* 'quiz' = the full evening (hidden; used by tests) */ const s = loadStore('mode', 'quick'); return MODES.some(m => m.id === s) ? s : 'quick'; }
+
+const DRINK = {
+  lager: { label: 'lager', icon: '🍺', ids: ['lager'], where: 'Kitchen fridge (or the garage fridge)' },
+  bitter: { label: 'bitter', icon: '🍺', ids: ['bitter'], where: 'Garage fridge' },
+  pint: { label: 'pint', icon: '🍺', ids: ['pint_glass', 'lager', 'bitter'], where: 'Pint glasses on the breakfast bar' },
+  prosecco: { label: 'Prosecco', icon: '🥂', ids: ['prosecco'], where: 'Kitchen fridge' },
+  wine: { label: 'glass of wine', icon: '🍷', ids: ['wine_glass', 'white_wine', 'red_wine'], where: 'Wine glasses on the breakfast bar' },
+  small: { label: 'small one', icon: '🍷', ids: ['wine_glass', 'prosecco', 'white_wine'], where: 'Wine glasses on the breakfast bar' },
+  juice: { label: 'juice', icon: '🧃', ids: ['juice', 'squash'], where: 'Kitchen fridge' },
+};
 
 export class Modes {
   constructor() {
-    G.modes = this; this.id = selectedMode(); this.def = modeById(this.id); this.score = 0; this.t = 0; this.limit = 0; this.running = false; this.combo = 1; this.comboT = 0; this.lines = [];
+    G.modes = this; this.id = selectedMode(); this.def = modeById(this.id); this.score = 0; this.t = 0; this.limit = 0; this.running = false; this.lines = [];
     on('started', () => this.start());
     G.updaters.push((dt) => this.update(dt));
     this.hud = document.getElementById('modeHud');
   }
   best() { return loadStore('best.' + this.id, null); }
-  add(pts, why, pos) {
-    if (!this.running) return; const p = Math.round(pts * (this.combo || 1)); this.score += p;
-    this.lines.unshift(`+${p}  ${why}${this.combo > 1 ? `  (x${this.combo.toFixed(1)})` : ''}`); this.lines.length = Math.min(this.lines.length, 5);
-    if (pos && G.fx) G.fx.score?.(pos, '+' + p);
-    this.flash = G.time;
-  }
+  add(pts, why) { if (!this.running) return; this.score += Math.round(pts); this.lines.unshift(`+${Math.round(pts)}  ${why}`); this.lines.length = Math.min(this.lines.length, 5); }
   start() {
-    this.id = selectedMode(); this.def = modeById(this.id); const q = G.quiz;
-    if (this.id !== 'quiz' && this.id !== 'quick') { q.disabled = true; G.systems.nextRoast = Infinity; }
-    if (this.id === 'quick') { q.lastRound = 1; q.qPer = 5; q.noMiniGames = true; }
+    this.def = modeById(this.id); const q = G.quiz; document.body.classList.remove('mode-fling', 'mode-beer', 'mode-games', 'mode-quick', 'mode-roam');
+    document.body.classList.add('mode-' + (this.id === 'quiz' ? 'quick' : this.id));
+    if (this.id === 'quiz') { this.running = false; this.hudOff?.(); return; }
+    if (this.id !== 'quick') { q.disabled = true; q.skipWelcome = true; G.systems.nextRoast = Infinity; }
     this.running = true; this.t = 0; const id = this.id;
-    G.ui?.toast(`${this.def.icon} ${this.def.name}: ${this.def.desc}`, 7);
-    if (id === 'quiz' || id === 'quick') { this.running = false; this.hudOff(); return; }
-    if (id === 'chaos') this.chaosSetup();
-    if (id === 'fling') this.flingSetup();
-    if (id === 'beer') this.beerSetup();
-    if (id === 'hide') this.hideSetup();
-    if (id === 'games') this.gamesSetup();
-    if (this.running) { this.drawTV(); this.drawHud(); }
-    if (id === 'sandbox') { this.running = false; this.hudOff(); G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FREE ROAM'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'No quiz tonight. Martin is devastated. Throw whatever you like (except the tree).', 60, 170, 900, 42); }); }
+    if (id === 'quick') return this.quickSetup();
+    if (id === 'games') return this.gamesSetup();
+    if (id === 'fling') return this.flingSetup();
+    if (id === 'beer') return this.beerSetup();
+    this.running = false; this.hudOff();
+    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FREE ROAM'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'No quiz tonight. Martin is devastated. Throw whatever you like (except the tree).', 60, 170, 900, 42); });
   }
-  // ---------------- Family Chaos ----------------
-  chaosSetup() {
-    this.limit = 180; G.systems.havoc = 85;
-    const ev = (n, pts) => on(n, (p) => { if (p?.isPlayer) return; this.hit(); this.add(pts, n === 'pileUp' ? 'PILE-UP!' : n === 'glassSquash' ? 'Face on the glass' : n === 'tvHit' ? 'Hit the telly' : n, p?.world?.[1]?.p); });
-    ev('punched', 50); ev('kicked', 60); ev('shoved', 40); ev('pileUp', 150); ev('glassSquash', 120); ev('tvHit', 80); ev('corkHit', 100); ev('chipBowled', 70);
-    on('thrown', (h) => { if (h.kind === 'char') { this.hit(); this.add(30, `Threw ${h.ref.name}`); } });
-    on('throwRated', (h, r) => { if (h.kind === 'char' && r.score > 3) this.add(r.score * 15, `${h.ref.name} landed: ${r.score.toFixed(1)}/10`); });
-    on('itemImpact', (inst, other, sp) => { if (other?.kind === 'char' && !other.ref.isPlayer && !other.ref.protected && G.time - (this._lastImp || 0) > 0.5) { this._lastImp = G.time; this.hit(); this.add(20, `${inst.type.name} to ${other.ref.name}`); } });
-    this.chaosT = 6;
+  // ---------------- Quick Quiz: in the living room, straight in ----------------
+  quickSetup() {
+    const q = G.quiz; q.lastRound = 1; q.qPer = 5; q.noMiniGames = true; q.skipWelcome = true; this.running = false; this.hudOff();
+    if (G.me && !G.me.isDog) G.player.teleport(-2.2, -1.75, 0.67);
+    card({ kicker: 'QUICK QUIZ', title: 'ROUND ONE', sub: `Two rounds, five questions each. Tap your answer on the cards. ${q.martin()?.name || 'Martin'} is marking.`, icon: '⚡', secs: 3.6 }).then(() => { if (q.phase === 'arrival') { q.phase = 'go'; q.startRound(0); } });
   }
-  hit() { this.combo = this.comboT > 0 ? Math.min(5, this.combo + 0.5) : 1; this.comboT = 3; }
-  // ---------------- Fling the Family ----------------
-  flingSetup() { this.throws = 0; this.maxThrows = 10; this.limit = 0;
-    on('thrown', (h) => { if (h.kind === 'char' && this.running) { this.throws++; this.inFlight = h.ref; this.flightBonus = 0; } });
-    for (const [e, pts, why] of [['pileUp', 200, 'Pile-up bonus'], ['glassSquash', 250, 'Window splat bonus'], ['tvHit', 150, 'Telly bonus']]) on(e, () => { if (this.inFlight) this.add(pts, why); });
-    on('throwRated', (h, r) => { if (h.kind !== 'char' || !this.running) return; const pts = Math.round(r.score * 100); this.add(pts, `${h.ref.name}: ${r.dist.toFixed(1)} m, ${r.height.toFixed(1)} m high — ${r.score.toFixed(1)}/10`);
-      G.ui?.toast(`Throw ${this.throws}/${this.maxThrows}: ${h.ref.name} — ${r.score.toFixed(1)}/10`, 3); this.inFlight = null;
-      if (this.throws >= this.maxThrows) setTimeout(() => this.end(), 2500); });
-    G.ui?.toast('Grab a relative (LMB / fist), hold RMB to charge, release to fling. Big heights and long distances score most.', 6);
+  // ---------------- Mini Games: dining room + conservatory ----------------
+  async gamesSetup() {
+    this.hudOff(); this.running = false; const mg = G.minigames; mg.total = {};
+    for (let i = 0; i < 5; i++) await mg.play(i);
+    const rows = mg.overall(); const mine = rows.find(r => r.me); const top = rows.slice().sort((a, b) => b.score - a.score)[0];
+    sfx(top.me ? 'cheer' : 'drum', null, 1);
+    await board({ kicker: 'MINI GAMES — FINAL STANDINGS', title: top.me ? 'YOU WIN!' : `${top.name.toUpperCase()} WIN`, rows, unit: ' pts', footer: '3 points for a win, 2 for second, 1 for third.', secs: 7 });
+    this.running = true; this.score = (mine?.score || 0) * 100; this.end();
   }
-  // ---------------- Beer Run ----------------
-  beerSetup() { this.limit = 180; this.orders = []; this.orderT = 2; G.systems.nextOrder = Infinity; this.served = 0; this.missed = 0;
-    on('drinkServed', (p, ok) => { if (!this.running) return; const o = this.orders.find(o => o.p === p); if (!o) { this.add(10, `${p.name} took one anyway`); return; } if (ok) { this.orders.splice(this.orders.indexOf(o), 1); this.served++; this.add(100 + Math.round(Math.max(0, o.until - G.time) * 3), `${p.name} got a ${o.label}`); sfx('ding', p.headPos(new THREE.Vector3()), 0.6); } else { this.score = Math.max(0, this.score - 20); this.lines.unshift(`-20  Wrong drink for ${p.name}`); } });
-    this.restock();
+  // ---------------- Fling the Relative (garden only) ----------------
+  flingSetup() {
+    this.throws = 0; this.maxThrows = 10; this.limit = 0; this.dists = []; this.lane = { x0: -5.6, z: -11.6 };
+    // clear the lawn of clutter
+    for (const it of G.items.instances.slice()) { if (it.type.fixed || it.held) continue; const t = it.body.translation(); if (t.z < -8.6 && t.z > -14.6 && t.x > -7.5 && t.x < 5.6) G.items.remove(it); }
+    this.buildRuler();
+    G.player.teleport(-6.3, this.lane.z, -Math.PI / 2); G.player.pitch = -0.12;
+    // everyone lines up on the patio
+    const q = shuffle(G.chars.filter(c => !c.isPlayer && !c.protected && c.brain && c.team !== 'host'));
+    if (G.chars.find(c => c.team === 'host' && !c.isPlayer)) q.push(G.chars.find(c => c.team === 'host' && !c.isPlayer));
+    this.queue = q; this.queue.forEach((p, i) => this.toQueue(p, i));
+    this.nextUp();
+    on('grab', (h) => { if (this.id === 'fling' && h.kind === 'char') this.holding = h.ref; });
+    on('thrown', (h) => { if (this.id !== 'fling' || h.kind !== 'char' || !this.running) return; this.throws++; this.flying = { p: h.ref, t: 0 }; this.holding = null; });
+    card({ kicker: 'FLING THE RELATIVE', title: '10 THROWS', sub: 'GRAB whoever\'s at the front, hold THROW to wind up, let go to launch them down the lawn. The tape measures it.', icon: '🚀', secs: 4 });
   }
-  restock() { const add = (id, x, y, z) => { if ((G.items.byType[id] || []).filter(i => { const t = i.body.translation(); return Math.hypot(t.x - x, t.z - z) < 0.5; }).length < 2) G.items.spawn(id, new THREE.Vector3(x + rand(-0.15, 0.15), y, z), null, { surface: true }); };
-    add('lager', 4.0, 0.58, 0.35); add('prosecco', 3.6, 0.13, 0.45); add('white_wine', 3.75, 0.13, 0.45); add('bitter', -5.0, 1.03, 5.65); add('juice', 3.65, 0.58, 0.5); add('lager', -5.0, 0.13, 5.62); }
+  toQueue(p, i) { const s = new THREE.Vector3(-7.0 + (i % 2) * 0.55, 0, -10.1 + Math.floor(i / 2) * 0.7); G.ai?.sendTo(p.name, s, () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = Math.PI; p.gesture = Math.random() < 0.3 ? 'armsFolded' : null; }, 1.4); }
+  nextUp() {
+    if (this.throws >= this.maxThrows) return; const p = this.queue.find(c => !c.flung && c.state === 'anim'); if (!p) return; this.up = p;
+    G.ai?.sendTo(p.name, new THREE.Vector3(this.lane.x0 + 0.2, 0, this.lane.z), () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = -Math.PI / 2; p.say(pick(['Go on then.', 'Not the face!', 'I\'ve just eaten!', 'Ten metres. Easy.', 'Mind the fence!']), { prio: 1 }); }, 1.6);
+    G.ui?.toast(`Next up: ${p.name}. GRAB, then hold THROW.`, 3);
+  }
+  buildRuler() {
+    const len = 10.4, W = 2048, Hh = 96; const tex = canvasTex(W, Hh); const g = tex.userData.ctx;
+    g.fillStyle = '#f5d10f'; g.fillRect(0, 0, W, Hh); g.fillStyle = '#111'; g.fillRect(0, 0, W, 6); g.fillRect(0, Hh - 6, W, 6);
+    for (let m = 0; m <= 100; m++) { const x = m / 100 * (W - 8) + 4; const big = m % 10 === 0, mid = m % 5 === 0; g.fillRect(x - (big ? 2 : 1), 6, big ? 4 : 2, big ? 46 : mid ? 30 : 16); if (big) { g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.fillText(m / 10 + 'm', Math.min(W - 40, Math.max(30, x)), 86); } }
+    tex.needsUpdate = true; tex.anisotropy = 8;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.42), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7 })); m.rotation.x = -Math.PI / 2; m.position.set(this.lane.x0 + len / 2, 0.012, this.lane.z - 0.85); G.scene.add(m);
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 1.8), new THREE.MeshBasicMaterial({ color: '#ffffff' })); line.rotation.x = -Math.PI / 2; line.position.set(this.lane.x0, 0.013, this.lane.z); G.scene.add(line);
+    this.flagMat = new THREE.MeshStandardMaterial({ color: '#c1121f' }); this.flags = [];
+  }
+  flag(x, z, d) { const grp = new THREE.Group(); const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.7), new THREE.MeshStandardMaterial({ color: '#ddd' })); pole.position.y = 0.35; grp.add(pole);
+    const tx = canvasTex(256, 128); const g = tx.userData.ctx; g.fillStyle = '#c1121f'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#fff'; g.font = 'bold 64px sans-serif'; g.textAlign = 'center'; g.fillText(d.toFixed(1) + 'm', 128, 86); tx.needsUpdate = true;
+    const fl = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.2), new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide })); fl.position.set(0.2, 0.6, 0); grp.add(fl); grp.position.set(x, 0, z); grp.lookAt(G.player.headPos(new THREE.Vector3()).setY(0)); G.scene.add(grp); this.flags.push(grp); }
+  tickFling(dt) {
+    const f = this.flying; if (!f) return; f.t += dt; const p = f.p; if (!p.bodies) return; const b = p.bodies[0]; const v = b.linvel(), t = b.translation();
+    if (f.t > 0.8 && Math.hypot(v.x, v.y, v.z) < 0.6) { this.flying = null; p.flung = true; const d = Math.max(0, t.x - this.lane.x0); this.dists.push({ name: p.name, d }); const pts = Math.round(d * 100); this.add(pts, `${p.name}: ${d.toFixed(1)} m`);
+      const best = Math.max(...this.dists.map(x => x.d)); this.flag(t.x, t.z, d); sfx(d >= best ? 'cheer' : 'boing', null, 0.8);
+      card({ kicker: `THROW ${this.throws} OF ${this.maxThrows}`, title: `${d.toFixed(1)} METRES`, sub: d >= best && this.dists.length > 1 ? `${p.name} — NEW BEST!` : `${p.name} landed.`, secs: 2.2, c1: '#2d6a4f', c2: '#0e3a20' })
+        .then(() => { setTimeout(() => { if (p.brain) { p.brain.state = 'idle'; G.ai?.sendTo(p.name, new THREE.Vector3(-2.5 + rand(-1, 1), 0, -7.6 + rand(-0.3, 0.3)), () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = -Math.PI / 2; }); } }, 2500);
+          if (this.throws >= this.maxThrows) { const rows = this.dists.slice().sort((a, b) => b.d - a.d).slice(0, 5).map((x, i) => ({ name: x.name, score: +x.d.toFixed(1), color: ['#ffd700', '#c0c0c0', '#cd7f32', '#888', '#666'][i], me: false })); board({ kicker: 'FLING THE RELATIVE', title: 'LONGEST THROWS', rows, unit: ' m', secs: 6 }).then(() => this.end()); }
+          else this.nextUp(); }); }
+  }
+  // ---------------- Drinks Run ----------------
+  beerSetup() {
+    this.limit = 180; this.orders = []; this.orderT = 3; G.systems.nextOrder = Infinity; this.served = 0; this.missed = 0; this.restock();
+    card({ kicker: 'DRINKS RUN', title: 'EVERYONE\'S THIRSTY', sub: 'The drinks are already poured. When someone shouts, find their drink and take it to them before their bar goes red. It gets busier.', icon: '🍺', secs: 4.2 });
+    if (G.me && !G.me.isDog) G.player.teleport(3.0, 2.6, -0.4);
+  }
+  restock() {
+    const add = (id, x, y, z, n = 2) => { const have = (G.items.byType[id] || []).filter(i => { const t = i.body.translation(); return Math.hypot(t.x - x, t.z - z) < 0.45 && Math.abs(t.y - y) < 0.3; }).length; for (let k = have; k < n; k++) G.items.spawn(id, new THREE.Vector3(x + rand(-0.12, 0.12), y, z + rand(-0.05, 0.05)), null, { surface: true }); };
+    add('lager', 5.6, 0.58, 0.1, 3); add('prosecco', 5.3, 0.13, 0.12); add('white_wine', 5.5, 0.13, 0.12, 1); add('juice', 5.35, 0.58, 0.15, 1);
+    add('wine_glass', 3.3, 1.035, -0.05, 3); add('pint_glass', 3.9, 1.035, -0.05, 2);
+    add('bitter', -4.75, 1.03, 0.12, 2); add('lager', -4.78, 0.13, 0.1, 2);
+  }
   newOrder() {
-    const label = { lager: 'lager', bitter: 'bitter', pint: 'pint (lager or bitter)', prosecco: 'Prosecco', wine: 'glass of wine', small: 'small one (Prosecco or wine)', juice: 'juice' };
-    const cands = G.chars.filter(c => !c.isPlayer && !c.protected && !c.isDown() && DRINK_ORDERS[c.name] && !this.orders.some(o => o.p === c)); if (!cands.length) return;
-    const p = pick(cands); const d = DRINK_ORDERS[p.name]; const o = { p, drink: d, label: label[d] || d, until: G.time + 50 }; this.orders.push(o);
-    p.say(pick([`Tommy! ${label[d]}, please!`, `Get us a ${label[d]}, Tommy.`, `I'm parched. ${label[d]}?`]), { prio: 1 });
+    const cands = G.chars.filter(c => !c.isPlayer && !c.protected && !c.isDown() && DRINK_ORDERS[c.name] && !this.orders.some(o => o.p === c) && c.brain?.state !== 'scripted'); if (!cands.length) return;
+    const p = pick(cands); const d = DRINK[DRINK_ORDERS[p.name]] || DRINK.lager; const patience = Math.max(22, 55 - this.t * 0.18);
+    const o = { p, d, start: G.time, until: G.time + patience, patience }; this.orders.push(o);
+    p.say(pick([`${G.me?.name || 'Tommy'}! ${d.label}, please!`, `Get us a ${d.label}, would you?`, `I'm parched. ${d.label}?`, `Any chance of a ${d.label}?`]), { prio: 1 }); p.gesture = 'wave'; setTimeout(() => p.gesture === 'wave' && (p.gesture = null), 2500);
+    o.marker = this.marker(d.icon); sfx('ding', null, 0.5);
+    G.popup?.card({ kicker: 'DRINK ORDER', title: `${p.name.toUpperCase()}: ${d.label.toUpperCase()}`, sub: `${d.icon} Where: <b>${d.where}</b><br>Where they are: ${roomName(p)}`, secs: 2.8, c1: '#8a5a00', c2: '#3a2400' });
   }
-  // ---------------- Hide & Seek ----------------
-  hideSetup() { this.limit = 240; this.found = 0;
-    const spots = shuffle([
-      ['in the Christmas tree', -2.12, 1.05, -6.1], ['under a sofa cushion', -2.9, 0.62, -1.0], ['in the bathroom', -2.2, 0.5, 4.8], ['in Chip\'s bed', -4.75, 0.08, -1.0],
-      ['on the garage shelf', -7.19, 1.55, 3.0], ['behind the TV', -5.45, 0.6, -5.7], ['in the conservatory plant pot', 5.15, 0.5, -6.45], ['on top of the fridge', 5.51, 1.92, 0.1],
-      ['under the stairs', -2.7, 0.1, 0.4], ['behind the trampoline', 3.4, 0.1, -14.0], ['in the fireplace', -5.0, 0.15, -3.05], ['in the kitchen bin', 2.35, 0.65, -0.05], ['on the landing', -2.1, 2.5, 0.1], ['under the BBQ', -7.0, 0.1, -7.4],
-    ]).slice(0, 6);
-    const ids = shuffle(['remote', 'keys', 'phone', 'cup_turkey', 'red_nose', 'rubber_duck']);
-    this.hidden = spots.map(([where, x, y, z], i) => { const it = G.items.spawn(ids[i], new THREE.Vector3(x, y, z), null); if (it) it.hiddenAt = where; return it; }).filter(Boolean);
-    on('grab', (h) => { if (!this.running || h.kind !== 'item') return; const i = this.hidden.indexOf(h.ref); if (i < 0 || h.ref.foundIt) return; h.ref.foundIt = true; this.found++; this.add(150, `Found the ${h.ref.type.name.toLowerCase()} ${h.ref.hiddenAt}`); sfx('ding', null, 0.8); G.charByName.Mason?.say(pick(['Awww!', 'No fair!', 'Hehehe!']), { prio: 1 }); if (this.found >= this.hidden.length) setTimeout(() => this.end(), 1200); });
-    this.sparkles = this.hidden.map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ color: '#ffe680', transparent: true, opacity: 0, depthTest: false })); s.scale.set(0.12, 0.12, 1); s.renderOrder = 60; G.scene.add(s); return s; });
-    G.ui?.toast('Mason has hidden: ' + this.hidden.map(h => h.type.name.toLowerCase()).join(', ') + '. Grab each one to find it. Sparkles appear after a minute.', 8);
+  marker(icon) { const tx = canvasTex(128, 128); const g = tx.userData.ctx; g.fillStyle = 'rgba(255,215,0,0.95)'; g.beginPath(); g.arc(64, 58, 50, 0, 7); g.fill(); g.beginPath(); g.moveTo(44, 98); g.lineTo(84, 98); g.lineTo(64, 126); g.fill(); g.font = '60px serif'; g.textAlign = 'center'; g.fillText(icon, 64, 80); tx.needsUpdate = true;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, transparent: true })); s.scale.set(0.32, 0.32, 1); s.renderOrder = 45; G.scene.add(s); return s; }
+  tickBeer(dt) {
+    this.orderT -= dt; const maxOrders = Math.min(6, 1 + Math.floor(this.t / 28));
+    if (this.orderT <= 0 && this.orders.length < maxOrders) { this.orderT = Math.max(4, rand(12, 18) - this.t * 0.06); this.newOrder(); }
+    // walking up to someone with the right drink in your hand hands it over
+    const held = G.player.heldItem('D') || G.player.heldItem('R') || G.player.heldItem('L'); const me = G.player.headPos(new THREE.Vector3());
+    for (const o of this.orders.slice()) {
+      const hp = o.p.headPos(new THREE.Vector3()); o.marker.position.copy(hp).add(new THREE.Vector3(0, 0.45 + Math.sin(G.time * 4) * 0.04, 0)); const anger = clamp((G.time - o.start) / o.patience, 0, 1); o.anger = anger;
+      if (anger > 0.6 && !o.moaned) { o.moaned = true; o.p.say(pick(['Still waiting!', 'Hello?! Drink!', 'Is it being brewed?']), { prio: 1 }); o.p.setMood('angry', 4); }
+      if (held && o.d.ids.includes(held.id) && hp.distanceTo(me) < 1.6) { this.serve(o, held); continue; }
+      if (G.time > o.until) { this.drop(o); this.missed++; this.score = Math.max(0, this.score - 40); this.lines.unshift(`-40  ${o.p.name} gave up`); o.p.say(pick(['Forget it, I\'ll get it myself.', 'Unbelievable.', 'I\'ll die of thirst.']), { prio: 1 }); o.p.setMood('angry', 6); G.ui?.toast(`${o.p.name} gave up waiting!`, 2.5); }
+    }
+    if (G.frame % 600 === 0) this.restock();
   }
-  // ---------------- Games Room Marathon ----------------
-  gamesSetup() { this.limit = 0; this.gi = 0; const q = G.quiz; this.base = q.bonus.paul;
-    G.player.teleport(1.6, -1.3, -0.6);
-    const next = () => { this.score = (q.bonus.paul - this.base) * 100; if (this.gi >= 5) return this.end(); G.minigames.start(this.gi++, next); };
-    setTimeout(next, 2500);
-  }
-  // ---------------- loop ----------------
+  serve(o, item) { G.player.releaseAll(); G.items.remove(item); this.drop(o); this.served++; const fast = Math.max(0, o.until - G.time); const pts = 100 + Math.round(fast * 4); this.add(pts, `${o.p.name} got their ${o.d.label}`); sfx('ding', null, 0.9);
+    o.p.say(pick(['Lovely, ta!', 'You\'re a star.', 'About time!', 'Cheers!']), { prio: 1 }); o.p.gesture = 'sip'; setTimeout(() => o.p.gesture === 'sip' && (o.p.gesture = null), 3000); G.ui?.toast(`+${pts} — ${o.p.name} is happy`, 2); }
+  drop(o) { this.orders.splice(this.orders.indexOf(o), 1); G.scene.remove(o.marker); }
+  // ---------------- loop + HUD ----------------
   update(dt) {
-    if (!this.running) return; this.t += dt; this.comboT -= dt; if (this.comboT <= 0) this.combo = 1;
-    if (this.id === 'chaos') { this.chaosT -= dt; if (this.chaosT <= 0) { this.chaosT = rand(14, 22); G.systems.chaos(pick(['corkPop', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'volume100', 'doorbell', 'paulOverRoast', 'wineSpill', 'puddingFire', 'channelChange'])); } }
-    if (this.id === 'beer') { this.orderT -= dt; if (this.orderT <= 0 && this.orders.length < 4) { this.orderT = rand(9, 15) * (1 - this.t / 400); this.newOrder(); }
-      for (const o of this.orders.slice()) if (G.time > o.until) { this.orders.splice(this.orders.indexOf(o), 1); this.missed++; this.score = Math.max(0, this.score - 30); this.lines.unshift(`-30  ${o.p.name} gave up waiting`); o.p.say(pick(['Forget it, I\'ll get it myself.', 'Never mind, Tommy.', 'Unbelievable.']), { prio: 1 }); }
-      if (G.frame % 600 === 0) this.restock(); }
-    if (this.id === 'hide' && this.sparkles) this.hidden.forEach((it, i) => { const s = this.sparkles[i]; if (!it.alive || it.foundIt) { s.visible = false; return; } const tp = it.body.translation(); s.position.set(tp.x, tp.y + 0.12, tp.z); s.material.opacity = this.t > 60 ? (Math.sin(G.time * 4 + i) * 0.5 + 0.5) * 0.9 : 0; s.material.rotation = G.time; });
-    if (this.limit && this.t >= this.limit) return this.end();
+    if (!this.running) return; this.t += dt;
+    if (this.id === 'beer') this.tickBeer(dt);
+    if (this.id === 'fling') this.tickFling(dt);
+    if (this.limit) { const left = Math.max(0, this.limit - this.t), L = Math.ceil(left); timer(`${Math.floor(L / 60)}:${String(L % 60).padStart(2, '0')}`, this.def.name.toUpperCase(), left < 15); if (left <= 0) return this.end(); }
     if (G.frame % 10 === 0) { this.drawHud(); this.drawTV(); }
   }
-  timeText() { const s = this.limit ? Math.max(0, Math.ceil(this.limit - this.t)) : Math.floor(this.t); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
   extra() {
-    if (this.id === 'fling' && this.maxThrows) return `Throws ${this.throws}/${this.maxThrows}`;
-    if (this.id === 'beer' && this.orders) return this.orders.map(o => `${o.p.name}: ${o.label} (${Math.max(0, Math.ceil(o.until - G.time))}s)`).join(' · ') || 'Waiting for orders…';
-    if (this.id === 'hide' && this.hidden) return `Found ${this.found}/${this.hidden.length}`;
-    if (this.id === 'chaos') return this.combo > 1 ? `COMBO x${this.combo.toFixed(1)}` : 'Chain hits for a combo';
-    if (this.id === 'games') return `Game ${this.gi}/5`;
+    if (this.id === 'fling' && this.maxThrows) return `Throw ${Math.min(this.throws + 1, this.maxThrows)}/${this.maxThrows}${this.dists?.length ? ` · best ${Math.max(...this.dists.map(x => x.d)).toFixed(1)} m` : ''}`;
+    if (this.id === 'beer' && this.orders) return this.orders.length ? this.orders.map(o => `<div class="ord"><b>${o.d.icon} ${o.p.name}</b> · ${o.d.label}<div class="ang"><i style="width:${Math.round((o.anger || 0) * 100)}%;background:${(o.anger || 0) > 0.66 ? '#ff4d4d' : (o.anger || 0) > 0.33 ? '#ffb020' : '#3bd16f'}"></i></div><small>${o.d.where}</small></div>`).join('') : 'Waiting for orders…';
     return '';
   }
   drawHud() { if (!this.hud) return; this.hud.style.display = G.xr ? 'none' : 'block'; const b = this.best();
-    this.hud.innerHTML = `<div class="mh-name">${this.def.icon} ${this.def.name}</div><div class="mh-row"><b>${this.score}</b><span>${this.timeText()}</span></div><div class="mh-extra">${this.extra()}</div>${b != null ? `<div class="mh-best">Best ${b}</div>` : ''}${this.lines.slice(0, 3).map((l, i) => `<div class="mh-line" style="opacity:${1 - i * 0.28}">${l}</div>`).join('')}`; }
+    this.hud.innerHTML = `<div class="mh-name">${this.def.icon} ${this.def.name}</div><div class="mh-row"><b>${this.score}</b></div><div class="mh-extra">${this.extra()}</div>${b != null ? `<div class="mh-best">Best ${b}</div>` : ''}`; }
   hudOff() { if (this.hud) this.hud.style.display = 'none'; }
-  drawTV() { G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, (this.def.name).toUpperCase(), '#1d3557'); g.fillStyle = '#ffd700'; g.font = 'bold 120px sans-serif'; g.fillText(String(this.score), 60, 230); g.fillStyle = '#fff'; g.font = 'bold 60px sans-serif'; g.fillText(this.timeText(), W - 230, 230);
-    g.font = '26px sans-serif'; wrapText(g, this.extra(), 60, 300, W - 120, 34); g.fillStyle = '#9fe0ff'; g.font = '22px sans-serif'; this.lines.slice(0, 4).forEach((l, i) => g.fillText(l, 60, 410 + i * 30)); const b = this.best(); if (b != null) { g.fillStyle = '#ffd700'; g.fillText('Best: ' + b, W - 230, 280); } }); }
+  drawTV() { G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, (this.def.name).toUpperCase(), '#1d3557'); g.fillStyle = '#ffd700'; g.font = 'bold 120px sans-serif'; g.fillText(String(this.score), 60, 230); g.fillStyle = '#9fe0ff'; g.font = '22px sans-serif'; this.lines.slice(0, 5).forEach((l, i) => g.fillText(l, 60, 320 + i * 32)); }); }
   end() {
-    if (!this.running) return; this.running = false; this.hudOff(); const prev = this.best(); const isBest = prev == null || this.score > prev; if (isBest) saveStore('best.' + this.id, this.score);
+    if (!this.running) return; this.running = false; this.hudOff(); timer(null); const prev = this.best(); const isBest = prev == null || this.score > prev; if (isBest) saveStore('best.' + this.id, this.score);
+    for (const o of this.orders || []) G.scene.remove(o.marker); this.orders = [];
     sfx(isBest ? 'cheer' : 'drum', null, 1); G.player.releaseAll();
-    const lines = { chaos: 'The house is wrecked. Julie is not speaking to you.', fling: 'Ten relatives, airborne. Nobody was hurt (much).', beer: `${this.served} drinks served, ${this.missed} people gave up waiting.`, hide: `You found ${this.found} of ${this.hidden?.length || 6}.`, games: 'Games room survived. Mostly.' }[this.id] || '';
-    G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FINAL SCORE', '#7a1f24'); g.fillStyle = '#ffd700'; g.font = 'bold 140px sans-serif'; g.fillText(String(this.score), 60, 260); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, (isBest ? 'NEW PERSONAL BEST! ' : `Best: ${prev}. `) + lines, 60, 340, W - 120, 40); });
+    const lines = { fling: `Longest throw: ${Math.max(0, ...(this.dists || []).map(x => x.d)).toFixed(1)} m.`, beer: `${this.served} drinks served, ${this.missed} people gave up waiting.`, games: 'Dining room survived. Mostly.' }[this.id] || '';
     G.ui?.modal('scoreModal', `<h2>${this.def.icon} ${this.def.name}</h2><div style="font:900 64px Georgia,serif;color:#ffd700;text-align:center">${this.score}</div><p style="text-align:center">${isBest ? '🎉 New personal best!' : `Your best: ${prev}`}<br>${lines}</p>
-      <div style="text-align:center"><button class="btn" id="mAgain">Play again</button><button class="btn alt" id="mModes">Choose another mode</button><button class="btn alt" data-close>Keep messing about</button></div>`, (el) => {
-      el.querySelector('#mAgain').onclick = () => { location.href = `?mode=${this.id}`; }; el.querySelector('#mModes').onclick = () => { location.href = '?'; }; });
-    if (G.xr) G.ui?.toast(`Final score ${this.score}${isBest ? ' — new best!' : ''}. Take the headset off to pick another mode.`, 8);
+      <div style="text-align:center"><button class="btn" id="mAgain">Play again</button><button class="btn alt" id="mModes">Main menu</button><button class="btn alt" id="mRoam">Free roam the house</button></div>`, (el) => {
+      el.querySelector('#mAgain').onclick = () => { location.href = `?mode=${this.id}&as=${G.me?.name || 'Tommy'}&skip=1`; }; el.querySelector('#mModes').onclick = () => { location.href = '?'; };
+      el.querySelector('#mRoam').onclick = () => { G.ui.closeModal('scoreModal'); document.body.classList.remove('mode-' + this.id); this.id = 'sandbox'; this.def = modeById('sandbox'); for (const p of G.chars) if (p.brain && p.brain.state === 'scripted') { p.brain.state = 'idle'; G.ai?.goHome(p.brain); } }; });
     emit('modeEnd', this.id, this.score);
   }
 }
-
-// home-screen mode picker
-export function buildModePicker(onPick) {
-  const el = document.getElementById('modes'); if (!el) return; let cur = selectedMode();
-  const draw = () => { el.innerHTML = MODES.map(m => { const b = loadStore('best.' + m.id, null); return `<button class="mode${m.id === cur ? ' sel' : ''}" data-m="${m.id}"><i>${m.icon}</i><b>${m.name}</b><small>${m.desc}</small><em>${m.tag}${b != null ? ` · best ${b}` : ''}</em></button>`; }).join('');
-    el.querySelectorAll('.mode').forEach(btn => btn.onclick = () => { cur = btn.dataset.m; saveStore('mode', cur); try { history.replaceState(null, '', '?mode=' + cur); } catch (e) {} draw(); onPick && onPick(cur); }); };
-  draw(); onPick && onPick(cur);
-  return () => cur;
-}
+function roomName(p) { const r = G.house?.roomAt?.(p.pos.x, p.pos.z) || ''; return { living: 'living room', kitchen: 'kitchen', dining: 'dining room', conservatory: 'conservatory', hall: 'hallway', garden: 'garden', garage: 'garage', toilet: 'bathroom', bay: 'living room' }[r] || 'somewhere'; }
+export function buildModePicker() {}

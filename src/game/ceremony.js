@@ -41,9 +41,9 @@ export class Ceremony {
     // Replay of the Night on the TV, then awards
     setTimeout(() => { q.mSay('And now... the Replay of the Night.', 2); G.replay.playHighlights(() => this.awards(winner)); }, 15000);
     // record the win
-    const winners = loadStore('winners', [{ year: 2025, team: 'Team Julie', note: '(disputed)' }]); winners.push({ year: new Date().getFullYear(), team: name, note: winner === 'paul' ? '(Tommy, captain)' : '' }); saveStore('winners', winners);
+    const winners = loadStore('winners', [{ year: 2025, team: 'Team Julie', note: '(disputed)' }]); winners.push({ year: new Date().getFullYear(), team: name, note: winner === (G.myTeam || 'paul') ? `(${G.me?.name || 'Tommy'}, captain)` : '' }); saveStore('winners', winners);
     // unlock outfits by winning
-    if (winner === 'paul') { const un = loadStore('unlockedOutfits', OUTFITS.map(o => o.id)); saveStore('unlockedOutfits', un); saveStore('pickNextOutfit', true); }
+    if (winner === (G.myTeam || 'paul')) { const un = loadStore('unlockedOutfits', OUTFITS.map(o => o.id)); saveStore('unlockedOutfits', un); saveStore('pickNextOutfit', true); }
   }
   awards(winner) {
     const q = G.quiz, s = G.systems, pl = G.player;

@@ -6,12 +6,16 @@ import { canvasTex } from '../engine/textures.js';
 import { saveSettings, loadStore, saveStore } from './settings.js';
 import { OUTFITS, TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { Ceremony } from './ceremony.js';
+import { startFlow } from './flow.js';
+import { setAvatar } from './avatar.js';
+import './popup.js';
 import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../engine/audio.js';
 
 const $ = (id) => document.getElementById(id);
 const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top in % / px), action
   // no grab button on phones: tap a person to knock them over, tap a thing to pick it up, tap again to throw
   { id: 'throw', icon: '🏈', label: 'THROW', pos: { right: 24, bottom: 28 }, big: true },
+  { id: 'grab', icon: '✋', label: 'GRAB', pos: { right: 128, bottom: 116 } }, // only shown in Fling the Relative
   { id: 'punch', icon: '👊', label: 'PUNCH', pos: { right: 128, bottom: 26 } },
   { id: 'use', icon: '🖊️', label: 'USE', pos: { right: 104, top: 12 } },
   { id: 'handUp', icon: '🙋', label: 'HAND UP', pos: { right: 20, top: 12 } },
@@ -30,7 +34,7 @@ class UI {
     on('say', (who, text) => this.onSay(who, text));
     on('menu', () => this.toggleMenu());
     on('scoreboard', (v) => this.scoreboard(v));
-    on('question', () => this.showAnswers()); on('answered', () => this.showAnswers());
+    on('question', () => this.showAnswers()); on('answered', () => this.showAnswers()); on('paulChanged', () => this.showAnswers()); on('questionEnd', () => G.popup?.questionCard(null));
     on('pointerlock', (l) => { if (!l && !this.modalOpen && !this.touchMode && !G.xr && this.started) { /* paused by ESC */ } });
     G.updaters.push((dt) => this.update(dt));
     // floating name tag over whoever you're looking at
@@ -44,8 +48,11 @@ class UI {
   startScreen() {
     $('startBtns').style.display = 'block';
     const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else { $('touch').classList.add('on'); document.body.classList.add('touch'); } };
-    $('btnPlay').onclick = go;
-    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { go(); this.enterVR(); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
+    this.go = go;
+    const qs = new URLSearchParams(location.search);
+    const quick = () => { setAvatar(qs.get('as') || 'Tommy'); const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; go(); };
+    $('btnPlay').onclick = () => { initAudio(); resumeAudio(); unlockSpeech(); if (qs.get('skip')) return quick(); startFlow(go); };
+    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { initAudio(); resumeAudio(); startFlow(() => { go(); this.enterVR(); }, { vr: true }); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });
   }
   async enterVR() {
@@ -116,12 +123,10 @@ class UI {
     const d = hp.distanceTo(G.player.headPos(new THREE.Vector3())); const k = clamp(d / 2.2, 0.6, 1.8); this.tag.scale.set(0.95 * k, 0.3 * k, 1); this.tag.visible = !G.xr;
     for (const b of this.bubbles) if (b.who === p && b.s.visible) b.s.position.y += 0.2 * k; // keep the speech bubble above it
   }
-  showAnswers() {
-    const q = G.quiz; const box = $('answers'); const cur = q.cur;
-    if (!cur || q.phase !== 'question') { box.style.display = 'none'; return; }
-    box.style.display = 'flex'; box.innerHTML = '';
-    cur.opts.forEach((o, i) => { const b = document.createElement('button'); b.textContent = `${'ABCD'[i]}  ${o}`; if (cur.answers.paul === i) b.className = 'sel'; b.onclick = (e) => { e.stopPropagation(); q.answer(i); }; b.onpointerdown = (e) => e.stopPropagation(); box.appendChild(b); });
-    clearTimeout(this.ansT); this.ansT = setTimeout(() => { if (G.quiz.phase !== 'question') box.style.display = 'none'; }, (q.qTime - q.t + 0.5) * 1000);
+  showAnswers() { // big animated question card with four tap-able answers (phones, tablets and desktop)
+    const q = G.quiz; const cur = q?.cur; const box = $('answers'); if (box) box.style.display = 'none';
+    if (!cur || q.phase !== 'question' || G.xr) { G.popup?.questionCard(null); return; }
+    G.popup?.questionCard({ q: cur.q, opts: cur.opts, round: q.roundName?.() }, q.qi + 1, q.questions.length, (i) => q.answer(i), cur.answers[G.myTeam || 'paul']);
   }
   openAnswerPicker() { this.showAnswers(); if (G.quiz.phase === 'heist') this.modal('pickModal', `<h2>Change an answer (heist!)</h2><p>Pick the letter to write over your wrong answer:</p>${[0, 1, 2, 3].map(i => `<button class="btn" data-a="${i}">${'ABCD'[i]}</button>`).join('')}<br><button class="btn alt" data-close>Cancel</button>`, (el) => el.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { G.quiz.answer(+b.dataset.a); this.closeModal('pickModal'); })); }
   askNumber(title, cb) { this.modal('pickModal', `<h2>${title}</h2><input id="numIn" type="number" value="100" style="font-size:22px;width:140px;padding:6px"> <button class="btn" id="numOk">Guess</button>`, (el) => { el.querySelector('#numOk').onclick = () => { const n = +el.querySelector('#numIn').value || 0; this.closeModal('pickModal'); cb(n); }; }); if (G.xr) cb(Math.round(60 + Math.random() * 60)); }
@@ -160,7 +165,7 @@ class UI {
       el.querySelector('#mRestart').onclick = () => location.reload();
       el.querySelector('#mWipe').onclick = () => { try { Object.keys(localStorage).filter(k => k.startsWith('masonQuiz.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} this.toast('Saved history cleared.'); };
       el.querySelector('#mLayout').onclick = () => { this.closeModal('menu'); this.editLayout(); };
-      el.querySelector('#mLayoutReset').onclick = () => { S.touchLayout = null; saveSettings(S); this.buildTouch(true); };
+      el.querySelector('#mLayoutReset').onclick = () => { S.touchLayout2 = null; saveSettings(S); this.buildTouch(true); };
       el.querySelectorAll('[data-k]').forEach(i => i.onchange = () => { S[i.dataset.k] = i.checked; saveSettings(S); if (i.dataset.k === 'thirdPerson') G.player.thirdPerson = i.checked; if (i.dataset.k === 'leftHanded') this.buildTouch(true); });
       el.querySelectorAll('[data-n]').forEach(i => i.oninput = () => { S[i.dataset.n] = +i.value; saveSettings(S); if (i.dataset.n.startsWith('touch')) this.buildTouch(true); });
       el.querySelectorAll('[data-s]').forEach(i => i.onchange = () => { S[i.dataset.s] = isNaN(+i.value) ? i.value : +i.value; saveSettings(S); });
@@ -169,9 +174,10 @@ class UI {
   // ---------------- touch controls ----------------
   buildTouch(rebuild) {
     const T = $('touch'); T.querySelectorAll('.tbtn').forEach(b => b.remove()); const S = G.settings; this.tbtn = {};
-    const layout = S.touchLayout || {};
+    const layout = S.touchLayout2 || {};
     for (const d of BUTTONS) {
-      const b = document.createElement('div'); b.className = 'tbtn' + (d.big ? ' big' : ''); b.innerHTML = `<span>${d.icon}</span>${d.label}` + (d.id === 'throw' ? '<div id="grabThumb"></div>' : '');
+      const dog = document.body.classList.contains('as-dog'); const lbl = dog ? ({ punch: 'PAW PUNCH', throw: 'DROP IT', jump: 'POUNCE', crouch: 'SNIFF' }[d.id] || d.label) : d.label; const ico = dog ? ({ punch: '🐾', throw: '🦴', jump: '🐕' }[d.id] || d.icon) : d.icon;
+      const b = document.createElement('div'); b.className = 'tbtn' + (d.big ? ' big' : ''); b.dataset.id = d.id; b.innerHTML = `<span>${ico}</span>${lbl}` + (d.id === 'throw' ? '<div id="grabThumb"></div>' : '');
       b.style.opacity = S.touchOpacity; b.style.transform = `scale(${S.touchScale})`;
       const p = layout[d.id] || d.pos; for (const k of ['left', 'right', 'top', 'bottom']) if (p[k] !== undefined) b.style[k] = typeof p[k] === 'number' ? p[k] + 'px' : p[k];
       if (S.leftHanded && !layout[d.id]) { if (p.right !== undefined) { b.style.left = p.right + 'px'; b.style.right = ''; } else if (typeof p.left === 'number') { b.style.right = p.left + 'px'; b.style.left = ''; } }
@@ -183,11 +189,12 @@ class UI {
     if (rebuild) return;
     // joystick on the left half, look on the right half
     const stick = $('stick'); let sid = null, sx = 0, sy = 0; let lid = null, lx = 0, ly = 0, l0x = 0, l0y = 0, l0t = 0;
+    const home = () => { stick.style.display = 'block'; stick.style.left = '22px'; stick.style.top = (innerHeight - 200) + 'px'; stick.classList.add('idle'); stick.firstChild.style.transform = ''; }; home(); addEventListener('resize', () => { if (sid === null) home(); }); this.stickHome = home;
     T.style.pointerEvents = 'none';
     const area = G.renderer.domElement;
-    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; if (e.clientX < innerWidth * 0.45 && sid === null) { sid = e.pointerId; sx = e.clientX; sy = e.clientY; stick.style.display = 'block'; stick.style.left = (sx - 60) + 'px'; stick.style.top = (sy - 60) + 'px'; } else if (lid === null) { lid = e.pointerId; lx = l0x = e.clientX; ly = l0y = e.clientY; l0t = performance.now(); } };
+    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; if (e.clientX < innerWidth * 0.45 && sid === null) { sid = e.pointerId; sx = e.clientX; sy = e.clientY; stick.style.display = 'block'; stick.classList.remove('idle'); stick.style.left = (sx - 60) + 'px'; stick.style.top = (sy - 60) + 'px'; } else if (lid === null) { lid = e.pointerId; lx = l0x = e.clientX; ly = l0y = e.clientY; l0t = performance.now(); } };
     const move = (e) => { if (e.pointerId === sid) { const dx = clamp((e.clientX - sx) / 50, -1, 1), dy = clamp((e.clientY - sy) / 50, -1, 1); G.player.controls.touchMove.x = dx; G.player.controls.touchMove.z = -dy; stick.firstChild.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; } if (e.pointerId === lid) { const s = 0.006 * (G.settings.mouseSens || 1); G.player.controls.touchLook.x += (e.clientX - lx) * s; G.player.controls.touchLook.y += (e.clientY - ly) * s; lx = e.clientX; ly = e.clientY; } };
-    const up = (e) => { if (e.pointerId === sid) { sid = null; stick.style.display = 'none'; G.player.controls.touchMove.x = G.player.controls.touchMove.z = 0; } if (e.pointerId === lid) { lid = null; if (Math.hypot(e.clientX - l0x, e.clientY - l0y) < 14 && performance.now() - l0t < 350) G.player.tapAt(e.clientX, e.clientY); } };
+    const up = (e) => { if (e.pointerId === sid) { sid = null; home(); G.player.controls.touchMove.x = G.player.controls.touchMove.z = 0; } if (e.pointerId === lid) { lid = null; if (Math.hypot(e.clientX - l0x, e.clientY - l0y) < 14 && performance.now() - l0t < 350) G.player.tapAt(e.clientX, e.clientY); } };
     area.addEventListener('pointerdown', down); addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   }
   press(id, v) {
@@ -210,7 +217,7 @@ class UI {
   startDrag(e, b, id) {
     if (id === 'menu') { this.editing = false; saveSettings(G.settings); this.toast('Layout saved.'); return; }
     const move = (ev) => { const x = ev.clientX, y = ev.clientY; b.style.left = (x - 36) + 'px'; b.style.top = (y - 36) + 'px'; b.style.right = ''; b.style.bottom = ''; };
-    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); const r = b.getBoundingClientRect(); G.settings.touchLayout = G.settings.touchLayout || {}; G.settings.touchLayout[id] = { left: Math.round(r.left), top: Math.round(r.top) }; };
+    const up = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', up); const r = b.getBoundingClientRect(); G.settings.touchLayout2 = G.settings.touchLayout2 || {}; G.settings.touchLayout2[id] = { left: Math.round(r.left), top: Math.round(r.top) }; };
     addEventListener('pointermove', move); addEventListener('pointerup', up);
   }
   // ---------------- Quest wrist menu ----------------
@@ -220,7 +227,7 @@ class UI {
     add(0.03, 0.30, 0.3, 0.16, q.phase === 'arrival' ? 'START QUIZ' : 'NEXT', () => emit('next'), q.phase === 'arrival' || q.phase === 'roundEnd');
     add(0.35, 0.30, 0.3, 0.16, 'JOKER', () => emit('joker'));
     add(0.67, 0.30, 0.3, 0.16, 'ASK KAREN', () => G.systems.askKaren());
-    for (let i = 0; i < 4; i++) add(0.03 + i * 0.24, 0.5, 0.22, 0.18, 'ABCD'[i], () => q.answer(i), q.cur?.answers.paul === i);
+    for (let i = 0; i < 4; i++) add(0.03 + i * 0.24, 0.5, 0.22, 0.18, 'ABCD'[i], () => q.answer(i), q.cur?.answers[G.myTeam || 'paul'] === i);
     add(0.03, 0.72, 0.3, 0.16, 'DISPUTE ✋', () => emit('handUp'), q.phase === 'marking');
     add(0.35, 0.72, 0.3, 0.16, 'TORCH', () => G.player.toggleTorch());
     add(0.67, 0.72, 0.3, 0.16, G.settings.smoothTurn ? 'SMOOTH TURN' : 'SNAP TURN', () => { G.settings.smoothTurn = !G.settings.smoothTurn; saveSettings(G.settings); });

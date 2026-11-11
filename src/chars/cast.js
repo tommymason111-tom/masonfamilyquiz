@@ -14,7 +14,10 @@ export const TEAM_IDS = Object.keys(TEAMS);
 export const CAST = [
   { name: 'Tommy', team: 'paul', height: 1.80, build: 'standard', sex: 'm', hair: { style: 'short', color: '#5a3c24' }, stubble: 0.25, stubbleColor: '#4a3020',
     top: { pattern: 'fairisle', c1: '#20406a', c2: '#f2f2f2', c3: '#c0282d' }, legs: { type: 'jeans', c1: '#2b3f5e' }, socks: '#c02020', eyes: '#4a6a3a', player: true,
-    voice: { pitch: 1, rate: 1, female: false, idx: 0 }, lines: {} },
+    voice: { pitch: 1, rate: 1, female: false, idx: 0 },
+    // Tommy: works in marketing in London, gets wound up by his dad, cracks jokes
+    lines: { idle: ["Dad. DAD. It's not your turn.", "In London we'd call this a team-building exercise.", "I do marketing, Martin. I could rebrand this quiz for you.", "Dad, you've been wrong four times and confident every time.", "Can we get through ONE question without Dad arguing?", "This train back to London can't come soon enough.", "Honestly, Dad, Google is right there.", "I'm putting this quiz in a slide deck. It's a case study in chaos.", "Dad, please. People are watching.", "Let's circle back to the sausage rolls."],
+      thrown: ["DAD!", "I've got work on Monday!", "Not the face, I've got a client meeting!"], laugh: ["Hahaha, Dad, stop!"], joke: ["What do you call a marketing team at Christmas? Sleigh-les.", "Dad's like a pop-up ad. You close him and he comes straight back.", "I'd pitch this quiz in London but they'd think it was satire."] } },
   { name: 'Paul', role: 'Dad', team: 'paul', height: 1.80, build: 'bigger', sex: 'm', hair: { style: 'short', color: '#1b1612', recede: 0.6 }, stubble: 0.65, stubbleColor: '#1e1814',
     top: { pattern: 'reindeer', c1: '#a8141c', c2: '#ffffff', c3: '#1d4d2b' }, legs: { type: 'jeans', c1: '#24324a' }, socks: '#1d4d2b', face: { jaw: 0.95, nose: 1.15, noseW: 1.2, brow: 0.9 },
     voice: { pitch: 0.55, rate: 1.05, female: false, idx: 1 }, weight: 'heavy', grazer: true,
@@ -86,6 +89,7 @@ export const CAST = [
 // Personal idles/behaviour flags used by the AI
 export const PERSONA = {
   Paul: { idle: ['bellyPat', 'point', 'argue'], seat: 'sofaL', drink: 'lager', loud: 1.4 },
+  Tommy: { idle: ['phone', 'laughPolite', 'sip', 'armsFolded'], drink: 'lager', holds: 'phone' },
   Karen: { idle: ['drink', 'tidy'], seat: 'sofaL', drink: 'prosecco', holds: 'wine' },
   Charli: { idle: ['phone', 'film'], seat: 'sofaL', drink: 'prosecco', holds: 'phone' },
   Martin: { idle: ['clipboard', 'whistle', 'straightenTree'], seat: 'armchair', drink: 'lager', holds: 'clipboard' },
@@ -102,7 +106,7 @@ export const PERSONA = {
   Bradley: { idle: ['bounce'], seat: 'stand', drink: 'lager', holdsBaby: true },
 };
 
-export const DRINK_ORDERS = { Paul: 'lager', Martin: 'lager', Gary: 'bitter', Dan: 'pint', Karen: 'prosecco', Debbie: 'prosecco', Julie: 'small', Mason: 'juice', Hollie: 'prosecco', Sophie: 'prosecco', James: 'lager', Kirsty: 'wine', Jodie: 'prosecco', Harry: 'lager', Bradley: 'lager', Charli: 'prosecco' };
+export const DRINK_ORDERS = { Tommy: 'lager', Paul: 'lager', Martin: 'lager', Gary: 'bitter', Dan: 'pint', Karen: 'prosecco', Debbie: 'prosecco', Julie: 'small', Mason: 'juice', Hollie: 'prosecco', Sophie: 'prosecco', James: 'lager', Kirsty: 'wine', Jodie: 'prosecco', Harry: 'lager', Bradley: 'lager', Charli: 'prosecco' };
 
 // Gary's Outfit Wheel
 // Gary's outfit of the year (one at random each game). On his 3D scan the costume is painted on below the neck
@@ -111,7 +115,6 @@ export const OUTFITS = [
   { id: 'mankini', label: 'Mankini (the classic)', top: { pattern: 'mankini' }, legs: { type: 'skin' }, bareFeet: true },
   { id: 'fairy', label: 'Christmas fairy (wings, wand and tutu)', top: { pattern: 'plain', c1: '#ec6fb4' }, legs: { type: 'trousers', c1: '#ffffff' }, socks: '#b0186a' },
   { id: 'minion', label: 'Minion (dungarees and all)', top: { pattern: 'plain', c1: '#f5cf14' }, legs: { type: 'jeans', c1: '#2f5d9e' }, socks: '#151515' },
-  { id: 'smurf', label: 'Smurf (blue from the neck down)', top: { pattern: 'plain', c1: '#3d8ad8' }, legs: { type: 'trousers', c1: '#f6f6f6' }, socks: '#f6f6f6' },
   { id: 'santa', label: 'Father Christmas suit (wrong size)', top: { pattern: 'santa', c1: '#c41e1e', hat: 'santa' }, legs: { type: 'trousers', c1: '#c41e1e' }, socks: '#111', trousersFall: true },
-  { id: 'elf', label: 'Elf on the Shelf', top: { pattern: 'elf', c1: '#1f8a3a' }, legs: { type: 'trousers', c1: '#c41e1e' }, socks: '#1f8a3a', onShelf: true },
+  { id: 'elf', label: 'Elf on the Shelf (tiny)', top: { pattern: 'elf', c1: '#1f8a3a' }, legs: { type: 'trousers', c1: '#c41e1e' }, socks: '#1f8a3a', onShelf: true, height: 1.1 },
 ];

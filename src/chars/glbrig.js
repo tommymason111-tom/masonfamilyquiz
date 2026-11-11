@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from '../../lib/addons/loaders/GLTFLoader.js';
 import { BONES, PARENT, PART_COUNT, computeDims } from './body.js';
 
-export const MODEL_FILES = { Paul: 'paul', Karen: 'karen', Charli: 'charli', Martin: 'martin', Julie: 'julie', Hollie: 'hollie', Sophie: 'sophie', James: 'james', Debbie: 'debbie', Gary: 'gary', Kirsty: 'kirsty', Jodie: 'jodie', Harry: 'harry', Bradley: 'bradley', Dan: 'dan' };
+export const MODEL_FILES = { Paul: 'paul', Karen: 'karen', Charli: 'charli', Martin: 'martin', Julie: 'julie', Hollie: 'hollie', Sophie: 'sophie', James: 'james', Debbie: 'debbie', Gary: 'gary', Kirsty: 'kirsty', Jodie: 'jodie', Harry: 'harry', Bradley: 'bradley', Dan: 'dan', Tommy: 'tommy' };
 export const models = {};
 // Arm pose of each scan (degrees from straight out to the side: 0 = T-pose, -75 = arms down, +55 = arms up)
 export const POSE_HINT = { Paul: 0, Martin: 0, Gary: 0, Harry: 0, James: 0, Julie: 0, Sophie: 0 };
@@ -18,6 +18,7 @@ export const ARM_MARKS = {
   Kirsty: { L: [[0.080, 0.834], [0.235, 0.795], [0.240, 0.936]], R: [[-0.080, 0.834], [-0.235, 0.795], [-0.240, 0.936]] },
   Bradley: { L: [[0.114, 0.836], [0.153, 0.670], [0.164, 0.511]], R: [[-0.114, 0.836], [-0.153, 0.670], [-0.164, 0.511]] },
   Debbie: { L: [[0.125, 0.835], [0.164, 0.687], [0.169, 0.550]], R: [[-0.125, 0.835], [-0.164, 0.687], [-0.169, 0.550]] },
+  Tommy: { L: [[0.102, 0.842], [0.233, 0.885], [0.199, 1.036]], R: [[-0.102, 0.842], [-0.233, 0.885], [-0.199, 1.036]] },
   Dan: { L: [[0.112, 0.818], [0.151, 0.640], [0.162, 0.488]], R: [[-0.112, 0.818], [-0.151, 0.640], [-0.162, 0.488]] },
   Charli: { L: [[0.109, 0.830], [0.120, 0.654], [0.125, 0.511]], R: [[-0.109, 0.830], [-0.120, 0.654], [-0.125, 0.511]] },
   // Karen's scan holds her arms straight out in front (third value = forward offset from the shoulder)

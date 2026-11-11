@@ -6,6 +6,7 @@ import { G, on, emit, pick, clamp } from '../core.js';
 import { PART_COUNT } from '../chars/body.js';
 
 const RATE = 30, SECS = 15, FRAMES = RATE * SECS;
+const HIDE = new THREE.Matrix4().makeScale(0, 0, 0);
 const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(1, 1, 1), _m2 = new THREE.Matrix4();
 
 export class Replay {
@@ -47,7 +48,7 @@ export class Replay {
   apply(arr, off = 0) {
     let o = off;
     for (const t of this.track) {
-      if (t.kind === 'item') { if (arr[o + 1] > -50) { _m.compose(_p.set(arr[o], arr[o + 1], arr[o + 2]), _q.set(arr[o + 3], arr[o + 4], arr[o + 5], arr[o + 6]), _s.set(1, 1, 1)); t.mesh.setMatrixAt(t.idx, _m); t.mesh.instanceMatrix.needsUpdate = true; } }
+      if (t.kind === 'item') { if (arr[o + 1] > -50) { _m.compose(_p.set(arr[o], arr[o + 1], arr[o + 2]), _q.set(arr[o + 3], arr[o + 4], arr[o + 5], arr[o + 6]), _s.set(1, 1, 1)); t.mesh.setMatrixAt(t.idx, _m); t.mesh.instanceMatrix.needsUpdate = true; } else if (t.inst.type.free?.includes(t.idx)) { t.mesh.setMatrixAt(t.idx, HIDE); t.mesh.instanceMatrix.needsUpdate = true; } }
       else { const ob = t.kind === 'bone' ? t.bone : t.obj; ob.position.set(arr[o], arr[o + 1], arr[o + 2]); ob.quaternion.set(arr[o + 3], arr[o + 4], arr[o + 5], arr[o + 6]); }
       o += 7;
     }
@@ -121,7 +122,7 @@ export class Replay {
     const prevRT = G.renderer.getRenderTarget(); G.renderer.setRenderTarget(this.rt); G.renderer.render(G.scene, a.pass ? this.cam2 : this.cam); G.renderer.setRenderTarget(prevRT);
     G.renderer.xr.enabled = xr;
     G.screens.tvMesh.visible = sheetVis; if (G.tommy) G.tommy.root.visible = tommyVis;
-    this.apply(this.live);
+    this.apply(this.live); // (removed items stay hidden; items spawned since are re-synced below)
     for (const inst of G.items.instances) G.items.syncOne(inst);
     if (G.screens.tvMesh.material.map !== this.rt.texture) { G.screens.tvMesh.material.map = this.rt.texture; G.screens.tvMesh.material.needsUpdate = true; }
     if (G.frame % 6 === 0) G.screens.showOverlay((g, W, H) => {

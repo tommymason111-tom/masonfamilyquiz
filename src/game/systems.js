@@ -92,7 +92,7 @@ export class Systems {
     on('masonHid', (it, where) => { this.stats.hidden++; G.ui?.toast(`Mason has hidden the ${it.type.name.toLowerCase()} ${where}.`, 3); });
     on('kidThrow', (who, inst, at) => { this.stats.kidsThrows++; });
     on('treeFellUnused', () => { G.ai.say('Julie', 'THE TREE! Who\'s knocked my tree over?!', 2); this.banter(10); G.ui?.toast('The tree is down. Tree Rescue: stand it back up and re-hang the baubles before Julie sees!', 5); G.dog?.goTo(G.tree.group.position.clone(), 3); });
-    on('treeUp', () => { G.ui?.toast('Tree back up! Re-hang the baubles by placing them on it. Put the angel back on top for a bonus.', 4); if (G.quiz) G.quiz.bonus.paul += 1; });
+    on('treeUp', () => { G.ui?.toast('Tree back up! Re-hang the baubles by placing them on it. Put the angel back on top for a bonus.', 4); if (G.quiz) G.quiz.bonus[G.myTeam || 'paul'] += 1; });
     on('baubleHung', () => { if (G.tree.star?.onTree === false) {} });
     on('caught', () => {});
     on('heistCaught', () => this.banter(15));
@@ -102,7 +102,7 @@ export class Systems {
     on('lockedDoor', () => G.ui?.toast('It\'s locked. Mason and Chip are giggling on the other side.', 3));
     on('pet', () => {});
     on('garden', (p) => { if (G.dog) G.dog.bark(3); });
-    on('paulConservatory', () => { if (G.quiz) { G.quiz.bonus.paul -= 2; G.ui?.toast('Paul thrown into the conservatory: works, but -2 points for unsportsmanlike conduct.', 4); } this.banter(-25); });
+    on('paulConservatory', () => { if (G.quiz) { G.quiz.bonus[G.myTeam || 'paul'] -= 2; G.ui?.toast('Paul thrown into the conservatory: works, but -2 points for unsportsmanlike conduct.', 4); } this.banter(-25); });
     on('crackerPulled', () => { this.havoc += 2; });
     on('sweetsOut', () => { this.havoc += 3; });
     on('roundStart', (r) => this.onRoundStart(r));
