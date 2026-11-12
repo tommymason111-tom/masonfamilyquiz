@@ -12,7 +12,7 @@ import { canvasTex } from '../engine/textures.js';
 
 export const MODES = [
   { id: 'quick', icon: '⚡', name: 'Quick Quiz', desc: 'Into the living room: two quick rounds on the big question cards, marking, then the Mason Cup.', tag: '10 min' },
-  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Nine games to choose from (or let the dice pick five): sprouts, crackers, sumo, magic elves, pass the parcel, chocolate box towers, catching leftovers, a snowball fight and waking Gary up.', tag: '9 games' },
+  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Eight games to choose from (or let the dice pick five): sprouts, crackers, sumo, magic elves, pass the parcel, chocolate box towers, catching leftovers and a snowball fight.', tag: '8 games' },
   { id: 'fling', icon: '🚀', name: 'Fling the Relative', desc: 'Out in the garden. The family line up, you grab and launch them down the lawn. There\'s a measuring tape.', tag: '10 throws' },
   { id: 'beer', icon: '🍺', name: 'Drinks Run', desc: 'Everyone wants a drink and they\'re getting cross. The drinks are poured — find the right one and get it to them.', tag: '3:00 · orders' },
   { id: 'sandbox', icon: '🎄', name: 'Free Roam', desc: 'No quiz, no timer. Just the family, the house and loads to throw.', tag: 'Relax' },

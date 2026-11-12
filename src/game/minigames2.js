@@ -2,7 +2,6 @@
 //   • Stack the Chocolate Boxes (dining table): a box swings back and forth over the table, DROP it on the tower
 //   • Catch the Leftovers (garden): Julie lobs Christmas dinner leftovers, catch them on your plate, Chip eats the misses
 //   • Snowball Fight (snowy garden): 3 v 3 behind snow forts, three hits and you're out
-//   • Wake Gary Up (living room): Gary's asleep on the sofa; telly, Chip, party poppers, ice and anything you can throw
 import * as THREE from 'three';
 import { G, rand, pick, clamp, shuffle } from '../core.js';
 import { sfx } from '../engine/audio.js';
@@ -337,88 +336,5 @@ export function installMoreGames(MiniGames) {
     if (!a.over) { const us = a.fighters.filter(f => f.side === 0).reduce((s, f) => s + Math.max(0, f.hp), 0) + Math.max(0, a.myHp), them = a.fighters.filter(f => f.side === 1).reduce((s, f) => s + Math.max(0, f.hp), 0); a.won = us > them; a.score = a.hits + (a.won ? 3 : 0); }
     a.btn?.(); for (const s of a.balls) G.scene.remove(s.m); a.balls = []; if (a.snow) G.scene.remove(a.snow); for (const h of Object.values(G.player.xrIn?.hands || {})) if (h) { h.ball = null; h.aimBall = null; } clearFx(a); clearWords(a); a.charge = 0;
     for (const f of a.fighters) f.p.gesture = null;
-  };
-
-  // =====================================================================================================
-  // WAKE GARY UP
-  // =====================================================================================================
-  P.setup_wakeGary = function (a) {
-    a.limit = 60; a.wake = 0; a.score = null; a.combo = 0; a.lastAct = -9;
-    const cands = G.chars.filter(c => !c.isPlayer && !c.protected && c.brain && c.H > 1.3 && !c.isDown()); const g = pick(cands) || G.charByName.Paul; a.g = g; a.gName = g.name; // whoever has nodded off this time
-    const seat = G.house.spots.sofaR[1]; this.place(g, seat.pos.x, seat.pos.z, [seat.pos.x + Math.sin(seat.yaw), seat.pos.z + Math.cos(seat.yaw)]); g.yaw = seat.yaw; g.seatY = seat.seatY; g.base = 'sleep'; g.gesture = null;
-    const front = [seat.pos.x + Math.sin(seat.yaw) * 1.5, seat.pos.z + Math.cos(seat.yaw) * 1.5]; a.front = front; G.player.teleport(front[0], front[1], faceYaw(front, [seat.pos.x, seat.pos.z])); G.player.pitch = -0.2;
-    // a blanket over him and a paper crown slipping off
-    const B = new Prop(); B.rbox(0.7, 0.05, 0.55, 0.03, '#2d6a4f', 0, 0, 0).box(0.7, 0.051, 0.06, '#c41e1e', 0, 0, 0.15).box(0.7, 0.051, 0.06, '#c41e1e', 0, 0, -0.15); a.blanket = new THREE.Mesh(B.build(), vc()); G.scene.add(a.blanket);
-    // things to throw within reach
-    a.ammo = (G.items.byType.cushion || []).filter(c => !c.held).sort((x, y) => { const tx = x.body.translation(), ty = y.body.translation(); return Math.hypot(tx.x - front[0], tx.z - front[1]) - Math.hypot(ty.x - front[0], ty.z - front[1]); }).slice(0, 3);
-    a.ammo.forEach((c, k) => { c.body.setTranslation({ x: front[0] - 0.5 + k * 0.5, y: 0.2, z: front[1] + 0.55 }, true); c.body.setLinvel({ x: 0, y: 0, z: 0 }, true); }); // the sofa cushions, on the floor in front of you
-    const ring = []; for (let k = 0; k < 8; k++) ring.push([seat.pos.x - 2.3 + (k % 2) * 0.45, seat.pos.z - 1.8 + k * 0.5]); this.crowd(ring, [seat.pos.x, seat.pos.z], [g], 5);
-    // nobody else on that sofa: anyone sitting there gets up and stands with the others
-    let n = 0; for (const c of G.chars) { if (c === g || c.isPlayer || !c.brain || c.isDown()) continue; if (G.house.spots.sofaR.some(sp => Math.hypot(c.pos.x - sp.pos.x, c.pos.z - sp.pos.z) < 0.7) || Math.hypot(c.pos.x - seat.pos.x, c.pos.z - seat.pos.z) < 1.2) { const r = ring[(5 + n++) % ring.length]; this.place(c, r[0] - 0.3, r[1], [seat.pos.x, seat.pos.z]); (this.audience ||= []).push(c); } }
-    if (G.dog && !G.dog.playerControlled) { G.dog.path = null; G.dog.pos.set(front[0] - 0.8, 0, front[1] + 0.6); G.dog.state = 'sit'; G.dog.timer = 999; }
-    a.label = () => `WAKEY WAKEY, ${a.gName.toUpperCase()}!`;
-    // punching / grabbing him counts as a prod rather than knocking him over
-    g.sumo = (imp, grab) => this.prod(a, grab ? 0.06 : 0.08, grab ? 'shake' : 'prod');
-  };
-  P.begin_wakeGary = function (a) {
-    const acts = [
-      { id: 'tv', icon: '📺', label: 'TELLY UP', cd: 7, amt: 0.17, fn: () => this.wakeAct(a, 'tv') },
-      { id: 'chip', icon: '🐶', label: 'SEND CHIP', cd: 10, amt: 0.24, fn: () => this.wakeAct(a, 'chip') },
-      { id: 'popper', icon: '🎉', label: 'POPPER', cd: 5, amt: 0.14, fn: () => this.wakeAct(a, 'popper') },
-      { id: 'ice', icon: '🧊', label: 'ICE CUBE', cd: 8, amt: 0.2, fn: () => this.wakeAct(a, 'ice') },
-      { id: 'beer', icon: '🍺', label: 'OPEN A BEER', cd: 4, amt: 0.1, fn: () => this.wakeAct(a, 'beer') },
-    ];
-    a.acts = acts; for (const x of acts) x.ready = 0;
-    if (G.xr) { a.vrI = 0; const next = () => { a.btn?.(); const x = acts[a.vrI % acts.length]; a.btn = tapButton(`${x.icon} ${x.label}`, () => { if (x.ready > a.t) return; x.fn(); a.vrI++; next(); }); }; a.vrNext = next; next(); }
-    else a.bar = actionBar(acts);
-  };
-  P.prod = function (a, amt, kind) {
-    if (a.woke) return; const now = a.t; a.combo = now - a.lastAct < 3 ? Math.min(4, a.combo + 1) : 0; a.lastAct = now; const mult = 1 + a.combo * 0.25;
-    a.wake = Math.min(1, a.wake + amt * mult * (a.deep ? 0.7 : 1)); const g = a.g;
-    g.say(pick(['Mmmf… five more minutes…', 'Not now…', 'Zzz… is it my round?…', 'Is it the quiz?…', 'Snrrrk… whuh?', 'I\'m resting my eyes…', '…one more sausage roll…', 'Mmm… turkey…']), { prio: 1 });
-    g.gesture = 'facepalm'; g.gestureT = 0; setTimeout(() => { if (g.gesture === 'facepalm') g.gesture = null; }, 900); sfx('snore', g.headPos(new THREE.Vector3()), 0.5);
-    floatWord(a, a.combo ? `x${(1 + a.combo * 0.25).toFixed(2).replace(/0$/, '')} COMBO` : kind === 'throw' ? 'BONK!' : 'WAKEY!', g.headPos(new THREE.Vector3()).add(V(0, 0.35, 0)), '#ffd700', 0.16);
-    if (a.wake >= 1) this.garyWakes(a);
-  };
-  P.wakeAct = function (a, id) {
-    if (a.woke) return; const x = a.acts.find(q => q.id === id); if (!x || x.ready > a.t) return; x.ready = a.t + x.cd; const g = a.g; const hp = g.headPos(new THREE.Vector3());
-    if (id === 'tv') { sfx('cheer', null, 1); sfx('drum', null, 0.8); G.screens?.setTV?.((gg, W, H) => { gg.fillStyle = '#c41e1e'; gg.fillRect(0, 0, W, H); gg.fillStyle = '#fff'; gg.font = 'bold 120px sans-serif'; gg.textAlign = 'center'; gg.fillText('🔊 VOLUME 100', W / 2, H / 2); }); G.charByName.Martin?.say('Who\'s touched the volume?!', { prio: 1 }); this.prod(a, x.amt, 'tv'); }
-    if (id === 'popper') { sfx('pop', hp, 1); burst(a, hp.clone().add(V(0, 0.2, 0)), pick(['#ff006e', '#ffd700', '#3bd16f', '#3a86ff']), 26, 2.4, 0.012); this.prod(a, x.amt, 'popper'); }
-    if (id === 'ice') { sfx('clink', hp, 1); g.setMood?.('shock', 1); g.say('BRRRR!', { prio: 2 }); this.prod(a, x.amt, 'ice'); }
-    if (id === 'beer') { sfx('pop', hp, 0.6); sfx('fizz', hp, 1); g.say('…did someone open a drink?…', { prio: 2 }); this.prod(a, x.amt, 'beer'); }
-    if (id === 'chip') { const d = G.dog; if (!d || d.playerControlled) return this.prod(a, x.amt * 0.6, 'chip'); d.wag = 3; sfx('bark', d.pos, 0.8);
-      d.goTo(V(g.pos.x + Math.sin(g.yaw) * 0.45, 0, g.pos.z + Math.cos(g.yaw) * 0.45), 3.4, () => { d.state = 'beg'; d.timer = 999; d.yaw = Math.atan2(g.pos.x - d.pos.x, g.pos.z - d.pos.z); sfx('yap', d.pos, 1); floatWord(a, 'LICK LICK', hp.clone().add(V(0, 0.2, 0)), '#ffb020', 0.16); this.prod(a, x.amt, 'chip');
-        setTimeout(() => { if (!d.playerControlled) { d.state = 'sit'; d.goTo(V(a.front[0] - 0.8, 0, a.front[1] + 0.6), 2.2, () => { d.state = 'sit'; d.timer = 999; }); } }, 1500); }); }
-  };
-  P.tick_wakeGary = function (a, dt) {
-    stepFx(a, dt); stepWords(a, dt); const g = a.g; if (!g) return;
-    const seat = G.house.spots.sofaR[1]; if (a.blanket) { a.blanket.position.set(g.pos.x + Math.sin(g.yaw) * 0.3, g.seatY + 0.08, g.pos.z + Math.cos(g.yaw) * 0.3); a.blanket.rotation.set(0, g.yaw, 0); a.blanket.visible = !a.woke; }
-    if (a.woke) return;
-    // he keeps sinking back into a deep sleep (the meter drains faster then)
-    a.deepT = (a.deepT ?? rand(8, 14)) - dt; if (a.deepT < 0) { a.deep = !a.deep; a.deepT = a.deep ? rand(4, 6) : rand(8, 14); if (a.deep) { G.ui?.toast(`${a.gName} is in a DEEP sleep! Throw everything at them!`, 2, { game: true }); sfx('snore', g.headPos(new THREE.Vector3()), 1); } }
-    a.wake = Math.max(0, a.wake - dt * (a.deep ? 0.06 : 0.025));
-    if (g.state === 'anim') { g.base = 'sleep'; g.pos.set(seat.pos.x, 0, seat.pos.z); g.yaw = seat.yaw; }
-    // Zzz drifting up, and a snore now and then
-    a.zT = (a.zT || 0) - dt; if (a.zT < 0) { a.zT = a.deep ? 0.5 : 0.9; floatWord(a, a.deep ? 'Z' : 'z', g.headPos(new THREE.Vector3()).add(V(rand(-0.05, 0.1), 0.2, 0)), '#bfe3ff', a.deep ? 0.22 : 0.14, 1.6); if (Math.random() < 0.35) sfx('snore', g.headPos(new THREE.Vector3()), a.deep ? 0.8 : 0.4); }
-    // anything thrown that hits him
-    if (G.frame % 2 === 0) { const hp = g.chestPos(new THREE.Vector3()); for (const it of G.items.instances) { if (it.held || it.type.fixed) continue; const t = it.body.translation(); if (Math.abs(t.x - hp.x) > 0.6 || Math.abs(t.z - hp.z) > 0.6) continue; const v = it.body.linvel(); if (Math.hypot(v.x, v.y, v.z) < 1.8) continue; if (Math.hypot(t.x - hp.x, t.y - hp.y, t.z - hp.z) < 0.5 && (it._wakeT || 0) < a.t) { it._wakeT = a.t + 1; sfx('boff', hp, 0.8); this.prod(a, Math.min(0.15, 0.06 + it.type.mass * 0.05), 'throw'); } } }
-    // keep a cushion or two within reach
-    for (const c of a.ammo) if (c?.alive) { const t = c.body.translation(); if (Math.hypot(t.x - a.front[0], t.z - a.front[1]) > 3) c.body.setTranslation({ x: a.front[0] + rand(-0.4, 0.4), y: 0.3, z: a.front[1] + rand(-0.4, 0.4) }, true); }
-    // the cooldowns on the phone buttons
-    if (a.bar) for (const x of a.acts) a.bar.cool(x, Math.max(0, (x.ready - a.t) / x.cd));
-    meters([{ label: a.deep ? `${a.gName.toUpperCase()} · DEEP SLEEP 💤` : `${a.gName.toUpperCase()} · WAKE-O-METER`, value: a.wake, color: a.wake > 0.75 ? '#3bd16f' : a.deep ? '#6a8aff' : '#ffd700' }]);
-  };
-  P.garyWakes = function (a) {
-    a.woke = true; const g = a.g; a.score = Math.max(1, Math.round(a.t)); meters(null); g.sumo = null;
-    g.base = 'stand'; g.pos.addScaledVector(V(Math.sin(g.yaw), 0, Math.cos(g.yaw)), 0.5); g.setMood?.('shock', 2); g.gesture = 'shrug'; g.gestureT = 0;
-    g.say(pick(['WHAT?! I wasn\'t asleep! I was resting my eyes!', 'I\'m awake! The answer\'s Spain!', 'Fair enough. Is it my round?']), { prio: 2 });
-    sfx('cheer', null, 1); burst(a, g.headPos(new THREE.Vector3()), '#ffd700', 30, 2.6, 0.012); G.popup?.splash?.(`${a.gName.toUpperCase()}'S AWAKE!`, `${a.score}s`); this.cheer();
-    setTimeout(() => this.stop(a), 2400);
-  };
-  P.end_wakeGary = function (a) {
-    a.bar?.remove(); a.btn?.(); meters(null); if (a.blanket) G.scene.remove(a.blanket); clearFx(a); clearWords(a); if (a.g) { a.g.sumo = null; if (a.g.state === 'anim') a.g.base = 'stand'; }
-    if (!a.woke) a.score = null; for (const c of a.ammo || []) if (c?.alive && c.mg) G.items.remove(c);
-    if (G.dog && !G.dog.playerControlled) { G.dog.timer = 2; G.dog.state = 'sit'; }
-    G.screens?.setTV?.(null);
   };
 }

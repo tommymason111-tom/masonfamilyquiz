@@ -146,7 +146,7 @@
   body.mg .tbtn:not([data-id=menu]) { display:none !important; }
   body.mg-sproutPong .tbtn[data-id=throw], body.mg-sumo .tbtn[data-id=punch], body.mg-sumo .tbtn[data-id=throw] { display:flex !important; }
   body.mg-crackerDuel #stick, body.mg-parcel #stick { display:none !important; }
-  body.mg-snowball .tbtn[data-id=throw], body.mg-wakeGary .tbtn[data-id=punch], body.mg-wakeGary .tbtn[data-id=throw], body.mg-wakeGary .tbtn[data-id=grab] { display:flex !important; }
+  body.mg-snowball .tbtn[data-id=throw] { display:flex !important; }
   body.mg-stack #stick { display:none !important; }
   body.mg-stack #pop .tap { left:auto; right:16px; bottom:max(40px, 6vh); transform:none; width:min(34vw,140px); height:min(34vw,140px); } body.mg-stack #pop .tap:active { transform:scale(.93); }
   body.mg-stack .mgact { top:auto; bottom:max(40px, 6vh); left:16px; transform:none; width:auto; }
@@ -162,7 +162,6 @@
   .mgact button span { display:block; font-size:19px; line-height:1.15; }
   .mgact button i { position:absolute; left:0; bottom:0; height:100%; width:0; background:rgba(0,0,0,.55); pointer-events:none; }
   .mgact button.cool { border-color:#888; filter:saturate(.4); }
-  body.mg-wakeGary .mgact { bottom:auto; top:max(26%, 180px); left:8px; transform:none; width:auto; flex-direction:column; gap:6px; }
   /* sprout throwing: a big POWER bar while you hold a sprout */
   body.mg-sproutPong #charge { display:block !important; width:min(60vw,240px); height:16px; margin-left:calc(min(60vw,240px) / -2); top:auto; bottom:max(150px,22vh); border:2px solid #fff; border-radius:9px; background:rgba(0,0,0,.55); overflow:visible; }
   body.mg-sproutPong #charge::before { content:'POWER'; position:absolute; left:0; right:0; top:-20px; text-align:center; font:900 13px system-ui; letter-spacing:.2em; color:#ffd700; text-shadow:0 1px 2px #000; }
