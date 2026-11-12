@@ -97,8 +97,8 @@ function wheelStep() {
 // 3. choose your character, by family
 function characterStep() {
   if (VR) { let sel = loadStore('lastAs', 'Tommy'); if (!G.charByName[sel] && sel !== 'Chip') sel = 'Tommy';
-    const items = FAMILIES.flatMap(f => f.people.filter(n => n === 'Chip' || G.charByName[n]).map(n => ({ id: n, label: n, img: P()[n], icon: n === 'Chip' ? '🐶' : '🎄' })));
-    return vrPick({ title: 'Who are you playing as?', lead: 'Point and pull the trigger (or pinch). Chip, Mason and Harrison just roam the house causing trouble.', items, selected: sel, cols: 6, done: 'Done ✓' }).then(r => { sfx('ding', null, 0.6); return r.sel; }); }
+    const groups = FAMILIES.map(f => ({ name: f.name, sub: f.sub, items: f.people.filter(n => n === 'Chip' || G.charByName[n]).map(n => ({ id: n, label: n, img: P()[n], icon: n === 'Chip' ? '🐶' : '🎄', sub: n === 'Chip' ? 'Just here for the buffet' : n === 'Martin' ? 'Quizmaster' : '' })) }));
+    return vrPick({ title: 'Who are you playing as?', lead: 'Point and pull the trigger (or pinch). Chip, Mason and Harrison roam causing trouble.', groups, items: groups.flatMap(x => x.items), selected: sel, done: 'Done ✓' }).then(r => { sfx('ding', null, 0.6); return r.sel; }); }
   return new Promise(res => {
     let sel = loadStore('lastAs', 'Tommy'); if (!G.charByName[sel] && sel !== 'Chip') sel = 'Tommy';
     const team = (n) => n === 'Chip' ? 'Just here for the buffet' : n === 'Martin' ? 'Quizmaster (or play him!)' : ''; // no team names here: just who they are

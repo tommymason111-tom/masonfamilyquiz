@@ -38,17 +38,67 @@ function flowClick(i) {
   try { G.renderer.xr.getSession()?.inputSources.forEach(s => s.gamepad?.hapticActuators?.[0]?.pulse(0.4, 30)); } catch (e) { /* no haptics */ }
   S.v++;
 }
+// ---- festive dressing for the headset screens: red velvet, a twinkling fairy-light garland, falling snow,
+// holly in the corners, hanging baubles and a double gold frame (to match the phone's start screens)
+const FLAKES = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), r: 1 + Math.random() ** 2 * 3.2, s: 0.02 + Math.random() * 0.05, w: Math.random() * 6 }));
+const BULBS = ['#ff3b3b', '#ffd23f', '#3bff7a', '#3bb8ff', '#ff6bf0', '#ffffff'];
+function holly(x, y, sc, flip) { g.save(); g.translate(x, y); g.scale(flip ? -sc : sc, sc);
+  for (const [a, dx] of [[-0.5, -18], [0.4, 18]]) { g.save(); g.rotate(a); g.beginPath(); g.moveTo(0, 0); for (let k = 0; k <= 6; k++) { const t = k / 6; g.lineTo(dx * 0 + t * 46, (k % 2 ? -1 : 1) * 9 * Math.sin(t * Math.PI) - 2); } for (let k = 6; k >= 0; k--) { const t = k / 6; g.lineTo(t * 46, (k % 2 ? 1 : -1) * 4 + 9 * Math.sin(t * Math.PI)); } g.closePath(); g.fillStyle = '#1f6a2f'; g.fill(); g.strokeStyle = '#0f3a18'; g.lineWidth = 1.5; g.stroke(); g.restore(); }
+  for (const [bx, by] of [[0, 0], [9, -6], [-7, -7]]) { g.beginPath(); g.arc(bx, by, 7, 0, 7); g.fillStyle = '#d81e2a'; g.fill(); g.beginPath(); g.arc(bx - 2, by - 2, 2, 0, 7); g.fillStyle = 'rgba(255,255,255,0.7)'; g.fill(); } g.restore(); }
+function festive(now) {
+  const grd = g.createRadialGradient(W / 2, -40, 40, W / 2, H * 0.45, W * 0.95); grd.addColorStop(0, '#8a1424'); grd.addColorStop(0.45, '#4a0a16'); grd.addColorStop(1, '#16060c');
+  rr(4, 4, W - 8, H - 8, 30); g.fillStyle = grd; g.fill();
+  // snow
+  g.save(); rr(4, 4, W - 8, H - 8, 30); g.clip(); const t = now / 1000;
+  for (const fl of FLAKES) { const y = ((fl.y + t * fl.s) % 1) * H, x = (fl.x + Math.sin(t * 0.6 + fl.w) * 0.01) * W; g.beginPath(); g.arc(x, y, fl.r, 0, 7); g.fillStyle = `rgba(255,255,255,${0.25 + fl.r / 8})`; g.fill(); }
+  // hanging baubles on ribbons from the top corners
+  [[70, 70, '#d4af37'], [120, 40, '#c1121f'], [W - 120, 46, '#1d6fd8'], [W - 70, 76, '#2d8a4f']].forEach(([x, len, c], k) => { const sw = Math.sin(t * 1.2 + k) * 4; g.strokeStyle = 'rgba(255,215,0,0.7)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 6); g.lineTo(x + sw, len); g.stroke();
+    const bg = g.createRadialGradient(x + sw - 5, len + 10, 2, x + sw, len + 14, 16); bg.addColorStop(0, '#fff'); bg.addColorStop(0.25, c); bg.addColorStop(1, '#000'); g.beginPath(); g.arc(x + sw, len + 14, 15, 0, 7); g.fillStyle = bg; g.fill(); g.fillStyle = '#d4af37'; g.fillRect(x + sw - 4, len - 2, 8, 5); });
+  g.restore();
+  // fairy-light garland swagging along the top
+  g.strokeStyle = '#1f4a2a'; g.lineWidth = 3; g.beginPath(); for (let k = 0; k <= 60; k++) { const x = 30 + k / 60 * (W - 60), y = 14 + Math.abs(Math.sin(k / 60 * Math.PI * 5)) * 18; k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+  for (let k = 0; k < 30; k++) { const u = (k + 0.5) / 30, x = 30 + u * (W - 60), y = 16 + Math.abs(Math.sin(u * Math.PI * 5)) * 18; const on = (Math.sin(t * 3 + k * 1.7) + 1) / 2; const col = BULBS[k % BULBS.length];
+    g.save(); g.shadowColor = col; g.shadowBlur = 6 + on * 14; g.globalAlpha = 0.45 + on * 0.55; g.beginPath(); g.ellipse(x, y + 6, 4.5, 6.5, 0, 0, 7); g.fillStyle = col; g.fill(); g.restore(); }
+  // double gold frame and holly in the corners
+  rr(4, 4, W - 8, H - 8, 30); g.lineWidth = 5; g.strokeStyle = '#ffd700'; g.stroke(); rr(14, 14, W - 28, H - 28, 24); g.lineWidth = 1.5; g.strokeStyle = 'rgba(255,215,0,0.45)'; g.stroke();
+  holly(26, H - 28, 0.9, false); holly(W - 26, H - 28, 0.9, true);
+}
+// the character screen in families, like the phone: one panel per family, everyone's photo inside
+function drawGroups(f, sp, y0) {
+  const G3 = sp.groups, gap = 16, x0 = 28, cw = (W - x0 * 2 - gap * (G3.length - 1)) / G3.length, top = y0 - 4, bottom = H - 96;
+  G3.forEach((grp, gi) => { const x = x0 + gi * (cw + gap);
+    rr(x, top, cw, bottom - top, 18); g.fillStyle = 'rgba(255,255,255,0.07)'; g.fill(); g.lineWidth = 2; g.strokeStyle = 'rgba(255,215,0,0.4)'; g.stroke();
+    text(grp.name, x + 16, top + 26, fit(grp.name, cw - 30, 24), '#ffd700', 'left'); text(grp.sub.toUpperCase(), x + 16, top + 50, 13, 'rgba(255,255,255,0.75)', 'left', 'system-ui', '700');
+    const cols = 3, tw = (cw - 24 - (cols - 1) * 8) / cols, th = Math.min(124, (bottom - top - 70 - 2 * 8) / 3);
+    grp.items.forEach((it, i) => { const tx = x + 12 + (i % cols) * (tw + 8), tyy = top + 64 + Math.floor(i / cols) * (th + 8); const idx = f.rects.length; f.rects.push({ kind: 'item', id: it.id, x: tx, y: tyy, w: tw, h: th }); const on = f.sel === it.id;
+      rr(tx, tyy, tw, th, 14); g.fillStyle = on ? 'rgba(255,215,0,0.2)' : f.hover === idx ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.3)'; g.fill(); g.lineWidth = on ? 4 : 1.5; g.strokeStyle = on ? '#ffd700' : 'rgba(255,255,255,0.18)'; g.stroke();
+      if (on) { g.save(); g.shadowColor = '#ffd700'; g.shadowBlur = 18; rr(tx, tyy, tw, th, 14); g.stroke(); g.restore(); }
+      const r = Math.min(tw * 0.34, th * 0.3), cx = tx + tw / 2, cy = tyy + 10 + r; const im = img(it.img);
+      g.beginPath(); g.arc(cx, cy, r + 2, 0, 7); g.fillStyle = on ? '#ffd700' : 'rgba(255,255,255,0.25)'; g.fill();
+      if (im) { g.save(); g.beginPath(); g.arc(cx, cy, r, 0, 7); g.clip(); g.drawImage(im, cx - r, cy - r, r * 2, r * 2); g.restore(); } else { g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fillStyle = '#2a1a20'; g.fill(); text(it.icon || '🎄', cx, cy + 2, r * 1.2, '#fff', 'center', 'system-ui', '400'); }
+      text(it.label, cx, cy + r + 18, fit(it.label, tw - 8, 18, 'system-ui', '800'), on ? '#ffd700' : '#fff', 'center', 'system-ui', '800');
+      if (it.sub) text(it.sub, cx, cy + r + 36, fit(it.sub, tw - 6, 11, 'system-ui', '600'), 'rgba(255,255,255,0.7)', 'center', 'system-ui', '600'); }); });
+  doneBtn(f, sp);
+}
+function doneBtn(f, sp) { const ok = !(sp.multi && f.toggle === sp.multiToggle && !f.sel.size); const bw = 300, bx = W / 2 - bw / 2, by = H - 80; const idx = f.rects.length; f.rects.push({ kind: 'done', x: bx, y: by, w: bw, h: 62 });
+  g.globalAlpha = ok ? 1 : 0.4; const bg = g.createLinearGradient(0, by, 0, by + 62); bg.addColorStop(0, f.hover === idx ? '#ff3a52' : '#e2283f'); bg.addColorStop(1, '#9c0f22'); rr(bx, by, bw, 62, 31); g.fillStyle = bg; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done || 'Next →', W / 2, by + 32, 30); g.globalAlpha = 1; tex.needsUpdate = true; }
 function drawFlow(now) {
   const f = flow, sp = f.spec; g.clearRect(0, 0, W, H); f.rects = [];
-  const grd = g.createRadialGradient(W / 2, 0, 40, W / 2, H * 0.4, W); grd.addColorStop(0, '#7a1020'); grd.addColorStop(0.5, '#3a0812'); grd.addColorStop(1, '#12060c'); rr(4, 4, W - 8, H - 8, 30); g.fillStyle = grd; g.fill(); g.lineWidth = 5; g.strokeStyle = '#ffd700'; g.stroke();
-  text(sp.title, W / 2, 50, fit(sp.title, W - 80, 46));
-  if (sp.lead) wrap(sp.lead, W / 2, 92, W - 120, 20, 24, 2, 'rgba(255,255,255,0.85)');
-  if (f.kind === 'show') { if (sp.draw) sp.draw(g, W, H, now - f.t0); else (sp.lines || []).forEach((l, i) => wrap(l, W / 2, 200 + i * 60, W - 140, i ? 28 : 36, 34, 2, i ? '#fff' : '#ffd700', 'Georgia, serif', '800'));
-    if (sp.done) { const bw = 300, bx = W / 2 - bw / 2, by = H - 92; f.rects.push({ kind: 'done', x: bx, y: by, w: bw, h: 64 }); rr(bx, by, bw, 64, 32); g.fillStyle = f.hover === 0 ? '#e2283f' : '#9c0f22'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done, W / 2, by + 32, 28); }
+  festive(now); const ty = 66;
+  // gold title with a dark drop shadow, like the phone screens
+  { const sz = fit(sp.title, W - 200, 44); g.font = `900 ${sz}px Georgia, serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#3a0a0a'; g.fillText(sp.title, W / 2 + 2, ty + 3);
+    const tg = g.createLinearGradient(W / 2 - 300, 0, W / 2 + 300, 0); tg.addColorStop(0, '#d9a12e'); tg.addColorStop(0.45, '#fff2c0'); tg.addColorStop(0.55, '#ffe08a'); tg.addColorStop(1, '#c8902a'); g.fillStyle = tg; g.fillText(sp.title, W / 2, ty); }
+  if (sp.lead) wrap(sp.lead, W / 2, ty + 38, W - 200, 18, 22, 2, 'rgba(255,243,214,0.88)');
+  if (f.kind === 'show') { if (sp.draw) sp.draw(g, W, H, now - f.t0); else { const L = (sp.lines || []).filter(Boolean); const ch = 140 + L.length * 64, cy = H / 2 - ch / 2 + 30; // a gold-edged card in the middle, with a little row of decorations
+      rr(W / 2 - 330, cy, 660, ch, 26); g.fillStyle = 'rgba(0,0,0,0.32)'; g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,215,0,0.7)'; g.stroke();
+      text('🎄   🎁   ⭐   🎁   🎄', W / 2, cy + 46, 36, '#fff', 'center', 'system-ui', '400');
+      L.forEach((l, i) => wrap(l, W / 2, cy + 104 + i * 64, 600, i ? 32 : 40, 38, 1, i ? '#fff' : '#ffd700', 'Georgia, serif', '800')); }
+    if (sp.done) doneBtn(f, sp);
     tex.needsUpdate = true; return; }
-  let y = 120;
+  let y = 136;
   if (sp.toggles) { const tw = 260, gap = 16, tot = sp.toggles.length * tw + (sp.toggles.length - 1) * gap; sp.toggles.forEach((t, i) => { const x = W / 2 - tot / 2 + i * (tw + gap); const idx = f.rects.length; f.rects.push({ kind: 'toggle', id: t.id, x, y, w: tw, h: 50 }); const on = f.toggle === t.id;
       rr(x, y, tw, 50, 25); g.fillStyle = on ? 'rgba(255,215,0,0.22)' : f.hover === idx ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.25)'; g.fill(); g.lineWidth = 3; g.strokeStyle = on ? '#ffd700' : 'rgba(255,255,255,0.4)'; g.stroke(); text(t.label, x + tw / 2, y + 25, fit(t.label, tw - 20, 22, 'system-ui', '800'), on ? '#ffd700' : '#fff', 'center', 'system-ui', '800'); }); y += 66; }
+  if (sp.groups) { drawGroups(f, sp, y); return; }
   const items = sp.items; const cols = sp.cols || (items.length > 12 ? 5 : items.length > 6 ? 3 : 2); const rows = Math.ceil(items.length / cols); const gx = 30, gw = W - 60, gh = H - 100 - y; const cw = (gw - (cols - 1) * 10) / cols, ch = Math.min(150, (gh - (rows - 1) * 10) / rows);
   const dim = sp.multi && f.toggle !== sp.multiToggle;
   items.forEach((it, i) => { const x = gx + (i % cols) * (cw + 10), yy = y + Math.floor(i / cols) * (ch + 10); const idx = f.rects.length; f.rects.push({ kind: 'item', id: it.id, x, y: yy, w: cw, h: ch });
@@ -61,9 +111,7 @@ function drawFlow(now) {
       text(it.label, tx, yy + (it.sub ? 26 : ch / 2), fit(it.label, cw - (tx - x) - 12, 24, 'Georgia, serif', '900'), on ? '#ffd700' : '#fff', 'left'); if (it.sub) { g.font = '600 16px system-ui'; g.fillStyle = 'rgba(255,255,255,0.8)'; const words = it.sub.split(' '); let line = '', n = 0; for (const w2 of words) { const t2 = line ? line + ' ' + w2 : w2; if (g.measureText(t2).width > cw - (tx - x) - 12 && line) { g.fillText(line, tx, yy + 52 + n * 19); line = w2; if (++n >= Math.floor((ch - 50) / 19)) { line = ''; break; } } else line = t2; } if (line) g.fillText(line, tx, yy + 52 + n * 19); } }
     if (sp.multi && !dim) text(on ? `${[...f.sel].indexOf(it.id) + 1}` : '+', x + cw - 22, yy + 20, 26, on ? '#ffd700' : 'rgba(255,255,255,0.6)', 'center', 'system-ui', '900');
     g.globalAlpha = 1; });
-  const ok = !(sp.multi && f.toggle === sp.multiToggle && !f.sel.size); const bw = 300, bx = W / 2 - bw / 2, by = H - 80; const idx = f.rects.length; f.rects.push({ kind: 'done', x: bx, y: by, w: bw, h: 62 });
-  g.globalAlpha = ok ? 1 : 0.4; rr(bx, by, bw, 62, 31); g.fillStyle = f.hover === idx ? '#ff3a52' : '#c0172e'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done || 'Next →', W / 2, by + 31, 28); g.globalAlpha = 1;
-  tex.needsUpdate = true;
+  doneBtn(f, sp);
 }
 // pointing: a laser from each controller / hand, hit-tested against the panel
 const _o = new THREE.Vector3(), _d = new THREE.Vector3(), _n = new THREE.Vector3(), _hit = new THREE.Vector3(); let lasers = null, flowInit = false;
