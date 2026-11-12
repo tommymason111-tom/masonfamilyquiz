@@ -144,6 +144,11 @@
   body.mg .tbtn:not([data-id=menu]) { display:none !important; }
   body.mg-sproutPong .tbtn[data-id=throw], body.mg-sumo .tbtn[data-id=punch], body.mg-sumo .tbtn[data-id=throw] { display:flex !important; }
   body.mg-crackerDuel #stick, body.mg-parcel #stick { display:none !important; }
+  /* sprout throwing: a big POWER bar while you hold a sprout */
+  body.mg-sproutPong #charge { display:block !important; width:min(60vw,240px); height:16px; margin-left:calc(min(60vw,240px) / -2); top:auto; bottom:max(150px,22vh); border:2px solid #fff; border-radius:9px; background:rgba(0,0,0,.55); overflow:visible; }
+  body.mg-sproutPong #charge::before { content:'POWER'; position:absolute; left:0; right:0; top:-20px; text-align:center; font:900 13px system-ui; letter-spacing:.2em; color:#ffd700; text-shadow:0 1px 2px #000; }
+  body.mg-sproutPong #charge i { border-radius:7px; background:linear-gradient(90deg,#3bd16f,#ffd700,#ff4d4d) !important; }
+  @media (pointer: coarse) { #prompt { top:auto !important; left:14px !important; bottom:max(6px, env(safe-area-inset-bottom)) !important; transform:none !important; font-size:12px; max-width:46vw; white-space:normal; } }
 </style>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }

@@ -162,7 +162,8 @@ export class Player {
       const dir = this.forward(new THREE.Vector3()); dir.y += 0.12; dir.normalize();
       const k = held.kind === 'char' ? (held.ref.heavy ? 0.6 : 0.85) : 1;
       const sp = (held.kind === 'char' ? 4 + this.charge * 13 : 6 + this.charge * 20) * k; // throws fly properly fast
-      this.release('D', dir.multiplyScalar(sp)); this.charge = 0;
+      if (held.kind === 'item' && held.ref.id === 'sprout' && G.minigames?.active?.id === 'sproutPong') { this.release('D', G.minigames.sproutLaunch(new THREE.Vector3())); this.charge = 0; } // sprout throwing: a gentle lob, power from how long you held THROW
+      else { this.release('D', dir.multiplyScalar(sp)); this.charge = 0; }
     } else if (!held) this.charge = 0;
     // gamepad: releasing the trigger with a right-stick flick throws
     if (c.btn('grab').released && held && this.controls.padFlick) { const dir = this.forward(new THREE.Vector3()); dir.y += 0.15; this.release('D', dir.normalize().multiplyScalar(held.kind === 'char' ? 11 : 17)); }
@@ -289,6 +290,7 @@ export class Player {
   // tap while holding something = throw it where you tapped.
   tapAt(sx, sy) {
     if (G.ui?.modalOpen) return;
+    if (G.minigames?.active?.id === 'sproutPong') return; // sprout throwing is THROW-button only (hold for power)
     const ndc = new THREE.Vector2(sx / innerWidth * 2 - 1, -(sy / innerHeight) * 2 + 1);
     const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, G.camera);
     const o = rc.ray.origin.clone(), d = rc.ray.direction.clone();

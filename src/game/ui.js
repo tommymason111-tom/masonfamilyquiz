@@ -98,6 +98,7 @@ class UI {
     const f = G.player.focus; const held = G.player.heldItem('D'); let txt = '';
     if (!G.xr) {
       if (held && f && (f.kind === 'char' || f.kind === 'dog') && f.dist < 2.2) txt = `R: give ${held.type.name} to ${f.ref.name}`;
+      else if (held && G.minigames?.active?.id === 'sproutPong') txt = 'Hold THROW for more power';
       else if (held && this.touchMode) txt = `${held.type.name} — tap to throw${held.type.food || held.type.drink ? ' · DRINK' : ''}`;
       else if (held) txt = `${held.type.name} — RMB throw · R use${held.type.food || held.type.drink ? ' · G eat/drink' : ''} · LMB drop`;
       else if (G.player.holders.D) txt = `Holding ${G.player.holders.D.ref.name || 'it'} — hold RMB to throw`;

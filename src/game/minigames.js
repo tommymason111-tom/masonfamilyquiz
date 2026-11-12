@@ -12,7 +12,7 @@ import { staticBox, staticCyl } from '../engine/physics.js';
 
 const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 export const GAMES = [
-  { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'Throw the sprouts into the red and white cups at the far end of the table. Tap a sprout to pick it up, tap again (or THROW) to lob it. 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
+  { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'A sprout appears in your hand. Hold THROW to build up power (watch the bar and the dotted line), let go to lob it into the red and white cups. 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
   { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Three relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 30 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 30 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
@@ -88,28 +88,51 @@ export class MiniGames {
     a.limit = 75; a.counted = new Set();
     this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);
     for (const c of G.items.byType.pong_cup || []) { c.body.setTranslation({ x: 1.25, y: 0.95, z: -3.5 - Math.random() * 0.5 }, true); c.dirty = true; } // the little cups go on the sideboard
-    const R0 = 0.062, R1 = 0.096, CH = 0.17;
-    const P = new Prop().lathe([[0, 0], [R0, 0], [R1, CH], [R1 - 0.004, CH], [R0 - 0.004, 0.006], [0, 0.006]], '#d0101e', 0, 0, 0, 24);
-    P.lathe([[0, 0.007], [R0 - 0.005, 0.007], [R1 - 0.005, CH - 0.002], [R1 - 0.006, CH - 0.002], [R0 - 0.006, 0.008], [0, 0.008]], '#f6f6f6', 0, 0, 0, 24); // white inside
-    P.torus(R1, 0.005, '#ffffff', 0, CH, 0, Math.PI / 2).torus(R1 - 0.009, 0.0035, '#ffffff', 0, CH - 0.022, 0, Math.PI / 2); // white rim + stripe
+    // six big red-and-white party cups, tilted a little towards you, fixed to the far end of the table
+    const R0 = 0.075, R1 = 0.115, CH = 0.19, TILT = 0.22; a.R0 = R0; a.R1 = R1; a.CH = CH;
+    const P = new Prop().lathe([[0, 0], [R0, 0], [R1, CH], [R1 - 0.004, CH], [R0 - 0.004, 0.006], [0, 0.006]], '#d0101e', 0, 0, 0, 26);
+    P.lathe([[0, 0.007], [R0 - 0.005, 0.007], [R1 - 0.005, CH - 0.002], [R1 - 0.006, CH - 0.002], [R0 - 0.006, 0.008], [0, 0.008]], '#f6f6f6', 0, 0, 0, 26); // white inside
+    P.torus(R1, 0.006, '#ffffff', 0, CH, 0, Math.PI / 2).torus(R1 - 0.011, 0.004, '#ffffff', 0, CH - 0.026, 0, Math.PI / 2); // white rim + stripe
     const geo = P.build(); const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, side: THREE.DoubleSide });
+    const qT = new THREE.Quaternion().setFromEuler(new THREE.Euler(TILT, 0, 0)); a.qTi = qT.clone().invert();
     a.cups = []; a.cupStatics = [];
-    const pts = [[-0.205, 0], [0, 0], [0.205, 0], [-0.1025, 0.18], [0.1025, 0.18], [0, 0.36]];
-    for (const [dx, dz] of pts) { const x = TABLE.x + dx, z = TABLE.z0 + 0.17 + dz, y = TABLE.y;
-      const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; G.scene.add(m); a.cups.push({ x, z, y, mesh: m });
-      a.cupStatics.push(staticCyl(x, y + 0.004, z, 0.004, R0)); // base
-      for (let k = 0; k < 12; k++) { const ang = k / 12 * Math.PI * 2, r = (R0 + R1) / 2 + 0.003; const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -ang, 0)); a.cupStatics.push(staticBox(x + Math.cos(ang) * r, y + CH / 2, z + Math.sin(ang) * r, 0.003, CH / 2, 0.027, q)); } }
-    for (let k = 0; k < 14; k++) this.spawn('sprout', new THREE.Vector3(TABLE.x - 0.25 + (k % 7) * 0.08, TABLE.y + 0.03, TABLE.z1 - 0.12 - Math.floor(k / 7) * 0.08));
-    G.player.teleport(TABLE.x, TABLE.z1 + 0.65, 0); G.player.pitch = -0.35;
+    const pts = [[-0.25, 0], [0, 0], [0.25, 0], [-0.125, 0.22], [0.125, 0.22], [0, 0.44]];
+    for (const [dx, dz] of pts) { const base = new THREE.Vector3(TABLE.x + dx, TABLE.y, TABLE.z0 + 0.18 + dz);
+      const m = new THREE.Mesh(geo, mat); m.position.copy(base); m.quaternion.copy(qT); m.castShadow = true; G.scene.add(m); a.cups.push({ x: base.x, z: base.z, y: base.y, base, mesh: m });
+      const W = (v) => v.clone().applyQuaternion(qT).add(base);
+      const c0 = W(new THREE.Vector3(0, 0.005, 0)); a.cupStatics.push(staticBox(c0.x, c0.y, c0.z, R0 * 0.8, 0.005, R0 * 0.8, qT)); // base
+      for (let k = 0; k < 14; k++) { const ang = k / 14 * Math.PI * 2, r = (R0 + R1) / 2 + 0.003; const wp = W(new THREE.Vector3(Math.cos(ang) * r, CH / 2, Math.sin(ang) * r)); const q = qT.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -ang, 0)));
+        a.cupStatics.push(staticBox(wp.x, wp.y, wp.z, 0.003, CH / 2, 0.028, q)); } }
+    // the dotted line showing where the sprout will go
+    a.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.012, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9, depthWrite: false }), 40);
+    a.dots.frustumCulled = false; a.dots.visible = false; a.dots.renderOrder = 5; G.scene.add(a.dots);
+    G.player.teleport(TABLE.x, TABLE.z1 + 0.65, 0); G.player.pitch = -0.3;
     this.park(this.reps(2), [[4.15, -3.25], [4.15, -4.2]], [TABLE.x, TABLE.z]); this.diningCrowd([]);
   }
-  tick_sproutPong(a) {
-    if (G.frame % 4) return;
-    for (const s of G.items.byType.sprout || []) { if (a.counted.has(s)) continue; const p = s.body.translation(); for (const c of a.cups) { if (Math.hypot(p.x - c.x, p.z - c.z) < 0.078 && p.y > c.y && p.y < c.y + 0.16) { a.counted.add(s); a.score++; sfx('ding', p, 0.7); G.ui?.toast(`IN THE CUP! (${a.score})`, 1.2, { game: true }); c.mesh.scale.setScalar(1.12); setTimeout(() => c.mesh.scale.setScalar(1), 160); this.cheer(); break; } } }
-    // sprouts run out? put a few more out
-    if ((G.items.byType.sprout || []).length < 60 && (G.items.byType.sprout || []).filter(s => !a.counted.has(s) && s.body.translation().y > 0.5).length < 3) for (let k = 0; k < 6; k++) this.spawn('sprout', new THREE.Vector3(TABLE.x - 0.2 + k * 0.08, TABLE.y + 0.03, TABLE.z1 - 0.12));
+  // sprouts appear in your hand, one at a time
+  handSprout(a) {
+    const key = G.xr ? 'R' : 'D'; if (G.player.holders[key]) { a.nextHand = null; return; }
+    if (a.nextHand == null) { a.nextHand = G.time + 0.45; return; } if (G.time < a.nextHand) return; a.nextHand = null;
+    const hp = G.xr ? (G.player.xrIn.hands.R?.palm || G.player.headPos(new THREE.Vector3())) : G.player.headPos(new THREE.Vector3()).add(G.player.forward(new THREE.Vector3()).multiplyScalar(0.4));
+    const s = this.spawn('sprout', hp.clone()); if (s) G.player.tryGrab(key, { kind: 'item', ref: s, point: hp.clone(), dist: 0.5 });
   }
-  end_sproutPong(a) { for (const c of a.cups || []) G.scene.remove(c.mesh); for (const st of a.cupStatics || []) { G.colliderMap.delete(st.collider.handle); G.world.removeRigidBody(st.body); } a.cups = []; a.cupStatics = []; }
+  // the launch the THROW button will give (power from how long it's held): used for the throw and the dotted line
+  sproutLaunch(out) { const pl = G.player; const dir = pl.forward(new THREE.Vector3()); dir.y += 0.35; dir.normalize(); return out.copy(dir).multiplyScalar(2.6 + pl.charge * 4.4); }
+  tick_sproutPong(a) {
+    this.handSprout(a);
+    // the dotted path of the throw, from the sprout in your hand
+    const held = G.player.heldItem('D');
+    if (a.dots) { a.dots.visible = !G.xr && !!held && held.id === 'sprout';
+      if (a.dots.visible) { const t = held.body.translation(); const p = new THREE.Vector3(t.x, t.y, t.z), v = this.sproutLaunch(new THREE.Vector3()); const mm = new THREE.Matrix4(); let n = 0;
+        for (let s = 0; s < 4; s++) { v.y -= 9.81 * 0.01; p.addScaledVector(v, 0.01); } // start just in front of your hand
+        for (let k = 0; k < 40; k++) { for (let s = 0; s < 2; s++) { v.y -= 9.81 * 0.012; v.multiplyScalar(1 - 0.4 * 0.012); p.addScaledVector(v, 0.012); } if (p.y < TABLE.y - 0.03) break; mm.makeTranslation(p.x, p.y, p.z); a.dots.setMatrixAt(n++, mm); }
+        a.dots.count = n; a.dots.instanceMatrix.needsUpdate = true; } }
+    if (G.frame % 3) return;
+    for (const s of G.items.byType.sprout || []) { if (a.counted.has(s) || s.held) continue; const p = s.body.translation();
+      for (const c of a.cups) { const l = new THREE.Vector3(p.x, p.y, p.z).sub(c.base).applyQuaternion(a.qTi); const rr = a.R0 + (a.R1 - a.R0) * Math.max(0, l.y / a.CH);
+        if (l.y > 0 && l.y < a.CH * 0.9 && Math.hypot(l.x, l.z) < rr - 0.012) { a.counted.add(s); a.score++; sfx('ding', p, 0.7); G.ui?.toast(`IN THE CUP! (${a.score})`, 1.2, { game: true }); c.mesh.scale.setScalar(1.1); setTimeout(() => c.mesh.scale.setScalar(1), 160); this.cheer(); break; } } }
+  }
+  end_sproutPong(a) { if (a.dots) G.scene.remove(a.dots); G.player.releaseAll(); for (const c of a.cups || []) G.scene.remove(c.mesh); for (const st of a.cupStatics || []) { G.colliderMap.delete(st.collider.handle); G.world.removeRigidBody(st.body); } a.cups = []; a.cupStatics = []; }
 
   // ---------- 2. Cracker pull ----------
   // you stand on one spot in the dining room; each opponent appears straight in front of you, the camera locks on them
