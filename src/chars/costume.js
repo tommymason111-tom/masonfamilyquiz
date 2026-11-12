@@ -39,7 +39,7 @@ export const COSTUMES = {
       if (c.hand || c.foot) return 3;                                       // black gloves and boots
       if (c.b >= 3) return c.b <= 6 ? 1 : 2;                                // yellow arms, denim legs
       if (c.y < c.shY - 0.09 * c.H) return 2;                               // dungarees, all the way round up to the chest
-      if (Math.abs(Math.abs(c.x) - 0.06 * c.H) < 0.017 * c.H) return 2;     // straps over the shoulders
+      if (Math.abs(Math.abs(c.x - c.cx) - 0.06 * c.H) < 0.017 * c.H) return 2; // straps over the shoulders (centred on his body, not the scan's origin)
       return 1;
     },
     extras: ['minion'],
@@ -77,7 +77,7 @@ export function paintCostume(p, outfit) {
   const g = mesh.geometry, P = g.attributes.position, UV = g.attributes.uv, SI = g.attributes.skinIndex, I = g.index;
   const map = mesh.material.map, img = map?.image; if (!img || !UV || !I) return;
   const W = img.width, Hh = img.height, H = p.H, O = p.O;
-  const ctx = { H, neckY: O[2].y, shY: O[3].y, hipY: O[7].y, kneeY: O[8].y };
+  const ctx = { H, neckY: O[2].y, shY: O[3].y, hipY: O[7].y, kneeY: O[8].y, cx: O[1].x };
   // arm reach per side (for hands and cuffs) measured from the shoulder
   const reach = { 4: 0, 6: 0 }; const sh = { 4: O[3], 6: O[5] }; const v = new THREE.Vector3();
   for (let i = 0; i < P.count; i++) { const b = SI.getX(i); if (b === 4 || b === 6) { v.fromBufferAttribute(P, i); reach[b] = Math.max(reach[b], v.distanceTo(sh[b])); } }
@@ -137,13 +137,15 @@ export function paintCostume(p, outfit) {
 // ---- the 3D costume pieces, sized from Gary's own scan (they don't have to follow his body: a costume is a costume) ----
 function measure(p) {
   const g = p.mesh.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, H = p.H, O = p.O; const v = new THREE.Vector3();
-  const band = (y, bones, dy = 0.02 * H) => { let hx = 0, z0 = 1e9, z1 = -1e9, n = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; const yy = P.getY(i); if (Math.abs(yy - y) > dy) continue; const x = P.getX(i), z = P.getZ(i); hx = Math.max(hx, Math.abs(x)); z0 = Math.min(z0, z); z1 = Math.max(z1, z); n++; } return n ? { hx, z0, z1, cz: (z0 + z1) / 2, rz: (z1 - z0) / 2 } : { hx: 0.17 * H / 1.8, z0: -0.12, z1: 0.12, cz: 0, rz: 0.12 }; };
+  const band = (y, bones, dy = 0.02 * H) => { let hx = 0, x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, n = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; const yy = P.getY(i); if (Math.abs(yy - y) > dy) continue; const x = P.getX(i), z = P.getZ(i); hx = Math.max(hx, Math.abs(x)); x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); n++; } return n ? { hx, cx: (x0 + x1) / 2, z0, z1, cz: (z0 + z1) / 2, rz: (z1 - z0) / 2 } : { hx: 0.17 * H / 1.8, cx: 0, z0: -0.12, z1: 0.12, cz: 0, rz: 0.12 }; };
+  // the front of the chest along a thin vertical strip down the middle (where the dungaree bib sits)
+  const front = (y, cx) => { let z1 = -1e9; for (let i = 0; i < P.count; i++) { const b = SI.getX(i); if (b > 1) continue; if (Math.abs(P.getY(i) - y) > 0.012 * H || Math.abs(P.getX(i) - cx) > 0.05 * H) continue; z1 = Math.max(z1, P.getZ(i)); } return z1 > -1e8 ? z1 : null; };
   const ends = (bones, far) => { const pts = []; let best = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; v.fromBufferAttribute(P, i); const d = far(v); if (d > best) best = d; } const out = new THREE.Vector3(); let n = 0; for (let i = 0; i < P.count; i++) { if (!bones.includes(SI.getX(i))) continue; v.fromBufferAttribute(P, i); if (far(v) > best - 0.06 * H / 1.8) { out.add(v); n++; } } return n ? out.divideScalar(n) : out; };
   const hd = p.dims.head;
   // face: the front of the head at eye level
   let eyeY = hd.cy + hd.ry * 0.12, fz = -1e9; for (let i = 0; i < P.count; i++) { if (SI.getX(i) !== 2) continue; if (Math.abs(P.getY(i) - eyeY) > 0.012 || Math.abs(P.getX(i)) > 0.03) continue; fz = Math.max(fz, P.getZ(i)); } if (fz < -1e8) fz = hd.cz + hd.rz * 0.9;
   return { H, O, hd, chest: band(O[3].y - 0.07 * H, [1]), belly: band(O[7].y + 0.1 * H, [0, 1]), hips: band(O[7].y, [0, 7, 9]), neck: band(O[2].y + 0.005 * H, [1, 2], 0.012 * H),
-    handL: ends([4], (q) => q.distanceTo(O[3])), handR: ends([6], (q) => q.distanceTo(O[5])), footL: ends([8], (q) => -q.y + q.z * 0.2), footR: ends([10], (q) => -q.y + q.z * 0.2), eyeY, faceZ: fz };
+    front, handL: ends([4], (q) => q.distanceTo(O[3])), handR: ends([6], (q) => q.distanceTo(O[5])), footL: ends([8], (q) => -q.y + q.z * 0.2), footR: ends([10], (q) => -q.y + q.z * 0.2), eyeY, faceZ: fz };
 }
 function addExtras(p, list) {
   const M = measure(p), H = M.H, O = M.O, hd = M.hd, S = H / 1.8;
@@ -186,11 +188,26 @@ function addExtras(p, list) {
       boots('#ec6fb4', null, false);
     }
     if (e === 'minion') {
-      // round pear-shaped Minion body over his torso, dungaree bib with the logo, buttons, goggles over his eyes, gloves and boots
-      const bl = M.belly, ch = M.chest; const rx = Math.max(bl.hx, ch.hx) * 0.9 + 0.02, rz = Math.max(bl.rz, ch.rz) + 0.035;
-      p.attach(mk(P => { P.sph(1, '#f5cf14', 0, 0.08, 0, rx, 0.3 * S, rz, 18).sph(1, '#2f5d9e', 0, -0.07, 0.004, rx + 0.006, 0.2 * S, rz + 0.006, 18); // pear body: yellow top, denim lower half
-        P.rbox(0.2 * S, 0.17 * S, 0.03, 0.02, '#2f5d9e', 0, 0.02, rz + 0.01).cyl(0.035 * S, 0.035 * S, 0.006, '#111', 0, 0.02, rz + 0.028, Math.PI / 2, 0, 0, 16).box(0.012 * S, 0.035 * S, 0.004, '#f2f2f2', 0.006 * S, 0.02, rz + 0.032).box(0.02 * S, 0.01 * S, 0.004, '#f2f2f2', 0.012 * S, 0.012, rz + 0.032);
-        for (const s of [-1, 1]) { P.cyl(0.016 * S, 0.016 * S, 0.01, '#111', s * 0.085 * S, 0.1, rz + 0.012, Math.PI / 2, 0, 0, 12); P.box(0.035 * S, 0.3 * S, 0.012, '#2f5d9e', s * 0.085 * S, 0.24, (rz + ch.rz) / 2, 0.5 * (1), 0, 0); P.box(0.035 * S, 0.3 * S, 0.012, '#2f5d9e', s * 0.085 * S, 0.24, -(rz + ch.rz) / 2 + 0.02, -0.5, 0, 0); } }), 'spine', at('spine', O[7].y + 0.13 * H, 0, bl.cz));
+      // dungarees hugging his own body (the denim and the straps are painted on): a stitched bib panel with the round
+      // G-logo pocket, strap ends with buttons at the top corners of the bib, and side buttons at the waist
+      const cx = O[1].x, yTop = O[3].y - 0.09 * H, yPk = O[3].y - 0.16 * H, yW = O[7].y + 0.07 * H;
+      const zAt = (y, x = cx) => (M.front(y, x) ?? (M.chest.z1)) - O[1].z;
+      const zTop = zAt(yTop), zPk = zAt(yPk), zW = zAt(yW);
+      p.attach(mk(P => {
+        const bw = 0.15 * H; // bib width
+        // bib panel: a thin denim plate following the chest from the strap buttons down to the waist
+        const steps = 6; for (let k = 0; k < steps; k++) { const t0 = k / steps, t1 = (k + 1) / steps; const y0 = yTop + (yW - yTop) * t0, y1 = yTop + (yW - yTop) * t1; const z0 = zAt(y0), z1 = zAt(y1); const ym = (y0 + y1) / 2 - O[1].y, zm = (z0 + z1) / 2 + 0.004;
+          P.box(bw, Math.abs(y1 - y0) + 0.004, 0.006, '#2f5d9e', 0, ym, zm, Math.atan2(z0 - z1, Math.abs(y0 - y1)) * -1, 0, 0); }
+        // stitching along the bib edges
+        for (const sx of [-1, 1]) for (let k = 0; k <= 10; k++) { const y = yTop + (yW - yTop) * k / 10; P.box(0.004, 0.012, 0.002, '#e8c060', sx * (bw / 2 - 0.008), y - O[1].y, zAt(y) + 0.008); }
+        // pocket with the round black G logo
+        P.rbox(0.09 * H, 0.07 * H, 0.008, 0.008, '#28508a', 0, yPk - O[1].y, zPk + 0.009).cyl(0.021 * H, 0.021 * H, 0.004, '#151515', 0, yPk - O[1].y, zPk + 0.015, Math.PI / 2, 0, 0, 18)
+          .box(0.007 * H, 0.022 * H, 0.003, '#f2f2f2', 0.004 * H, yPk - O[1].y, zPk + 0.018).box(0.012 * H, 0.006 * H, 0.003, '#f2f2f2', 0.008 * H, yPk - O[1].y - 0.006 * H, zPk + 0.018);
+        // strap ends and big black buttons at the bib's top corners
+        for (const sx of [-1, 1]) { const x = sx * 0.06 * H; P.box(0.034 * H, 0.05 * H, 0.006, '#2f5d9e', x, yTop - O[1].y + 0.02 * H, zTop + 0.006).cyl(0.012 * H, 0.012 * H, 0.008, '#111', x, yTop - O[1].y, zTop + 0.012, Math.PI / 2, 0, 0, 14); }
+      }), 'spine', new THREE.Vector3(cx - O[1].x, 0, 0));
+      // side buttons at the waistband
+      p.attach(mk(P => { for (const sx of [-1, 1]) P.cyl(0.011 * H, 0.011 * H, 0.008, '#111', sx * (M.belly.hx * 0.85), yW - O[0].y, zW - (O[0].z - O[1].z) - 0.03, Math.PI / 2, 0, sx * 0.8, 14); }), 'hips', new THREE.Vector3(cx - O[0].x, 0, 0));
       const ez = M.faceZ - hd.cz; p.attach(mk(P => { for (const s of [-1, 1]) { P.torus(0.03 * S, 0.009 * S, '#b8c0c8', s * 0.034 * S, 0, 0, 0, 0, 0).torus(0.024 * S, 0.004 * S, '#7a828a', s * 0.034 * S, 0, 0.006, 0, 0, 0); }
           P.box(0.016 * S, 0.01 * S, 0.012, '#7a828a', 0, 0, 0);
           for (let k = 0; k < 34; k++) { const a = (k / 34) * Math.PI * 2; const x = Math.sin(a) * hd.rx * 1.05, z = -ez + Math.cos(a) * hd.rz * 1.05; if (Math.cos(a) > 0.82) continue; P.box(0.03, 0.026 * S, 0.012, '#151515', x, 0, z, 0, a, 0); } }, shiny), 'head', new THREE.Vector3(-O[2].x, M.eyeY - O[2].y, M.faceZ + 0.012 - O[2].z));
