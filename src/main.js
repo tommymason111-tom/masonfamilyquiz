@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '13 Nov 2026 · title v40';
+export const BUILD = '13 Nov 2026 · vrfix v41';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -89,22 +89,24 @@ async function boot() {
   renderer.setAnimationLoop(loop);
 }
 
-let acc = 0;
+let acc = 0; const seenErr = new Set();
+function safe(what, fn) { try { fn(); } catch (e) { const k = what + ':' + e.message; if (!seenErr.has(k)) { seenErr.add(k); console.error('[' + what + ']', e); } } }
 function loop(t, xrFrame) {
   let dt = Math.min(G.clock.getDelta(), 0.05);
   if (G.fx && G.fx.hitStop > 0) { G.fx.hitStop -= dt; dt *= 0.15; }
   G.dt = dt; G.time += dt; G.frame++;
   G.xr = G.renderer.xr.isPresenting;
-  if (!G.ui?.started && !G.xr) { orbitCamera(dt); G.player.controls.poll(); G.player.controls.endFrame(); } else G.player.preUpdate(dt, xrFrame);
-  for (const p of G.chars) p.update(dt);
-  G.dog?.update(dt);
-  stepPhysics(dt);
-  G.items.update(dt);
-  G.tree?.update(dt);
-  for (const f of G.updaters) f(dt);
-  if (G.ui?.started || G.xr) G.player.postUpdate(dt); else G.player.fp.setVisible(false);
-  updateListener(G.player.headObject());
-  G.replay?.render();
+  // each part is guarded: one bad frame in one system must never stop the picture (in the headset that throws you out of VR)
+  safe('player', () => { if (!G.ui?.started && !G.xr) { orbitCamera(dt); G.player.controls.poll(); G.player.controls.endFrame(); } else G.player.preUpdate(dt, xrFrame); });
+  for (const p of G.chars) safe('char', () => p.update(dt));
+  safe('dog', () => G.dog?.update(dt));
+  safe('physics', () => stepPhysics(dt));
+  safe('items', () => G.items.update(dt));
+  safe('tree', () => G.tree?.update(dt));
+  for (const f of G.updaters) safe('updater', () => f(dt));
+  safe('post', () => { if (G.ui?.started || G.xr) G.player.postUpdate(dt); else G.player.fp.setVisible(false); });
+  safe('audio', () => updateListener(G.player.headObject()));
+  safe('replay', () => G.replay?.render());
   G.renderer.render(G.scene, G.camera);
 }
 

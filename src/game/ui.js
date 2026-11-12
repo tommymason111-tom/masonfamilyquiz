@@ -54,7 +54,7 @@ class UI {
     const prep = () => { const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; dressGaryFor(G.modes.id); setAvatar(qs.get('as') || 'Tommy'); };
     const quick = () => { prep(); go(); };
     $('btnPlay').onclick = () => { initAudio(); resumeAudio(); unlockSpeech(); if (qs.get('skip')) return quick(); startFlow(go); };
-    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = async () => { if (this.started || this.vrFlow) return; initAudio(); resumeAudio(); if (qs.get('skip')) { prep(); go(); this.enterVR(); return; } this.vrFlow = true; const ok = await this.enterVR(true); if (!ok) { this.vrFlow = false; return; } startFlow(() => { this.vrFlow = false; go(); }, { vr: true }); }; // straight into the headset, then the setup screens in there $('btnVR').onclick = enter; $('vrbtn').onclick = enter;
+    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = async () => { if (this.started || this.vrFlow) return; initAudio(); resumeAudio(); if (qs.get('skip')) { prep(); go(); this.enterVR(); return; } this.vrFlow = true; try { setAvatar(loadStore('lastAs', 'Tommy') === 'Chip' ? 'Tommy' : (G.charByName[loadStore('lastAs', 'Tommy')] ? loadStore('lastAs', 'Tommy') : 'Tommy')); } catch (e) { /* set properly after the setup screens */ } const ok = await this.enterVR(true); if (!ok) { this.vrFlow = false; return; } startFlow(() => { this.vrFlow = false; go(); }, { vr: true }); }; // straight into the headset, then the setup screens in there $('btnVR').onclick = enter; $('vrbtn').onclick = enter;
       // changed mode from the headset menu: the Quest browser hands the VR session straight back after the reload
       if (qs.get('vr')) { navigator.xr.addEventListener?.('sessiongranted', enter); $('btnVR').textContent = '🥽 Back into VR'; } }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });
@@ -66,7 +66,7 @@ class UI {
       G.renderer.xr.setSession(s); $('hud').style.display = 'none'; $('loading').style.display = 'none'; $('touch').classList.remove('on');
       s.addEventListener('end', () => { $('hud').style.display = ''; if (this.vrFlow) { location.reload(); return; } this.started = true; });
       return true;
-    } catch (e) { this.toast('Could not start VR: ' + e.message, 5); return false; }
+    } catch (e) { this.toast('Could not start VR: ' + e.message, 6); const el = $('vrErr') || Object.assign(document.createElement('div'), { id: 'vrErr' }); el.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:99;background:#b3122a;color:#fff;border:3px solid #ffd700;border-radius:14px;padding:10px 16px;font:700 15px system-ui;max-width:90vw;text-align:center'; el.textContent = 'Could not start VR: ' + e.message + ' — tap Enter VR again.'; document.body.appendChild(el); setTimeout(() => el.remove(), 8000); return false; }
   }
   // ---------------- toasts / subtitles / bubbles ----------------
   toast(text, secs = 3, opts = {}) {
