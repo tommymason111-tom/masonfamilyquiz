@@ -34,7 +34,7 @@ class UI {
     this.bubbles = []; this.bubbleTex = [];
     for (let i = 0; i < 6; i++) { const t = canvasTex(512, 128); const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: true, transparent: true })); s.scale.set(0.9, 0.225, 1); s.visible = false; s.renderOrder = 20; G.scene.add(s); this.bubbles.push({ s, t, until: 0, who: null }); }
     on('say', (who, text) => this.onSay(who, text));
-    on('menu', () => this.toggleMenu());
+    on('menu', () => G.xr && G.vrHud ? G.vrHud.toggleMenu() : this.toggleMenu()); // in the headset the menu is on the floating panel
     on('scoreboard', (v) => this.scoreboard(v));
     on('question', () => this.showAnswers()); on('answered', () => this.showAnswers()); on('paulChanged', () => this.showAnswers()); on('questionEnd', () => G.popup?.questionCard(null));
     on('pointerlock', (l) => { if (!l && !this.modalOpen && !this.touchMode && !G.xr && this.started) { /* paused by ESC */ } });
@@ -52,9 +52,12 @@ class UI {
     const go = () => { initAudio(); resumeAudio(); unlockSpeech(); if (!voiceAvailable()) this.toast('This browser has no speech voices — subtitles only.', 5); $('loading').style.display = 'none'; $('hud').style.display = ''; this.started = true; emit('started'); if (!this.touchMode) G.renderer.domElement.requestPointerLock?.(); else { $('touch').classList.add('on'); document.body.classList.add('touch'); } };
     this.go = go;
     const qs = new URLSearchParams(location.search);
-    const quick = () => { const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; dressGaryFor(G.modes.id); setAvatar(qs.get('as') || 'Tommy'); go(); };
+    const prep = () => { const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; dressGaryFor(G.modes.id); setAvatar(qs.get('as') || 'Tommy'); };
+    const quick = () => { prep(); go(); };
     $('btnPlay').onclick = () => { initAudio(); resumeAudio(); unlockSpeech(); if (qs.get('skip')) return quick(); startFlow(go); };
-    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { initAudio(); resumeAudio(); startFlow(() => { go(); this.enterVR(); }, { vr: true }); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter; }).catch(() => {});
+    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { if (this.started) return; initAudio(); resumeAudio(); if (qs.get('skip')) { prep(); go(); this.enterVR(); return; } startFlow(() => { go(); this.enterVR(); }, { vr: true }); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter;
+      // changed mode from the headset menu: the Quest browser hands the VR session straight back after the reload
+      if (qs.get('vr')) { navigator.xr.addEventListener?.('sessiongranted', enter); $('btnVR').textContent = '🥽 Back into VR'; } }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });
   }
   async enterVR() {
@@ -194,9 +197,12 @@ class UI {
     const home = () => { stick.style.display = 'block'; stick.style.left = '22px'; stick.style.top = (innerHeight - 200) + 'px'; stick.classList.add('idle'); stick.firstChild.style.transform = ''; }; home(); addEventListener('resize', () => { if (sid === null) home(); }); this.stickHome = home;
     T.style.pointerEvents = 'none';
     const area = G.renderer.domElement;
-    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; if (e.clientX < innerWidth * 0.45 && sid === null) { sid = e.pointerId; sx = e.clientX; sy = e.clientY; stick.style.display = 'block'; stick.classList.remove('idle'); stick.style.left = (sx - 60) + 'px'; stick.style.top = (sy - 60) + 'px'; } else if (lid === null) { lid = e.pointerId; lx = l0x = e.clientX; ly = l0y = e.clientY; l0t = performance.now(); } };
+    const down = (e) => { if (!this.touchMode || this.modalOpen || this.editing) return; const hx = 82, hy = innerHeight - 140; if (sid === null && Math.hypot(e.clientX - hx, e.clientY - hy) < 95) { sid = e.pointerId; sx = hx; sy = hy; stick.classList.remove('idle'); } /* the joystick stays where it is; everywhere else is look / tap */ else if (lid === null) { lid = e.pointerId; lx = l0x = e.clientX; ly = l0y = e.clientY; l0t = performance.now(); } };
     const move = (e) => { if (e.pointerId === sid) { const dx = clamp((e.clientX - sx) / 50, -1, 1), dy = clamp((e.clientY - sy) / 50, -1, 1); G.player.controls.touchMove.x = dx; G.player.controls.touchMove.z = -dy; stick.firstChild.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; } if (e.pointerId === lid) { const s = 0.006 * (G.settings.mouseSens || 1); G.player.controls.touchLook.x += (e.clientX - lx) * s; G.player.controls.touchLook.y += (e.clientY - ly) * s; lx = e.clientX; ly = e.clientY; } };
     const up = (e) => { if (e.pointerId === sid) { sid = null; home(); G.player.controls.touchMove.x = G.player.controls.touchMove.z = 0; } if (e.pointerId === lid) { lid = null; if (Math.hypot(e.clientX - l0x, e.clientY - l0y) < 14 && performance.now() - l0t < 350) G.player.tapAt(e.clientX, e.clientY); } };
+    // no text selection / magnifier when a thumb lingers or double-taps
+    document.addEventListener('selectstart', (e) => { if (!/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName || '')) e.preventDefault(); });
+    document.addEventListener('dblclick', (e) => e.preventDefault()); area.addEventListener('contextmenu', (e) => e.preventDefault());
     area.addEventListener('pointerdown', down); addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', up);
   }
   press(id, v) {

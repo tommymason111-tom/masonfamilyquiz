@@ -154,6 +154,10 @@ function addExtras(p, list) {
   // hands: the scans hold their arms out, but the rig's rest pose is arms-down, so hang hand props straight below the elbow (as people.js does)
   const rel = (bone, v) => { const i = { lArmL: 4, lArmR: 6, shinL: 8, shinR: 10 }[bone]; if (i === 4 || i === 6) return new THREE.Vector3(0, -(O[i].y - (p.dims.wristY - 0.065 * H)), 0.02); return v.clone().sub(O[i]); };
   const headTop = new THREE.Vector3(0, hd.cy - O[2].y + hd.ry * 0.92, hd.cz * 0.5);
+  // a pointy hat that sits on the crown, brim above the forehead and tipped back, so his face is always visible.
+  // Built upright with the brim at the origin, then tilted about the brim (front up, tip falling behind).
+  const hat = (color, h, trim, bobble, br) => p.attach(mk(P => { P.cone(hd.rx * 0.98, h, color, 0, h / 2, 0, 0, 0, 0, 18); ring(P, hd.rx * 0.96, hd.rz * 1.0, 0, 0, 0.026, trim, 30); P.sph(br, bobble, 0, h + br * 0.4, 0, 1, 1, 1, 10); }, vc),
+    'head', new THREE.Vector3(-O[2].x, hd.cy - O[2].y + hd.ry * 0.55, hd.cz - O[2].z - hd.rz * 0.18), new THREE.Euler(-0.38, 0, 0));
   const ring = (P, rx, rz, y, cz, thick, col, n = 40, ry = 1) => { for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2; P.sph(thick, typeof col === 'function' ? col(k) : col, Math.sin(a) * rx, y, cz + Math.cos(a) * rz, 1.4, ry, 1.4, 6); } };
   const fur = (k) => ['#ffffff', '#f2f2f2', '#e8e8e8'][k % 3];
   const gloves = (col, scale = 1) => { for (const [b, h] of [['lArmL', M.handL], ['lArmR', M.handR]]) p.attach(mk(P => P.sph(0.055 * S * scale, col, 0, 0, 0, 1.15, 0.8, 1, 12).sph(0.03 * S * scale, col, 0, -0.05 * S, 0.02, 1, 1, 1, 8)), b, rel(b, h)); };
@@ -201,7 +205,7 @@ function addExtras(p, list) {
         for (let k = 0; k < 8; k++) P.sph(0.022 * S, fur(k), 0, 0.16 * S - k * 0.045 * S, rz + 0.01); }), 'spine', at('spine', O[7].y + 0.12 * H, 0, bl.cz));
       for (const [b, h] of [['lArmL', M.handL], ['lArmR', M.handR]]) p.attach(mk(P => ring(P, 0.06 * S, 0.06 * S, 0, 0, 0.022 * S, fur, 16)), b, rel(b, h).add(new THREE.Vector3(0, 0.09 * S, 0)));
       boots('#151515', fur, false);
-      p.attach(mk(P => { P.cone(hd.rx * 1.06, 0.32, '#c41e1e', 0, 0.13, -0.02, -0.4, 0, 0, 20); ring(P, hd.rx * 1.02, hd.rz * 1.02, -0.02, 0, 0.028, fur, 30); P.sph(0.045, '#ffffff', 0, 0.26, -0.13, 1, 1, 1, 10); }), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
+      hat('#c41e1e', 0.3, fur, '#ffffff', 0.045);
       p.attach(mk(P => P.sph(0.24 * S, '#8a5a2a', 0, 0, 0, 1, 1.2, 0.8, 14).cyl(0.04 * S, 0.06 * S, 0.12 * S, '#7a4a20', 0, 0.3 * S, 0).torus(0.05 * S, 0.012, '#c8a050', 0, 0.26 * S, 0, Math.PI / 2).box(0.08, 0.1, 0.01, '#c1121f', 0.06, 0.1, 0.19 * S)), 'spine', at('spine', O[3].y - 0.1 * H, 0.04, M.chest.z0 - 0.17 * S));
     }
     if (e === 'elf') {
@@ -211,7 +215,7 @@ function addExtras(p, list) {
         P.box(r * 2.05, 0.05 * S, 0.02, '#6b3a1f', 0, 0.06, hp.cz + r * 0.9).box(0.07 * S, 0.06 * S, 0.012, '#ffd700', 0, 0.06, hp.cz + r * 0.92); }), 'hips', at('hips', O[7].y + 0.02 * H));
       p.attach(mk(P => { for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; P.cone(0.035 * S, 0.08 * S, k % 2 ? '#c41e1e' : '#1f8a3a', Math.sin(a) * (nk.hx + 0.03), -0.02, nk.cz + Math.cos(a) * (nk.rz + 0.03), Math.PI / 2 + 0.6, a, 0, 4); P.sph(0.012 * S, '#ffd700', Math.sin(a) * (nk.hx + 0.07), -0.05, nk.cz + Math.cos(a) * (nk.rz + 0.07)); } }, shiny), 'spine', at('spine', O[2].y - 0.01 * H));
       boots('#1f8a3a', null, true);
-      p.attach(mk(P => { P.cone(hd.rx * 1.04, 0.36, '#1f8a3a', 0, 0.15, -0.03, -0.55, 0, 0, 18); ring(P, hd.rx * 1.0, hd.rz * 1.0, -0.02, 0, 0.022, (k) => k % 2 ? '#c41e1e' : '#f6f6f6', 26); P.sph(0.032, '#ffd700', 0, 0.28, -0.2); }, vc), 'head', headTop.clone().add(new THREE.Vector3(0, -0.05, 0)));
+      hat('#1f8a3a', 0.34, (k) => k % 2 ? '#c41e1e' : '#f6f6f6', '#ffd700', 0.032);
       for (const s of [-1, 1]) p.attach(mk(P => P.cone(0.02 * S, 0.07 * S, '#e8b8a0', 0, 0.03, 0, 0, 0, s * -0.9, 8)), 'head', new THREE.Vector3(s * hd.rx * 0.98 - O[2].x, M.eyeY - O[2].y, hd.cz - 0.01 - O[2].z));
     }
   }

@@ -92,7 +92,7 @@ export class Quiz {
     this.mSay('Gary\'s Outfit Wheel! Spin it!');
     const labels = OUTFITS.map(o => o.label.split(' (')[0]); const colors = ['#c1121f', '#2d6a4f', '#d4af37', '#1d3557', '#7b2cbf', '#e76f51'];
     const target = OUTFITS.findIndex(o => o.id === G.garyOutfit.id); const n = labels.length;
-    const finalAngle = -((target + 0.5) / n) * Math.PI * 2 + Math.PI * 2 * 6; const start = G.time;
+    const finalAngle = -((target + 0.5) / n) * Math.PI * 2 + Math.PI * 2 * 6; const start = G.wheelShown ? G.time - 6 : G.time; // already spun on the start screens: just show the result
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, "GARY'S OUTFIT WHEEL", '#2d6a4f'); const k = clamp((G.time - start) / 6, 0, 1); const e = 1 - Math.pow(1 - k, 3); drawWheel(g, 420, 320, 230, labels, colors, finalAngle * e);
       if (k >= 1) { g.fillStyle = '#ffd700'; g.font = 'bold 34px sans-serif'; wrapText(g, 'THIS YEAR: ' + G.garyOutfit.label, 700, 200, 300, 44); } });
     setTimeout(() => {

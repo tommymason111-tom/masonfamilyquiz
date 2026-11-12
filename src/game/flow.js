@@ -64,6 +64,7 @@ export async function startFlow(launch, opts = {}) {
 
 // 2. the outfit wheel
 function wheelStep() {
+  G.wheelShown = true;
   return new Promise(res => {
     const list = OUTFITS; const target = Math.max(0, list.findIndex(o => o.id === G.garyOutfit?.id)); const n = list.length;
     el.innerHTML = `<h2>Gary's Outfit Wheel</h2><p class="lead">What's Gary wearing this year?</p><canvas class="wheel" width="600" height="600"></canvas><h2 id="wRes" style="min-height:1.3em;color:#ffd700"></h2><button class="go" id="wGo" disabled>Let's play →</button>`;
@@ -75,7 +76,7 @@ function wheelStep() {
       g.beginPath(); g.arc(0, 0, 46, 0, 7); g.fillStyle = '#ffd700'; g.fill(); g.fillStyle = '#7a1020'; g.font = 'bold 22px Georgia'; g.textAlign = 'center'; g.fillText('GARY', 0, 8); g.restore();
       g.fillStyle = '#fff'; g.beginPath(); g.moveTo(300, 8); g.lineTo(278, -2 + 30); g.lineTo(322, 28); g.closePath(); g.moveTo(300, 52); g.lineTo(282, 12); g.lineTo(318, 12); g.fill(); };
     const step = (now) => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); const a = final * e; draw(a); const ti = Math.floor(a / (Math.PI * 2 / n)); if (ti !== tickA) { tickA = ti; sfx('tap', null, 0.25); }
-      if (k < 1) requestAnimationFrame(step); else { sfx('cheer', null, 0.7); el.querySelector('#wRes').textContent = 'THIS YEAR: ' + (G.garyOutfit?.label || ''); const b = el.querySelector('#wGo'); b.disabled = false; b.onclick = () => res(); setTimeout(res, 3500); } };
+      if (k < 1) requestAnimationFrame(step); else { sfx('cheer', null, 0.7); el.querySelector('#wRes').textContent = `Gary will be wearing the ${(G.garyOutfit?.label || '').split(' (')[0]} outfit!`; const b = el.querySelector('#wGo'); b.disabled = false; b.onclick = () => res(); setTimeout(res, 3500); } };
     requestAnimationFrame(step);
   });
 }

@@ -180,6 +180,7 @@ export class XRInput {
   }
   onPinch(rec, head) {
     const p = this.player;
+    if (G.vrHud?.menuOpen()) return; // the trigger is choosing a menu item
     if (G.popup?.S?.tap) { G.popup.S.tap.onTap(); return; } // PULL! / TEAR! in the headset: pull the trigger
     // pinch an item held in the other hand = use it (pull cracker, open can, click pen)
     const held = p.heldItem(rec.key) || p.heldItem(rec.key === 'L' ? 'R' : 'L');
@@ -216,6 +217,7 @@ export class XRInput {
   }
   controllerSticks(dt, head) {
     const p = this.player;
+    if (G.vrHud?.menuOpen()) return; // the sticks drive the menu while it's up
     for (const key of ['L', 'R']) {
       const rec = this.hands[key]; const gp = rec?.source?.gamepad; if (!gp || rec.isHand) continue;
       const ax = gp.axes.length >= 4 ? [gp.axes[2], gp.axes[3]] : [gp.axes[0], gp.axes[1]];

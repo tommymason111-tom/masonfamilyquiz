@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { G } from '../core.js';
 import { S } from './popup.js';
+import { saveStore } from './settings.js';
 
 const W = 1024, H = 768, PW = 1.0, PH = PW * H / W, DIST = 1.25;
 let canvas, g, tex, mesh, lastV = -1, lastDraw = 0, placed = false;
@@ -19,7 +20,32 @@ function wrap(s, x, y, maxW, size, lh, max = 3, color = '#fff', font = 'system-u
   if (line) { text(line, x, y + n * lh, size, color, 'center', font, weight); n++; } return n;
 }
 
-function active() { return S.cards.length || S.timer || S.meters || S.q || S.tap || G.modes?.vrLines || (G.ui?.vrToast && G.time < G.ui.vrToast.until); }
+// ---- the headset menu (Y on the left controller): thumbstick up/down, trigger to choose ----
+const MENU = [{ id: 'resume', label: '▶  Resume' }, { id: 'quick', label: '⚡  Quick Quiz' }, { id: 'games', label: '🎲  Mini Games' }, { id: 'fling', label: '🚀  Fling the Relative' }, { id: 'beer', label: '🍺  Drinks Run' }, { id: 'sandbox', label: '🎄  Free Roam' }, { id: 'restart', label: '↺  Restart this game' }, { id: 'exit', label: '⏏  Leave VR' }];
+const menu = { open: false, sel: 0, axT: 0, trig: false };
+function choose(id) {
+  menu.open = false; S.v++;
+  if (id === 'resume') return;
+  if (id === 'exit') { G.renderer.xr.getSession()?.end(); return; }
+  const mode = id === 'restart' ? (G.modes?.id || 'quick') : id; const as = G.me?.name || 'Tommy';
+  if (mode !== 'roam') saveStore('mode', mode);
+  location.href = `?mode=${mode}&as=${encodeURIComponent(as)}&skip=1&vr=1`;
+}
+function menuInput(dt) {
+  const s = G.renderer.xr.getSession(); if (!s) return; let ay = 0, trig = false;
+  for (const src of s.inputSources) { const gp = src.gamepad; if (!gp) continue; const y = gp.axes[3] ?? gp.axes[1] ?? 0; if (Math.abs(y) > Math.abs(ay)) ay = y; if (gp.buttons[0]?.pressed || gp.buttons[0]?.value > 0.6) trig = true; }
+  menu.axT -= dt; if (Math.abs(ay) > 0.6 && menu.axT <= 0) { menu.sel = (menu.sel + (ay > 0 ? 1 : -1) + MENU.length) % MENU.length; menu.axT = 0.28; S.v++; } if (Math.abs(ay) < 0.3) menu.axT = 0;
+  if (trig && !menu.trig) choose(MENU[menu.sel].id); menu.trig = trig;
+}
+function drawMenu() {
+  g.clearRect(0, 0, W, H); const w = 560, h = 90 + MENU.length * 66, x = W / 2 - w / 2, y = H / 2 - h / 2; panel(x, y, w, h, 'rgba(20,10,16,0.95)', '#ffd700', 26);
+  text('MENU', W / 2, y + 44, 34, '#ffd700');
+  MENU.forEach((m, i) => { const yy = y + 84 + i * 66; const on = i === menu.sel; if (on) { rr(x + 24, yy, w - 48, 56, 14); g.fillStyle = '#b3122a'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#ffd700'; g.stroke(); }
+    const cur = m.id === G.modes?.id; text(m.label + (cur ? '  (playing)' : ''), x + 50, yy + 28, 28, on ? '#fff' : 'rgba(255,255,255,0.85)', 'left', 'system-ui', '800'); });
+  text('Thumbstick to move · trigger to choose · Y to close', W / 2, y + h + 26, 20, '#fff', 'center', 'system-ui', '700'); tex.needsUpdate = true;
+}
+
+function active() { return menu.open || S.cards.length || S.timer || S.meters || S.q || S.tap || G.modes?.vrLines || (G.ui?.vrToast && G.time < G.ui.vrToast.until); }
 
 function draw(now) {
   g.clearRect(0, 0, W, H);
@@ -71,7 +97,7 @@ export function initVRHud() {
   tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   mesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false }));
   mesh.renderOrder = 999; mesh.frustumCulled = false; mesh.visible = false; G.scene.add(mesh);
-  G.vrHud = { mesh, draw: () => draw(performance.now()) };
+  G.vrHud = { mesh, draw: () => draw(performance.now()), toggleMenu: () => { menu.open = !menu.open; menu.sel = 0; menu.trig = true; S.v++; }, menuOpen: () => menu.open, drawMenu: () => drawMenu() };
   G.updaters.push((dt) => {
     if (!G.xr || !active()) { mesh.visible = false; placed = false; return; }
     // follow the head lazily: stays put while you glance around, catches up when you turn away
@@ -80,6 +106,7 @@ export function initVRHud() {
     if (!placed) { mesh.position.copy(_t); placed = true; } else { const d = mesh.position.distanceTo(_t); mesh.position.lerp(_t, Math.min(1, dt * (d > 0.45 ? 4 : 1.2))); }
     mesh.lookAt(_p); mesh.visible = true;
     const now = performance.now(); const animating = S.cards.length || S.tap || S.timer?.urgent || S.q;
+    if (menu.open) { menuInput(dt); if (S.v !== lastV || now - lastDraw > 250) { lastV = S.v; lastDraw = now; menu.open ? drawMenu() : draw(now); } return; }
     if (S.v !== lastV || (animating && now - lastDraw > 50) || now - lastDraw > 250) { lastV = S.v; lastDraw = now; draw(now); }
   });
 }

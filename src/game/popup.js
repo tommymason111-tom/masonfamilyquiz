@@ -34,10 +34,14 @@ function ensure() {
   #pop .meters div { margin:6px 0; } #pop .meters .m { height:16px; border-radius:8px; background:rgba(0,0,0,.5); border:2px solid #fff; overflow:hidden; } #pop .meters .m i { display:block; height:100%; width:0; background:#ffd700; transition:width .1s; }
   #pop .qcard { position:absolute; left:50%; top:max(84px,11vh); transform:translate(-50%,-30px); opacity:0; width:min(94vw,640px); border-radius:22px; padding:14px 14px 12px; color:#fff; background:linear-gradient(180deg,#1d3557,#0d1b2e); border:3px solid #ffd700; box-shadow:0 14px 40px rgba(0,0,0,.55); transition: transform .4s cubic-bezier(.2,1.5,.4,1), opacity .3s; pointer-events:auto; }
   #pop .qcard.in { transform:translate(-50%,0); opacity:1; }
-  #pop .qcard .qn { font:900 13px system-ui; letter-spacing:.25em; color:#ffd700; } #pop .qcard .qq { font:800 clamp(18px,5.4vw,26px)/1.2 Georgia,serif; margin:6px 0 10px; }
+  #pop .qcard .qn { padding-right:46px; font:900 13px system-ui; letter-spacing:.25em; color:#ffd700; } #pop .qcard .qq { font:800 clamp(18px,5.4vw,26px)/1.2 Georgia,serif; margin:6px 0 10px; }
   #pop .qcard .opts { display:grid; grid-template-columns:1fr 1fr; gap:8px; } #pop .qcard button { min-height:56px; border-radius:14px; border:2px solid rgba(255,255,255,.5); color:#fff; font:800 clamp(14px,4vw,18px) system-ui; text-align:left; padding:8px 10px; animation: rowIn .35s both; }
   #pop .qcard button b { display:inline-block; width:1.6em; } #pop .qcard button.sel { border-color:#ffd700; box-shadow:0 0 0 3px #ffd700 inset; transform:scale(1.02); }
   #pop .qcard .qt { height:8px; border-radius:4px; background:rgba(255,255,255,.18); margin-top:10px; overflow:hidden; } #pop .qcard .qt i { display:block; height:100%; background:linear-gradient(90deg,#3bd16f,#ffd700,#ff4d4d); }
+  #pop .qcard .qmin { position:absolute; right:8px; top:6px; width:40px; height:30px; border-radius:10px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.4); color:#fff; font:900 18px system-ui; display:flex; align-items:center; justify-content:center; padding:0; min-height:0; animation:none; }
+  #pop .qcard.min { padding:8px 10px; } #pop .qcard.min .qq { display:none; } #pop .qcard.min .opts { grid-template-columns:repeat(4,1fr); gap:6px; margin-top:6px; }
+  #pop .qcard.min .opts button { min-height:40px; text-align:center; padding:4px; } #pop .qcard.min .opts button span { display:none; } #pop .qcard.min .opts button b { width:auto; }
+  #pop .qcard.min .qt { margin-top:6px; height:5px; }
   @keyframes popBounce { from { transform:translateY(0) rotate(-6deg); } to { transform:translateY(-8px) rotate(6deg); } }
   @keyframes rowIn { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
   @keyframes pulseT { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.07); } }
@@ -70,16 +74,19 @@ export function tapButton(label, onTap) { ensure(); const tp = { label, onTap };
 // tug-of-war style meters: [{ label, value 0..1, color }]
 export function meters(list) { ensure(); S.meters = list ? list.map(x => ({ ...x })) : null; bump(); const m = root.querySelector('#popMeters'); if (!list) { m.style.display = 'none'; return; } m.style.display = 'block'; m.innerHTML = list.map(x => `<div>${esc(x.label)}<div class="m"><i style="width:${Math.round(Math.min(1, x.value) * 100)}%;background:${x.color || '#ffd700'}"></i></div></div>`).join(''); }
 // the quiz question card with big tap answers
-let qEl = null;
+let qEl = null; let qMin = false; try { qMin = localStorage.getItem('qMin') === '1'; } catch (e) { /* private mode */ }
 export function questionCard(q, n, total, onPick, selected) {
   ensure(); S.q = q ? { q: q.q, opts: q.opts, round: q.round, n, total, selected, frac: S.q?.q === q.q ? S.q.frac : 1 } : null; bump();
   if (!q) { if (qEl) { const e = qEl; qEl = null; e.classList.remove('in'); setTimeout(() => e.remove(), 400); } return; }
   const cols = ['#c1121f', '#1d6fd8', '#d39b00', '#2d8a4f'];
   if (!qEl || qEl.dataset.q !== q.q) { if (qEl) qEl.remove(); qEl = document.createElement('div'); qEl.className = 'qcard'; qEl.dataset.q = q.q;
-    qEl.innerHTML = `<div class="qn">QUESTION ${n} OF ${total}${q.round ? ' · ' + esc(String(q.round).toUpperCase()) : ''}</div><div class="qq">${esc(q.q)}</div><div class="opts">${q.opts.map((o, i) => `<button data-i="${i}" style="background:${cols[i]};animation-delay:${0.1 + i * 0.08}s"><b>${'ABCD'[i]}</b>${esc(o)}</button>`).join('')}</div><div class="qt"><i></i></div>`;
-    qEl.querySelectorAll('button').forEach(b => b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onPick(+b.dataset.i); }));
-    root.appendChild(qEl); const el = qEl; requestAnimationFrame(() => el.classList.add('in')); }
-  qEl.querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.i === selected));
+    qEl.innerHTML = `<div class="qn">QUESTION ${n} OF ${total}${q.round ? ' · ' + esc(String(q.round).toUpperCase()) : ''}</div><div class="qq">${esc(q.q)}</div><button class="qmin" aria-label="Minimise question">${qMin ? '▴' : '▾'}</button><div class="opts">${q.opts.map((o, i) => `<button data-i="${i}" style="background:${cols[i]};animation-delay:${0.1 + i * 0.08}s"><b>${'ABCD'[i]}</b><span>${esc(o)}</span></button>`).join('')}</div><div class="qt"><i></i></div>`;
+    qEl.querySelectorAll('.opts button').forEach(b => b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onPick(+b.dataset.i); }));
+    // minimise: just the question number, A-D buttons and the time bar, so you can see the room
+    const mb = qEl.querySelector('.qmin'); const el = qEl; el.classList.toggle('min', qMin);
+    mb.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); qMin = !qMin; el.classList.toggle('min', qMin); mb.textContent = qMin ? '▴' : '▾'; try { localStorage.setItem('qMin', qMin ? '1' : '0'); } catch (err) { /* private mode */ } });
+    root.appendChild(qEl); requestAnimationFrame(() => el.classList.add('in')); }
+  qEl.querySelectorAll('.opts button').forEach(b => b.classList.toggle('sel', +b.dataset.i === selected));
   return qEl;
 }
 export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
