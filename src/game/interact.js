@@ -109,6 +109,7 @@ function unwrap(inst) {
 }
 
 function give(inst, person, player) {
+  if (G.modes?.id === 'beer' && G.modes.running && (inst.type.drink || inst.drinkOverride)) { G.ui?.toast('Hand it over properly: touch the drink on them!', 2, { game: true }); return; } // Drinks Run: no handing over from across the room
   const t = inst.type; const name = person.name;
   const take = () => { G.items.remove(inst); };
   if (person.isDog) {
