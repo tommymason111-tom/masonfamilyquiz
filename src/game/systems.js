@@ -184,17 +184,17 @@ export class Systems {
       if (b.state !== 'chase' && b.state !== 'walk' && b.state !== 'idle') return true; // knocked down or busy: give up
       if (g.state !== 'anim' || G.time - t0 > 18) { b.state = 'idle'; G.ai?.goHome(b); return true; }
       const pp = G.player.pos; const d = Math.hypot(pp.x - g.pos.x, pp.z - g.pos.z);
-      if (d < 0.95) { // shove
+      if (d < 1.2) { // shove
         g.yaw = Math.atan2(pp.x - g.pos.x, pp.z - g.pos.z); g.base = 'stand'; g.gesture = 'argue'; g.gestureT = 0; b.state = 'scripted'; b.timer = 3; b.path = null;
         setTimeout(() => { g.gesture = 'point'; }, 350); G.player.knockDown(g.pos); G.fx?.hit?.(G.player.headPos(new THREE.Vector3()), 'punch', 1.2);
         setTimeout(() => G.popup?.banner({ kicker: 'WHAT JUST HAPPENED', title: `${g.name.toUpperCase()} FLATTENED YOU`, sub: why, icon: '💥', secs: 3, c1: '#3a3a4a', c2: '#14141c' }), 700);
         g.say(pick(['And STAY down.', who.isDog || who === G.dog ? 'Nobody touches the dog.' : 'Leave him alone!', 'Let that be a lesson.']), { prio: 2 });
         setTimeout(() => { g.gesture = null; if (b.state === 'scripted') { b.state = 'idle'; G.ai?.goHome(b); } }, 3200); return true; }
-      if (G.time - lastPath > 0.8) { lastPath = G.time; G.ai?.goTo(b, new THREE.Vector3(pp.x, 0, pp.z), null, 3.6); b.state = 'walk'; }
+      if (G.time - lastPath > 0.35) { lastPath = G.time; G.ai?.goTo(b, new THREE.Vector3(pp.x, 0, pp.z), null, d > 4 ? 6.5 : 5.2); b.state = 'walk'; g.gesture = null; }
       return false;
     };
     const up = (dt) => { if (chase(dt)) { const k = G.updaters.indexOf(up); if (k >= 0) G.updaters.splice(k, 1); } };
-    warned.then(() => { t0 = G.time; g.lookTarget = null; g.gesture = null; b.state = 'chase'; G.updaters.push(up); });
+    warned.then(() => { t0 = G.time; lastPath = -9; g.lookTarget = null; g.gesture = null; g.base = 'run'; b.state = 'chase'; G.updaters.push(up); });
   }
   harrisonLaugh() {
     const h = G.charByName.Harrison; if (!h) return; h.setMood('laugh', 3); h.say('Hehehehe!', { prio: 0 });
