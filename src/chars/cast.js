@@ -12,7 +12,7 @@ export const TEAMS = {
 export const TEAM_IDS = Object.keys(TEAMS);
 
 export const CAST = [
-  { name: 'Tommy', team: 'paul', height: 1.80, build: 'standard', sex: 'm', hair: { style: 'short', color: '#5a3c24' }, stubble: 0.25, stubbleColor: '#4a3020',
+  { name: 'Tommy', team: 'paul', height: 1.84, build: 'standard', sex: 'm', hair: { style: 'short', color: '#5a3c24' }, stubble: 0.25, stubbleColor: '#4a3020',
     top: { pattern: 'fairisle', c1: '#20406a', c2: '#f2f2f2', c3: '#c0282d' }, legs: { type: 'jeans', c1: '#2b3f5e' }, socks: '#c02020', eyes: '#4a6a3a', player: true,
     voice: { pitch: 1, rate: 1, female: false, idx: 0 },
     // Tommy: works in marketing in London, gets wound up by his dad, cracks jokes

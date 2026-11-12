@@ -6,6 +6,7 @@ import { G, GR, groups, ALL, emit, clamp } from '../core.js';
 import { overlapSphere, raycast } from '../engine/physics.js';
 import { sfx, setMuted } from '../engine/audio.js';
 import { HandModel } from './handmodel.js';
+import { makePaw } from './paw.js';
 
 const JOINTS = ['wrist', 'thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip',
   'index-finger-metacarpal', 'index-finger-phalanx-proximal', 'index-finger-phalanx-intermediate', 'index-finger-phalanx-distal', 'index-finger-tip',
@@ -29,7 +30,7 @@ export class XRInput {
       const rec = { i, ctrl, grip, hand, source: null, palm: new THREE.Vector3(), q: new THREE.Quaternion(), vel: new THREE.Vector3(), hist: [], fist: false, pinch: false, pinchT: 0,
         tracked: false, key: null, joints: [], tip: new THREE.Vector3(), thumbTip: new THREE.Vector3(), normal: new THREE.Vector3(), pointT: 0, raiseT: 0, punchCD: 0, pokeCD: 0, kickCD: 0 };
       ctrl.addEventListener('connected', (e) => { rec.source = e.data; rec.key = e.data.handedness === 'left' ? 'L' : 'R'; this.hands[rec.key] = rec; rec.isHand = !!e.data.hand; this.buildVisual(rec); });
-      ctrl.addEventListener('disconnected', () => { if (rec.key && this.hands[rec.key] === rec) this.hands[rec.key] = null; if (rec.vis) rec.vis.visible = false; if (rec.model) { rec.model.root.parent?.remove(rec.model.root); } rec.vis = null; rec.model = null; });
+      ctrl.addEventListener('disconnected', () => { if (rec.key && this.hands[rec.key] === rec) this.hands[rec.key] = null; if (rec.vis) rec.vis.visible = false; if (rec.paw) { G.scene.remove(rec.paw); rec.paw = null; } if (rec.model) { rec.model.root.parent?.remove(rec.model.root); } rec.vis = null; rec.model = null; });
     }
     // wrist menu panel
     this.panel = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.17), new THREE.MeshBasicMaterial({ transparent: true, depthTest: true }));
@@ -44,7 +45,7 @@ export class XRInput {
     G.camera.position.set(0, 0, 0); G.camera.rotation.set(0, 0, 0);
   }
   buildVisual(rec) {
-    if (rec.vis) { rec.vis.visible = true; return; }
+    if (rec.vis) { rec.vis.visible = true; if (!rec.paw) { rec.paw = makePaw(rec.key === 'R' ? 1 : -1); rec.paw.visible = false; G.scene.add(rec.paw); } return; }
     const g = new THREE.Group(); G.scene.add(g); rec.vis = g;
     const cuffMat = new THREE.MeshStandardMaterial({ color: rec.key === 'L' ? '#20406a' : '#20406a', roughness: 0.9 });
     const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.04, 0.09, 16, 1, true), cuffMat); cuff.material.side = THREE.DoubleSide;
@@ -53,11 +54,18 @@ export class XRInput {
     rec.cuff = cuff; g.add(cuff);
     if (rec.key === 'L') { const watch = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.008, 16), new THREE.MeshStandardMaterial({ color: '#222', metalness: 0.6 })); watch.rotation.x = Math.PI / 2; watch.position.set(0, -0.055, 0.035); rec.watch = watch; cuff.add(watch); }
     // realistic articulated hand (tracked joints in hand-tracking mode, posed from the buttons with controllers)
-    rec.model = new HandModel(rec.key, { cuff: true, watch: rec.key === 'L' });
+    rec.model = new HandModel(rec.key, { cuff: false, watch: rec.key === 'L' }); // bare hands, no sleeve, same as on the phone
+    rec.paw = makePaw(rec.key === 'R' ? 1 : -1); rec.paw.visible = false; G.scene.add(rec.paw); // Chip's paw, shown instead of the hand when you're him
     cuff.visible = false;
     if (rec.isHand) { G.scene.add(rec.model.root); }
     else { const holder = new THREE.Group(); holder.add(rec.model.root); rec.model.root.rotation.set(-0.5, 0, (rec.key === 'L' ? 1 : -1) * Math.PI / 2 * 0.9); rec.model.root.position.set(0, -0.01, 0.07); g.add(holder); rec.ctrlHand = holder; }
     this.skinMat = rec.model.mat;
+  }
+  // when you're Chip the hand is swapped for a paw that follows it
+  pawUpdate(rec) {
+    const dog = !!G.dog?.playerControlled; if (rec.model) rec.model.root.visible = !dog; if (rec.watch) rec.watch.visible = !dog; if (!rec.paw) return;
+    rec.paw.visible = dog && !!rec.vis?.visible; if (!dog) return;
+    rec.paw.position.copy(rec.palm); rec.paw.quaternion.copy(rec.q);
   }
   jointPos(rec, name, out) { const j = rec.hand.joints[name]; if (!j) return null; return j.getWorldPosition(out); }
 
@@ -104,7 +112,7 @@ export class XRInput {
       rec.pointing = indexExt > 0.085 && fistAmt < 0.07 && pinchD > 0.04;
       rec.thumbsDir = (fistAmt < 0.065 && Jp[4].distanceTo(Jp[0]) > 0.09) ? new THREE.Vector3().subVectors(Jp[4], Jp[2]).normalize().y : 0;
       rec.open = fistAmt > 0.09;
-      this.drawHand(rec);
+      this.drawHand(rec); this.pawUpdate(rec);
       if (rec.fist && !wasFist) this.onGrab(rec);
       if (!rec.fist && wasFist) this.onRelease(rec);
       if (rec.pinch && !wasPinch) this.onPinch(rec, head);
@@ -124,6 +132,7 @@ export class XRInput {
       rec.tip.set(0, -0.01, -0.09).applyQuaternion(rec.q).add(rec.palm);
       rec.normal.set(rec.key === 'L' ? 1 : -1, 0, 0).applyQuaternion(rec.q);
       if (rec.vis) { rec.vis.position.copy(rec.palm); rec.vis.quaternion.copy(rec.q); rec.model?.pose(squeeze > 0.6 ? (this.player.holders[rec.key] ? 'grip' : 'fist') : trig > 0.6 ? 'pinch' : squeeze > 0.2 ? 'relaxed' : 'open', dt, 14); }
+      this.pawUpdate(rec);
       if (rec.fist && !wasFist) this.onGrab(rec); if (!rec.fist && wasFist) this.onRelease(rec);
       if (rec.pinch && !wasPinch) this.onPinch(rec, head); if (!rec.pinch && wasPinch) this.onPinchEnd(rec);
       // buttons: A/X = hand up/kick, B/Y = drink/menu

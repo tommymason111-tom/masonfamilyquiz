@@ -4,12 +4,14 @@ import * as THREE from 'three';
 import { G, clamp, lerp } from '../core.js';
 import { Prop } from '../engine/geo.js';
 import { HandModel } from './handmodel.js';
+import { makePaw } from './paw.js';
 
-const SKIN = '#e9c2a6', KNIT = '#20406a', BAND = '#f2f2f2', RED = '#c0282d';
+const SKIN = '#e3b296';
 function armGeo(side) {
   const p = new Prop(); const s = side; // built along -z (forward), origin at the elbow
-  p.cyl(0.05, 0.045, 0.32, KNIT, 0, 0, -0.16, Math.PI / 2, 0, 0, 14).cyl(0.051, 0.051, 0.03, BAND, 0, 0, -0.24, Math.PI / 2, 0, 0, 14).cyl(0.052, 0.052, 0.015, RED, 0, 0, -0.27, Math.PI / 2, 0, 0, 14)
-    .cyl(0.047, 0.047, 0.04, KNIT, 0, 0, -0.31, Math.PI / 2, 0, 0, 14);
+  // bare forearm (no sleeve): thicker by the elbow, slimmer at the wrist, a soft muscle bulge on top
+  p.cyl(0.044, 0.031, 0.33, SKIN, 0, 0, -0.165, Math.PI / 2, 0, 0, 16).sph(0.041, SKIN, 0, 0.006, -0.07, 1, 0.92, 2.1, 14)
+    .sph(0.032, SKIN, 0, 0, -0.318, 1.12, 0.78, 0.6, 12);
   return p.build();
 }
 function handGeo(side, curl) { // palm faces inward (+x for the right hand), fingers curl around a grip point
@@ -34,9 +36,21 @@ export class FPHands {
       this.arms[k] = { arm, hand, model, s, rest: new THREE.Vector3(s * 0.25, -0.34, -0.02), pose: new THREE.Vector3(), rot: new THREE.Euler(), punch: 0, mouth: 0 };
     }
     this.gripPoint = this.arms.R.model.gripPoint;
+    // Chip's two front paws instead of hands when you're playing as him
+    this.pawGroup = new THREE.Group(); G.camera.add(this.pawGroup); this.paws = {};
+    for (const [k, s] of [['R', 1], ['L', -1]]) { const g = makePaw(s); this.pawGroup.add(g); this.paws[k] = { g, s, ph: k === 'R' ? 0 : Math.PI }; }
     this.bob = 0;
   }
   setVisible(v) { this.group.visible = v; }
+  // paws: low down at the bottom of the view, padding along in turn as you trot, a swipe forward for a "punch"
+  updatePaws(dt, player) {
+    const moving = (player.speedXZ || 0) > 0.2; this.bob += dt * (moving ? 11 : 2); const narrow = innerWidth < innerHeight ? 0.6 : 1;
+    for (const k of ['R', 'L']) { const a = this.paws[k]; const arm = this.arms[k];
+      const step = moving ? Math.sin(this.bob + a.ph) : 0; const t = new THREE.Vector3(a.s * 0.09 * narrow, -0.17 + Math.max(0, step) * 0.03, -0.42 - step * 0.04);
+      let rx = 0.75 + step * 0.2;
+      if (arm.punch > 0) { const p = Math.sin((1 - arm.punch) * Math.PI); t.add(new THREE.Vector3(-a.s * 0.05, 0.1, -0.16).multiplyScalar(p)); rx -= p * 0.7; arm.punch -= dt * 4; }
+      a.g.position.lerp(t, 1 - Math.exp(-dt * 14)); a.g.rotation.set(rx, -a.s * 0.12, a.s * 0.08); }
+  }
   punch(side = 'R') { this.arms[side].punch = 1; }
   toMouth(side = 'R') { this.arms[side].mouth = 1; }
   // world transform of the right-hand grip, with the item pushed out so it sits in the fingers
@@ -47,7 +61,9 @@ export class FPHands {
     return outP;
   }
   update(dt, player) {
-    const show = !G.xr && !player.thirdPerson && !G.ui?.modalOpen && !G.dog?.playerControlled; /* no human hands when you're Chip */ this.group.visible = show; if (!show) return;
+    const dog = !!G.dog?.playerControlled; const base = !G.xr && !player.thirdPerson && !G.ui?.modalOpen;
+    const show = base && !dog; this.group.visible = show; this.pawGroup.visible = base && dog; // Chip gets paws, everyone else bare hands
+    if (base && dog) return this.updatePaws(dt, player); if (!show) return;
     const h = player.holders.D; const item = h && h.kind === 'item' && h.attach;
     const heavy = h && !item; // people, doors, heavy furniture: both hands reach forward
     const moving = (player.speedXZ || 0) > 0.2; this.bob += dt * (moving ? 9 : 2);

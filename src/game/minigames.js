@@ -280,7 +280,7 @@ export class MiniGames {
   // ---------- 4. Find the magic elves ----------
   // five little glowing elves hidden around the house; walk up to one to catch it; 1:30 on the clock
   setup_elfHunt(a) {
-    a.limit = 90; a.found = 0; a.label = () => `ELVES ${a.found}/5`;
+    a.limit = 90; a.found = 0; a.label = () => `FIND THE ELVES · ${a.found} OUT OF 5 FOUND`;
     const tree = G.house.spots.tree;
     const spots = [[1.15, 0.9, -4.6, 'on the dining room sideboard'], [3.85, 0.93, 5.55, 'on the kitchen worktop'], [-3.45, 0.95, 4.2, 'on the garage workbench'], [-7.19, 0.54, 3.5, 'on the garage shelf'], [-4.4, 0.02, -0.6, 'by the living room door'], [-3.2, 0.02, 2.5, 'under the stairs'], [5.51, 1.87, 0.1, 'on top of the fridge'], [0.0, 0.02, 5.6, 'by the front door'], [2.6, 0.02, -8.0, 'in the conservatory'], [tree.x + 0.55, 0.02, tree.z + 0.35, 'under the Christmas tree'], [-2.2, 1.45, -0.1, 'up on the living room shelf'], [-2.5, 0.95, 3.75, 'in the bathroom'], [-1.5, 0.02, 5.55, 'behind the toilet door'], [4.6, 0.02, -7.4, 'in the conservatory corner']];
     const chosen = shuffle(spots).slice(0, 5); a.elves = [];
@@ -308,7 +308,7 @@ export class MiniGames {
       if (Math.hypot(hp.x - e.x, hp.z - e.z) < 1.0 && Math.abs(hp.y - e.y) < 1.7) {
         e.found = true; a.found++; sfx('ding', new THREE.Vector3(e.x, e.y, e.z), 1); sfx('cheer', null, 0.4);
         let k = 0; const pop = () => { k++; e.grp.scale.setScalar(1 + k * 0.25); e.grp.position.y += 0.03; e.sp.material.opacity = 1 - k / 8; if (k < 8) setTimeout(pop, 30); else G.scene.remove(e.grp); }; pop();
-        G.ui?.toast(`🧝 MAGIC ELF FOUND! ${a.found}/5`, 1.8, { game: true });
+        G.ui?.toast(`🧝 MAGIC ELF FOUND! ${a.found} OUT OF 5`, 1.8, { game: true });
         if (a.found >= 5) { a.score = Math.max(1, Math.round(a.t)); this.stop(a); }
       }
     }
