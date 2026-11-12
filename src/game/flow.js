@@ -52,14 +52,15 @@ const face = (n) => P()[n] ? `<img src="${P()[n]}" alt="">` : `<div class="ph">$
 // entry point from the Play button. launch() starts the game (and VR when asked)
 export async function startFlow(launch, opts = {}) {
   ensure(); VR = !!opts.vr; if (!VR) el.classList.add('on'); document.getElementById('loading').style.display = 'none';
+  if (VR) await vrTitleStep();
   const who = await characterStep();
   let mode = 'roam', random = false;
-  if (!ROAMERS.includes(who)) ({ mode, random } = await modeStep());
+  if (!ROAMERS.includes(who)) { ({ mode, random } = await modeStep()); await teamsStep(who, random); }
   if (mode === 'games') await gamesStep();
   // Gary's outfit wheel comes last; Mini Games and Fling the Relative get plain Gary
   if (mode !== 'games' && mode !== 'fling') await wheelStep();
   dressGaryFor(mode);
-  setAvatar(who); if (random) randomTeams();
+  setAvatar(who); // (the teams were settled on the teams screen)
   G.modes.id = mode; G.modes.def = modeById(mode); if (mode !== 'roam') saveStore('mode', mode); saveStore('lastAs', who);
   await summaryStep(who, mode);
   el.classList.remove('on'); launch();
@@ -126,6 +127,40 @@ function modeStep() {
   });
 }
 
+// 1. in the headset: the title, on its own, before anything else
+function vrTitleStep() {
+  sfx('whistle', null, 0.5);
+  return vrShow({ title: '✦ The 2026 Boxing Day Edition ✦', done: 'Start ▶', draw: (g, W, H, ms) => { g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#fff3d6'; g.font = 'italic 900 58px Georgia, serif'; g.fillText('The Mason Family', W / 2, 220);
+    const gr = g.createLinearGradient(W / 2 - 360, 0, W / 2 + 360, 0); const sh = (ms / 2500) % 1; gr.addColorStop(0, '#a8701a'); gr.addColorStop(Math.max(0, sh - 0.1), '#ffe08a'); gr.addColorStop(sh, '#fff8e0'); gr.addColorStop(Math.min(1, sh + 0.1), '#d9a12e'); gr.addColorStop(1, '#ffe08a');
+    g.fillStyle = gr; g.font = '900 104px Georgia, serif'; g.fillText('Boxing Day Quiz', W / 2, 330);
+    g.fillStyle = '#fff3d6'; g.font = '900 52px Georgia, serif'; g.shadowColor = 'rgba(255,215,0,0.7)'; g.shadowBlur = 24; g.fillText('— T H E   G A M E —', W / 2, 450); g.shadowBlur = 0;
+    g.font = '600 22px system-ui'; g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillText('Point at Start and pull the trigger (or pinch)', W / 2, 560); } });
+}
+
+// 4a. the teams: default or shuffled, everyone shown, yours highlighted
+function teamsStep(who, random) {
+  const def = Object.fromEntries(CAST.map(c => [c.name, c.team]));
+  const settle = () => { if (random) randomTeams(); else for (const c of G.chars) if (def[c.name]) c.team = def[c.name]; };
+  const mine = () => { const t = G.charByName[who]?.team; return t === 'host' ? 'julie' : t; };
+  const teams = () => TEAM_IDS.map(t => ({ t, ppl: G.chars.filter(c => c.team === t && !(c.name === who && G.charByName[who]?.team === 'host')).map(c => c.name).concat(who === 'Martin' && t === 'julie' ? ['Martin'] : []) }));
+  settle();
+  if (VR) return vrShow({ title: random ? '🎲 Tonight\'s random teams' : 'Tonight\'s teams', done: 'Next →', draw: (g, W, H) => { const T = teams(); const cw = (W - 80) / 2, chh = 250;
+      T.forEach((x, i) => { const cx = 30 + (i % 2) * (cw + 20), cy = 110 + Math.floor(i / 2) * (chh + 16); const me = x.t === mine(); g.beginPath(); g.roundRect(cx, cy, cw, chh, 18); g.fillStyle = me ? 'rgba(255,215,0,0.16)' : 'rgba(0,0,0,0.32)'; g.fill(); g.lineWidth = me ? 5 : 2; g.strokeStyle = me ? '#ffd700' : TEAMS[x.t].color; g.stroke();
+        g.fillStyle = TEAMS[x.t].color; g.fillRect(cx + 12, cy + 16, 10, 34); g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '900 32px Georgia, serif'; g.fillStyle = '#fff'; g.fillText(TEAMS[x.t].name + (me ? '  (you)' : ''), cx + 34, cy + 34);
+        g.font = '700 24px system-ui'; x.ppl.forEach((n, k) => { g.fillStyle = n === who ? '#ffd700' : '#fff'; g.fillText((n === who ? '★ ' : '• ') + n, cx + 30 + (k % 2) * (cw / 2 - 10), cy + 84 + Math.floor(k / 2) * 38); }); }); } });
+  return new Promise(res => {
+    const draw = () => { const T = teams();
+      el.innerHTML = `<h2>${random ? '🎲 Tonight\'s random teams' : 'Tonight\'s teams'}</h2><p class="lead">${random ? 'Shuffled! Don\'t like them? Shuffle again.' : 'The usual families, as ever.'}</p>
+        <div class="tgrid big">${T.map(x => `<div class="${x.t === mine() ? 'me' : ''}" style="--c:${TEAMS[x.t].color}"><b>${TEAMS[x.t].name}${x.t === mine() ? ' <small>(your team)</small>' : ''}</b><div class="tf">${x.ppl.map(n => `<span class="${n === who ? 'you' : ''}">${face(n)}${n}</span>`).join('')}</div></div>`).join('')}</div>
+        ${random ? '<div class="tog" style="margin-top:14px"><button id="tShuffle">🎲 Shuffle again</button></div>' : ''}<button class="go" id="tGo">Next →</button>`;
+      el.scrollTop = 0; el.querySelector('#tGo').onclick = () => { sfx('ding', null, 0.6); res(); };
+      const sb = el.querySelector('#tShuffle'); if (sb) sb.onclick = () => { sfx('tap', null, 0.5); settle(); draw(); }; };
+    const st = document.createElement('style'); st.textContent = '#flow .tgrid.big { max-width:900px; margin:12px auto 0; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); } #flow .tgrid.big > div { padding:10px 12px; } #flow .tgrid.big small { color:#ffd700; font-size:11px; } #flow .tf { display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:6px; } #flow .tf span { display:flex; flex-direction:column; align-items:center; font:700 12px system-ui; width:58px; text-align:center; } #flow .tf img, #flow .tf .ph { width:44px; height:44px; border-radius:50%; object-fit:cover; background:#2a1a20; font-size:26px; line-height:44px; margin-bottom:3px; } #flow .tf span.you { color:#ffd700; } #flow .tf span.you img { box-shadow:0 0 0 3px #ffd700; }';
+    document.head.appendChild(st); draw();
+  });
+}
+
 // 4b. Mini Games: let the dice pick five, or choose exactly which ones
 function gamesStep() {
   if (VR) { const saved = loadStore('gamesPick', { random: true, ids: GAMES.slice(0, 5).map(g => g.id) }); const short = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
@@ -157,7 +192,7 @@ function summaryStep(who, mode) {
     const teams = TEAM_IDS.map(t => ({ t, ppl: G.chars.filter(c => c.team === t).map(c => c.name) }));
     el.innerHTML = `<div class="sum"><h2>Tonight</h2><div class="big">You're playing as <b>${who}</b></div><div class="big">${m.icon} <b>${m.name}</b></div>
       ${who === 'Chip' ? '<p class="lead">Dog mode: paw-punch the family, steal sausage rolls, sit on the answer sheets.</p>' : `<p class="lead">Quizmaster: ${host}${G.myTeam ? ` · your team: ${TEAMS[G.myTeam].name}` : ''}</p>`}
-      <div class="tgrid">${teams.map(x => `<div class="${x.t === G.myTeam ? 'me' : ''}" style="--c:${TEAMS[x.t].color}"><b>${TEAMS[x.t].name}</b>${x.ppl.join(', ')}</div>`).join('')}</div></div>`;
+      </div>`;
     el.scrollTop = 0; sfx('whistle', null, 0.6); setTimeout(res, 3000);
   });
 }
