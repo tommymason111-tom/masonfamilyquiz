@@ -35,7 +35,7 @@ const DRINK = {
 // what people chat about in each mode (idle chatter gets swapped for these)
 const ROAM_LINES = {
   Chip: ['Chip! Get down!', 'Who let Chip in here?', 'CHIP! That\'s my sausage roll!', 'Aww, Chip. Who\'s a good boy?', 'Chip, no! Leave it!', 'Martin, your dog is at it again.', 'He\'s got the remote!', 'Chip\'s had a pig in blanket, I saw that.'],
-  Mason: ['Mason, put that down!', 'Where\'s Mason gone?', 'Mason, no throwing!', 'Jodie, he\'s at it again!', 'Mason! That\'s Grandad\'s!', 'Who gave Mason sugar?', 'Mason, gentle!', 'Ha! He\'s a little menace.'],
+  Mason: ['Mason, put that down!', 'Is that Bluey?!', 'Bluey, come here!', 'Where\'s Mason gone?', 'Mason, no throwing!', 'Jodie, he\'s at it again!', 'Mason! That\'s Grandad\'s!', 'Who gave Mason sugar?', 'Mason, gentle!', 'Ha! He\'s a little menace.'],
   Harrison: ['Harrison, that\'s not a toy!', 'Aww, look at the little elf!', 'Bradley, he\'s escaped!', 'Harrison, come here, trouble!', 'Who dressed him as an elf? Amazing.', 'He\'s faster than he looks!', 'Harrison! Not the tree!', 'Jingle bells, Harrison!'],
 };
 const GAME_LINES = {
@@ -82,7 +82,7 @@ export class Modes {
     if (id === 'fling') return this.flingSetup();
     if (id === 'beer') return this.beerSetup();
     this.running = false; this.hudOff();
-    if (id === 'roam') { this.running = true; this.havocSetup(); const who = G.me?.name || 'Chip'; const L = { Chip: ['Paw-punch the family, steal the sausage rolls, sit on the answer sheets.', ['🐾', '🦴', '💥', '🌭']], Mason: ['Throw everything. Climb everything. Shout DINOSAUR.', ['🦖', '💥', '🧱', '🚗']], Harrison: ['Tiny elf. Maximum chaos. Jingle bells!', ['🧝', '🔔', '💥', '🎄']] }[who] || ['Cause havoc.', ['💥']];
+    if (id === 'roam') { this.running = true; this.havocSetup(); const who = G.me?.name || 'Chip'; const L = { Chip: ['Paw-punch the family, steal the sausage rolls, sit on the answer sheets.', ['🐾', '🦴', '💥', '🌭']], Mason: ['Throw everything. Climb everything. Shout BLUEY!', ['💙', '🐾', '💥', '🧱']], Harrison: ['Tiny elf. Maximum chaos. Jingle bells!', ['🧝', '🔔', '💥', '🎄']] }[who] || ['Cause havoc.', ['💥']];
       setTimeout(() => { sfx('bigthud', null, 1); setTimeout(() => sfx('crack', null, 0.9), 450); setTimeout(() => sfx('cheer', null, 0.5), 1300); G.popup.havoc(who, L[0], L[1]); }, 400); }
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FREE ROAM'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'No quiz tonight. Martin is devastated. Throw whatever you like (except the tree).', 60, 170, 900, 42); });
   }

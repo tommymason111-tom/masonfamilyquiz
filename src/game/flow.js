@@ -44,7 +44,7 @@ function ensure() {
   el = document.createElement('div'); el.id = 'flow'; document.body.appendChild(el); return el;
 }
 const P = () => G.portraits || {};
-const face = (n) => P()[n] ? `<img src="${P()[n]}" alt="">` : `<div class="ph">${n === 'Mason' ? '🦖' : n === 'Harrison' ? '🧝' : n === 'Chip' ? '🐶' : '🎄'}</div>`;
+const face = (n) => P()[n] ? `<img src="${P()[n]}" alt="">` : `<div class="ph">${n === 'Mason' ? '💙' : n === 'Harrison' ? '🧝' : n === 'Chip' ? '🐶' : '🎄'}</div>`;
 
 // entry point from the Play button. launch() starts the game (and VR when asked)
 export async function startFlow(launch, opts = {}) {

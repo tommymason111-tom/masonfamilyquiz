@@ -252,6 +252,7 @@ function jumperColor(spec, d, P, region) {
   if (pat === 'speedo') { if (y < d.p.hip + 0.025) return C('#1a2a6a'); return C(spec.skin); }
   if (pat === 'turkey') { const n = noise3(P.x * 120, P.y * 120, P.z * 120); return lerpC(C('#6b3f1f'), C('#a8693a'), n); }
   if (pat === 'xmastree') { const n = noise3(P.x * 90, P.y * 90, P.z * 90); return lerpC(C('#174d1f'), C('#2f7a2a'), n); }
+  if (pat === 'bluey') { if (region === 'torso' && front > 0.45 && y < d.p.shoulder - 0.04) return C('#f0d8a8'); if (region === 'torso' && front < -0.6 && y > d.p.waist) return C('#2f4f8f'); return c1; } // Bluey: tan tummy, darker saddle
   if (pat === 'dino') { if (region === 'torso' && front > 0.5 && y < d.p.shoulder - 0.05) return C('#c9e07a'); return c1; }
   if (pat === 'elf') { if (Math.abs(y - d.p.waist + 0.03) < 0.015) return C('#111'); if (y < d.p.hip + 0.03) return C('#c41e1e'); return c1; }
   if (pat === 'sumo') { const n = noise3(P.x * 30, P.y * 30, P.z * 30); return lerpC(C('#e8b892'), C('#f5cfaf'), n); }
@@ -787,6 +788,16 @@ function buildOutfitExtras(acc, spec, d, O) {
     const hc = new THREE.Vector3(0, d.head.cy + d.head.ry * 0.55, d.head.cz);
     const rr = []; for (let i = 0; i <= 8; i++) { const t = i / 8; rr.push({ c: [t * 0.06 * H, hc.y + Math.sin(t * 1.4) * 0.12 * H, hc.z - t * 0.05 * H], rx: d.head.rx * 1.1 * (1 - t * 0.9), rz: d.head.rz * 1.1 * (1 - t * 0.9) }); }
     loft(acc, rr, 16, (i) => i === 0 ? C('#ffffff') : C('#c41e1e'), () => [2, 2, 1]);
+  }
+  if (top.hood === 'bluey') { // Bluey hood: blue head with darker cap, tall pointy ears (tan inside), tan muzzle patch, and a tail
+    const hc = new THREE.Vector3(0, d.head.cy + d.head.ry * 0.25, d.head.cz - 0.01 * H);
+    sphere(acc, 14, 20, (D) => new THREE.Vector3(D.x * d.head.rx * 1.26, D.y * d.head.ry * 1.2, D.z * d.head.rz * 1.24).add(hc), (P, D) => C(D.y > 0.5 ? '#2f4f8f' : '#6fa8dc'), () => [2, 2, 1], { include: (D) => D.z < 0.3 || D.y > 0.55 });
+    for (const s of [-1, 1]) { const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -s * 0.28));
+      ellipsoid(acc, new THREE.Vector3(s * d.head.rx * 0.62, hc.y + d.head.ry * 1.2, hc.z), [0.03 * H, 0.085 * H, 0.012 * H], C('#2f4f8f'), 2, { quat: q, lat: 6, lon: 8 });
+      ellipsoid(acc, new THREE.Vector3(s * d.head.rx * 0.6, hc.y + d.head.ry * 1.15, hc.z + 0.008 * H), [0.018 * H, 0.06 * H, 0.006 * H], C('#e8c890'), 2, { quat: q, lat: 6, lon: 8 }); }
+    ellipsoid(acc, new THREE.Vector3(0, hc.y + d.head.ry * 0.9, hc.z + d.head.rz * 0.75), [0.045 * H, 0.016 * H, 0.012 * H], C('#f0d8a8'), 2); // the tan brow patch on the hood front
+    ellipsoid(acc, new THREE.Vector3(0, d.p.hip * H, -0.1 * H * d.wMul), [0.025 * H, 0.025 * H, 0.09 * H], C('#6fa8dc'), 0, { quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.6, 0, 0)), lat: 6, lon: 8 }); // tail
+    ellipsoid(acc, new THREE.Vector3(0, d.p.hip * H - 0.055 * H, -0.165 * H * d.wMul), [0.02 * H, 0.02 * H, 0.03 * H], C('#2f4f8f'), 0); // tail tip
   }
   if (top.hood === 'dino') { // dinosaur hood with eyes on toddler
     const hc = new THREE.Vector3(0, d.head.cy + d.head.ry * 0.25, d.head.cz - 0.01 * H);

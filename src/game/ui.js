@@ -106,6 +106,8 @@ class UI {
       if (!txt && G.player.seated) txt = 'Move to stand up';
       const who = f && (f.kind === 'char' || f.kind === 'dog') ? f.ref : null;
       if (who && !(held && f.dist < 2.2)) txt = '';
+      // phones: name the on-screen buttons, not keyboard keys
+      if (this.touchMode && txt) txt = txt.replace(/^R: /, 'USE: ').replace(/ · R use/g, ' · USE').replace(/RMB throw/g, 'THROW').replace(/hold RMB to throw/g, 'hold THROW').replace(/ · G eat\/drink/g, ' · DRINK').replace(/ · LMB drop/g, '').replace(/LMB grab/g, 'Tap to pick up');
       $('prompt').textContent = txt;
       const ch = G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
       this.updateTouchReady(f, held);

@@ -14,9 +14,9 @@ const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 export const GAMES = [
   { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'Throw the sprouts into the red and white cups at the far end of the table. Tap a sprout to pick it up, tap again (or THROW) to lob it. 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
   { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Three relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
-  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 25 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 25 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
+  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 30 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 30 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
-  { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it stops on YOU, hit TEAR before the music starts again!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
+  { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it reaches you, hit PASS to send it on. When the music stops with it in your hands, hit TEAR!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
 ];
 // (spare games, used between quiz rounds if ever needed)
 export const SPARE = [
@@ -54,9 +54,9 @@ export class MiniGames {
     G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, `GAME ${ORDINAL[i]}: ${def.title}`, '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, how, 60, 170, 900, 42); });
     await card({ kicker: `GAME ${ORDINAL[i]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
     await card({ kicker: 'GET READY', title: '3 · 2 · 1 · GO!', secs: 1.6, c1: '#2d8a4f', c2: '#0e3a20' });
-    sfx('whistle', null, 1); a.live = true; this.active = a; this['begin_' + def.id]?.(a);
+    sfx('whistle', null, 1); a.live = true; this.active = a; document.body.classList.add('mg', 'mg-' + def.id); this['begin_' + def.id]?.(a);
     await new Promise(res => { a.done = res; });
-    this.active = null; timer(null); meters(null); stopMusic(); this['end_' + def.id]?.(a);
+    this.active = null; timer(null); meters(null); stopMusic(); document.body.classList.remove('mg', 'mg-' + def.id); this['end_' + def.id]?.(a); if (a.beams) await new Promise(r => setTimeout(r, 6400));
     // leaderboard: you vs the other teams (theirs are made up, obviously)
     const mine = this.me(); const skills = shuffle([rand(0.9, 1.2), rand(0.65, 1.0), rand(0.35, 0.8)]); let si = 0; // one team close to you (sometimes just ahead), the others behind; different every game
     let rows = TEAM_IDS.map(t => ({ team: t, name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: t === mine ? a.score : this.rival(def, a.score, skills[si++ % 3]) }));
@@ -154,7 +154,7 @@ export class MiniGames {
   // a little sumo stage on the lawn. Every hit fills the opponent's wobble meter (and it drains if you stop); full
   // meter on a phone = they fly out of the ring; in the headset = grab them and throw them out. They shove back.
   setup_sumo(a) {
-    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(3); a.limitEach = 25;
+    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(3); a.limitEach = 30;
     const P = new Prop(); P.cyl(R.r + 0.28, R.r + 0.34, 0.07, '#b89a6a', 0, 0.035, 0, 0, 0, 0, 40).cyl(R.r, R.r, 0.006, '#e6d3a2', 0, 0.075, 0, 0, 0, 0, 40); // raised clay platform + sand
     for (let k = 0; k < 90; k++) { const ang = k / 90 * Math.PI * 2; P.sph(0.055, k % 2 ? '#c8a960' : '#b8964c', Math.cos(ang) * R.r, 0.09, Math.sin(ang) * R.r, 1.6, 0.9, 1.6, 8); } // the straw-bale rope round the edge
     for (const s of [-1, 1]) P.box(0.04, 0.006, 0.42, '#ffffff', s * 0.45, 0.08, 0); // the two start lines
@@ -172,17 +172,17 @@ export class MiniGames {
   begin_sumo(a) { this.nextBout(a); }
   nextBout(a) {
     const R = a.ring; if (a.round >= a.opps.length) return this.stop(a);
-    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.7, 0.85), rand(0.9, 1.05), rand(1.1, 1.3)]))[a.round]; // each opponent has their own strength
+    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.95, 1.1), rand(1.15, 1.3), rand(1.35, 1.6)]))[a.round]; // each opponent has their own strength
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2);
     this.place(opp, R.x + 0.75, R.z, [R.x - 0.75, R.z]); opp.gesture = 'sumo'; opp.sumoReady = false;
-    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.11) / (a.str || 1)); sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
+    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.045 : 0.065) / (a.str || 1)); // lots of hits needed sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
       const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.pos.addScaledVector(d, 0.06); opp.gestureT = 0; };
     card({ kicker: `BOUT ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
   }
   tick_sumo(a, dt) {
     const R = a.ring, opp = a.opp; if (!opp) return;
     if (!a.boutOn) { meters(null); return; }
-    a.boutT += dt; a.meter = Math.max(0, a.meter - dt * 0.22);
+    a.boutT += dt; a.meter = Math.max(0, a.meter - dt * 0.3 * (a.str || 1)); // drains faster against the strong ones
     // they edge forward and shove you back (out of the ring = you lose the bout)
     if (opp.state === 'anim' && opp.sumo) {
       const pp = G.player.pos; const d = new THREE.Vector3(pp.x - opp.pos.x, 0, pp.z - opp.pos.z); const dist = d.length(); d.normalize();
@@ -226,10 +226,10 @@ export class MiniGames {
   setup_elfHunt(a) {
     a.limit = 90; a.found = 0; a.label = () => `ELVES ${a.found}/5`;
     const tree = G.house.spots.tree;
-    const spots = [[1.15, 0.9, -4.6], [3.85, 0.93, 5.55], [-3.45, 0.95, 4.2], [-7.19, 0.54, 3.5], [-4.4, 0.02, -0.6], [-3.2, 0.02, 2.5], [5.51, 1.87, 0.1], [0.0, 0.02, 5.6], [2.6, 0.02, -8.0], [tree.x + 0.55, 0.02, tree.z + 0.35], [-2.2, 1.45, -0.1], [-2.5, 0.95, 3.75], [-1.5, 0.02, 5.55], [4.6, 0.02, -7.4]];
+    const spots = [[1.15, 0.9, -4.6, 'on the dining room sideboard'], [3.85, 0.93, 5.55, 'on the kitchen worktop'], [-3.45, 0.95, 4.2, 'on the garage workbench'], [-7.19, 0.54, 3.5, 'on the garage shelf'], [-4.4, 0.02, -0.6, 'by the living room door'], [-3.2, 0.02, 2.5, 'under the stairs'], [5.51, 1.87, 0.1, 'on top of the fridge'], [0.0, 0.02, 5.6, 'by the front door'], [2.6, 0.02, -8.0, 'in the conservatory'], [tree.x + 0.55, 0.02, tree.z + 0.35, 'under the Christmas tree'], [-2.2, 1.45, -0.1, 'up on the living room shelf'], [-2.5, 0.95, 3.75, 'in the bathroom'], [-1.5, 0.02, 5.55, 'behind the toilet door'], [4.6, 0.02, -7.4, 'in the conservatory corner']];
     const chosen = shuffle(spots).slice(0, 5); a.elves = [];
     const halo = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,200,1)'); gr.addColorStop(0.35, 'rgba(140,255,120,0.55)'); gr.addColorStop(1, 'rgba(60,255,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
-    for (const [x, y, z] of chosen) {
+    for (const [x, y, z, where] of chosen) {
       const P = new Prop(); P.cone(0.07, 0.16, '#1f8a3a', 0, 0.08, 0, 0, 0, 0, 12).cyl(0.062, 0.062, 0.02, '#151515', 0, 0.05, 0, 0, 0, 0, 12).box(0.03, 0.022, 0.012, '#ffd700', 0, 0.05, 0.062)
         .sph(0.048, '#f2c9a8', 0, 0.2, 0, 1, 1, 1, 12).sph(0.008, '#222', -0.017, 0.21, 0.042).sph(0.008, '#222', 0.017, 0.21, 0.042).sph(0.01, '#e88', 0, 0.195, 0.048)
         .cone(0.05, 0.13, '#c41e1e', 0, 0.29, -0.01, -0.35, 0, 0, 12).sph(0.016, '#ffd700', 0, 0.35, -0.05).torus(0.046, 0.01, '#f6f6f6', 0, 0.235, 0, Math.PI / 2)
@@ -239,7 +239,7 @@ export class MiniGames {
       const grp = new THREE.Group(); grp.position.set(x, y + 0.03, z); grp.add(m);
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: '#ccff99' })); sp.scale.setScalar(0.75); sp.position.y = 0.18; grp.add(sp);
       const sparks = []; for (let k = 0; k < 6; k++) { const s2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: '#fff6a0' })); s2.scale.setScalar(0.08); grp.add(s2); sparks.push(s2); }
-      grp.rotation.y = Math.random() * 6; G.scene.add(grp); a.elves.push({ grp, m, sp, sparks, x, y, z, ph: Math.random() * 6 });
+      grp.rotation.y = Math.random() * 6; G.scene.add(grp); a.elves.push({ grp, m, sp, sparks, x, y, z, where, ph: Math.random() * 6 });
     }
     G.player.teleport(-2.2, -1.75, 0.67); G.player.pitch = 0;
     this.seatEveryone();
@@ -257,7 +257,14 @@ export class MiniGames {
       }
     }
   }
-  end_elfHunt(a) { for (const e of a.elves || []) G.scene.remove(e.grp); if (a.found < 5) a.score = null; }
+  end_elfHunt(a) {
+    if (a.found >= 5) { for (const e of a.elves || []) G.scene.remove(e.grp); return; }
+    a.score = null; const missed = a.elves.filter(e => !e.found);
+    // show where the ones you missed were: a tall golden beam over each, plus a card listing the spots (they stay up through the leaderboard)
+    a.beams = missed.map(e => { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#ffe680', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); b.position.set(e.x, e.y + 3, e.z); G.scene.add(b); e.sp.scale.setScalar(1.4); return b; });
+    card({ kicker: `TIME'S UP · ${a.found}/5 FOUND`, title: 'THE ONES YOU MISSED', sub: missed.map(e => `🧝 ${e.where}`).join('<br>') + '<br><small>(look for the golden beams)</small>', icon: '🔦', secs: 6, c1: '#2d6a4f', c2: '#0b2a1a' });
+    setTimeout(() => { for (const b of a.beams) G.scene.remove(b); for (const e of a.elves) G.scene.remove(e.grp); }, 13000);
+  }
 
   // ---------- 3. Pass the parcel ----------
   setup_parcel(a) {
@@ -273,12 +280,14 @@ export class MiniGames {
   begin_parcel(a) { this.parcelMusic(a); }
   parcelMusic(a) { if (!a.live) return; a.playing = true; a.tearing = false; playMusic('wewish', true, 0.35); a.passT = 0; a.stopAt = a.t + rand(2.8, 6.5); timer('♪ MUSIC ♪', `PASS THE PARCEL · ${a.layers} LAYERS LEFT`); }
   tick_parcel(a, dt) {
-    if (a.playing) { a.passT += dt; if (a.passT > 0.55) { a.passT = 0; a.holder = (a.holder + 1) % 5; sfx('tap', null, 0.2); }
-      if (a.t > a.stopAt) { a.playing = false; stopMusic(); sfx('click', null, 1);
+    // while the music plays: everyone else passes it on by themselves; when it's in your hands you press PASS
+    if (a.playing && a.holder === 0 && !a.passBtn) { a.passBtn = tapButton('PASS ➜', () => { if (!a.playing || a.holder !== 0) return; a.holder = 1; a.passT = 0; sfx('tap', null, 0.3); a.passBtn?.(); a.passBtn = null; }); }
+    if (a.playing && a.holder !== 0) { a.passT += dt; if (a.passT > 0.55) { a.passT = 0; a.holder = (a.holder + 1) % 5; sfx('tap', null, 0.2); } }
+    if (a.playing) {
+      if (a.t > a.stopAt) { a.playing = false; stopMusic(); sfx('click', null, 1); a.passBtn?.(); a.passBtn = null;
         if (a.holder === 0) { timer('IT\'S YOU!', 'TEAR IT!', true); a.tearing = true; const until = a.t + 2.2; a.tearUntil = until; a.removeBtn = tapButton('TEAR!', () => { if (!a.tearing) return; a.tearing = false; a.removeBtn?.(); this.tore(a, true); }); }
         else { const p = a.people[a.holder - 1]; timer(`${p.name}!`, 'MUSIC STOPPED'); setTimeout(() => this.tore(a, false, p), 1100); } } }
     if (a.tearing && a.t > a.tearUntil) { a.tearing = false; a.removeBtn?.(); G.ui?.toast('Too slow! It goes round again.', 2, { game: true }); G.ai.say('Paul', 'Tear it, then!', 1); setTimeout(() => this.parcelMusic(a), 1200); }
-    if (a.playing && (G.player.controls.btn('use').pressed)) { a.score = Math.max(0, a.score - 1); G.ui?.toast('You tore it while the music was playing! -1', 2, { game: true }); }
   }
   tore(a, mine, p) {
     if (!a.live) return; a.layers--; sfx('rip', a.parcel?.body.translation(), 1);
@@ -288,7 +297,7 @@ export class MiniGames {
       if (mine) a.score += 2; card({ kicker: 'THE PRIZE IS…', title: 'A SATSUMA', sub: mine ? 'All yours. +2' : `${p?.name || 'They'} got it.`, secs: 2.2 }).then(() => this.stop(a)); return; }
     setTimeout(() => this.parcelMusic(a), 1300);
   }
-  end_parcel(a) { a.removeBtn?.(); if (a.parcel?.alive) G.items.remove(a.parcel); stopMusic(); }
+  end_parcel(a) { a.removeBtn?.(); a.passBtn?.(); if (a.parcel?.alive) G.items.remove(a.parcel); stopMusic(); }
 
   // ---------- 4. Stack the Celebrations ----------
   setup_stack(a) { a.limit = 30; this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);

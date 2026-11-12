@@ -140,6 +140,10 @@
   #modeHud .hvcombo { font:900 20px Georgia,serif; color:#ffd700; text-shadow:0 2px 0 #7a1020; animation: pulseT .3s infinite alternate; }
   body.paused #pop, body.paused #toasts, body.paused #subs, body.paused #modeHud, body.paused #bubbles { display:none !important; } /* the pause menu is never covered by pop-ups */
   body.touch #prompt { top:auto; left:14px; bottom:max(6px, env(safe-area-inset-bottom)); transform:none; font-size:12px; max-width:46vw; white-space:normal; padding:3px 8px; } /* phones: the 'what's this' hint sits under the joystick, out of the way */
+  /* mini games: only the buttons that game uses (plus MENU); the cracker pull and the parcel are played with the big on-screen button */
+  body.mg .tbtn:not([data-id=menu]) { display:none !important; }
+  body.mg-sproutPong .tbtn[data-id=throw], body.mg-sumo .tbtn[data-id=punch], body.mg-sumo .tbtn[data-id=throw] { display:flex !important; }
+  body.mg-crackerDuel #stick, body.mg-parcel #stick { display:none !important; }
 </style>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }

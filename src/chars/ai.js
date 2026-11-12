@@ -351,7 +351,7 @@ export class AI {
       const T = clamp(start.distanceTo(target) / 6, 0.35, 0.9);
       const v = target.clone().sub(start).divideScalar(T); v.y += 0.5 * 9.81 * T; v.x += rand(-0.3, 0.3); v.z += rand(-0.3, 0.3);
       inst.body.setLinvel(v, true); inst.thrownBy = 'Mason'; inst.thrownAt = label;
-      sfx('whoosh', start, 0.4); m.say(pick(['DINOSAUR!', 'Wheee!', 'GARY BUM!', 'Catch!']), { prio: 0 });
+      sfx('whoosh', start, 0.4); m.say(pick(['BLUEY!', 'Wheee!', 'GARY BUM!', 'Catch!']), { prio: 0 });
       emit('kidThrow', 'Mason', inst, label);
       setTimeout(() => { m.gesture = null; m.base = 'sitFloor'; }, 600);
     }, 700);

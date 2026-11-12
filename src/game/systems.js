@@ -165,7 +165,7 @@ export class Systems {
   // Hit Chip, Mason or Harrison and their grown-up comes for you: a big red warning, they run over and flatten you.
   protectorComes(who) {
     if (!who || G.time < (this.protectT || 0)) return; const me = G.me;
-    const map = who.isDog || who === G.dog ? { title: 'DON\'T HIT THE DOG!', guard: ['Martin', 'Julie'], icon: '🐶' } : who.name === 'Mason' ? { title: 'DON\'T HIT MASON!', guard: ['Harry', 'Jodie'], icon: '🦖' } : who.name === 'Harrison' ? { title: 'DON\'T HIT HARRISON!', guard: ['Bradley', 'Hollie'], icon: '🧝' } : null;
+    const map = who.isDog || who === G.dog ? { title: 'DON\'T HIT THE DOG!', guard: ['Martin', 'Julie'], icon: '🐶' } : who.name === 'Mason' ? { title: 'DON\'T HIT MASON!', guard: ['Harry', 'Jodie'], icon: '💙' } : who.name === 'Harrison' ? { title: 'DON\'T HIT HARRISON!', guard: ['Bradley', 'Hollie'], icon: '🧝' } : null;
     if (!map) return;
     const g = map.guard.map(n => G.charByName[n]).find(c => c && !c.isPlayer && c !== me && c.state === 'anim'); if (!g || !g.brain) return;
     this.protectT = G.time + 12;
