@@ -97,7 +97,7 @@
     radial-gradient(circle at 58% 58%, #d01020 0 7px, transparent 8px), radial-gradient(circle at 70% 50%, #e01828 0 7px, transparent 8px), radial-gradient(circle at 62% 70%, #b00c18 0 7px, transparent 8px),
     radial-gradient(ellipse 46px 18px at 40% 40%, #1f6a2a 60%, transparent 62%), radial-gradient(ellipse 46px 18px at 78% 28%, #2a7a34 60%, transparent 62%), radial-gradient(ellipse 18px 46px at 30% 76%, #185a24 60%, transparent 62%); }
   .holly.tl { left:-14px; top:-10px; } .holly.tr { right:-14px; top:-10px; transform: scaleX(-1); }
-  @media (max-width: 820px) { .teams, .row3 { grid-template-columns: 1fr; } .homewrap { padding-top:52px; } #cupPanel, #tonight { display:none; } .face { width:46px; } .face img, .face .ph { width:46px; height:46px; } }
+  @media (max-width: 820px) { .teams, .row3 { grid-template-columns: 1fr; } .homewrap { padding-top:52px; } #cupPanel, #tonight { display:none; } .homewrap > .row3 { order:3; } .homewrap > .teams { order:4; } .homewrap > .foot { order:5; } /* phones: PLAY / loading first, the teams underneath */ .face { width:46px; } .face img, .face .ph { width:46px; height:46px; } }
 
   .modes { display:flex; gap:10px; width:min(1100px,100%); overflow-x:auto; padding:4px 2px 8px; scroll-snap-type:x mandatory; }
   .modes { flex-shrink:0; }
@@ -138,6 +138,7 @@
   body.mode-games #subs, body.mode-fling #subs { display:none; } /* no chat over the mini games and the fling */
   #modeHud .hvbar { height:12px; border-radius:6px; background:rgba(0,0,0,.5); border:2px solid #fff; overflow:hidden; margin:4px 0; min-width:180px; } #modeHud .hvbar i { display:block; height:100%; background:linear-gradient(90deg,#ffd700,#ff8a00,#ff2a2a); transition:width .2s; }
   #modeHud .hvcombo { font:900 20px Georgia,serif; color:#ffd700; text-shadow:0 2px 0 #7a1020; animation: pulseT .3s infinite alternate; }
+  body.paused #pop, body.paused #toasts, body.paused #subs, body.paused #modeHud, body.paused #bubbles { display:none !important; } /* the pause menu is never covered by pop-ups */
 </style>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }

@@ -117,17 +117,17 @@ export function tapButton(label, onTap) { ensure(); const tp = { label, onTap };
 // tug-of-war style meters: [{ label, value 0..1, color }]
 export function meters(list) { ensure(); S.meters = list ? list.map(x => ({ ...x })) : null; bump(); const m = root.querySelector('#popMeters'); if (!list) { m.style.display = 'none'; return; } m.style.display = 'block'; m.innerHTML = list.map(x => `<div>${esc(x.label)}<div class="m"><i style="width:${Math.round(Math.min(1, x.value) * 100)}%;background:${x.color || '#ffd700'}"></i></div></div>`).join(''); }
 // the quiz question card with big tap answers
-let qEl = null; let qMin = false; try { qMin = localStorage.getItem('qMin') === '1'; } catch (e) { /* private mode */ }
+let qEl = null; let qMin = false; // each new question starts full size
 export function questionCard(q, n, total, onPick, selected) {
   ensure(); S.q = q ? { q: q.q, opts: q.opts, round: q.round, n, total, selected, frac: S.q?.q === q.q ? S.q.frac : 1 } : null; bump();
   if (!q) { if (qEl) { const e = qEl; qEl = null; e.classList.remove('in'); setTimeout(() => e.remove(), 400); } return; }
   const cols = ['#c1121f', '#1d6fd8', '#d39b00', '#2d8a4f'];
-  if (!qEl || qEl.dataset.q !== q.q) { if (qEl) qEl.remove(); qEl = document.createElement('div'); qEl.className = 'qcard'; qEl.dataset.q = q.q;
+  if (!qEl || qEl.dataset.q !== q.q) { if (qEl) qEl.remove(); qMin = false; qEl = document.createElement('div'); qEl.className = 'qcard'; qEl.dataset.q = q.q;
     qEl.innerHTML = `<div class="qn">QUESTION ${n} OF ${total}${q.round ? ' · ' + esc(String(q.round).toUpperCase()) : ''}</div><div class="qq">${esc(q.q)}</div><button class="qmin" aria-label="Minimise question">${qMin ? '▴' : '▾'}</button><div class="opts">${q.opts.map((o, i) => `<button data-i="${i}" style="background:${cols[i]};animation-delay:${0.1 + i * 0.08}s"><b>${'ABCD'[i]}</b><span>${esc(o)}</span></button>`).join('')}</div><div class="qt"><i></i></div>`;
     qEl.querySelectorAll('.opts button').forEach(b => b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onPick(+b.dataset.i); }));
     // minimise: just the question number, A-D buttons and the time bar, so you can see the room
     const mb = qEl.querySelector('.qmin'); const el = qEl; el.classList.toggle('min', qMin);
-    mb.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); qMin = !qMin; el.classList.toggle('min', qMin); mb.textContent = qMin ? '▴' : '▾'; try { localStorage.setItem('qMin', qMin ? '1' : '0'); } catch (err) { /* private mode */ } });
+    mb.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); qMin = !qMin; el.classList.toggle('min', qMin); mb.textContent = qMin ? '▴' : '▾'; });
     root.appendChild(qEl); requestAnimationFrame(() => el.classList.add('in')); }
   qEl.querySelectorAll('.opts button').forEach(b => b.classList.toggle('sel', +b.dataset.i === selected));
   return qEl;
