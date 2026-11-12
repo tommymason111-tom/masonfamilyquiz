@@ -384,6 +384,7 @@ export class Person {
         case 'toast': E(5, -2.4, 0, -0.2); E(6, -0.6); E(2, -0.15); break;
         case 'selfie': E(5, -2.0, 0.6, -0.5); E(6, -0.4); E(2, -0.1, 0.25); break;
         case 'sumo': { const sw = Math.sin(t * 2.4) * 0.06; E(7, -0.75, 0, 0.42); E(9, -0.75, 0, -0.42); E(8, 1.05); E(10, 1.05); E(1, 0.32 + sw, 0, sw); E(2, -0.25); E(3, -1.25 + sw, 0, 0.35); E(5, -1.25 - sw, 0, -0.35); E(4, -0.45); E(6, -0.45); rootY -= 0.13 * H; break; } // low wide sumo stance, arms out
+        case 'shove': { const k = Math.min(1, gt / 0.18); E(3, -1.5 * k, 0, 0.12); E(5, -1.5 * k, 0, -0.12); E(4, -0.1); E(6, -0.1); E(1, 0.25 * k); E(7, -0.55); E(9, -0.2); E(8, 0.6); E(10, 0.5); rootY -= 0.08 * H; break; } // two-handed sumo shove
         case 'hips': E(3, -0.2, 0, 0.55); E(5, -0.2, 0, -0.55); E(4, -1.5, 0.9); E(6, -1.5, -0.9); break;
       }
     } else if (talking && b !== 'sleep') {

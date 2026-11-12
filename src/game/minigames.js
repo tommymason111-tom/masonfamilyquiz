@@ -58,7 +58,8 @@ export class MiniGames {
     await new Promise(res => { a.done = res; });
     this.active = null; timer(null); meters(null); stopMusic(); this['end_' + def.id]?.(a);
     // leaderboard: you vs the other teams (theirs are made up, obviously)
-    const mine = this.me(); let rows = TEAM_IDS.map(t => ({ team: t, name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: t === mine ? a.score : def.other() }));
+    const mine = this.me(); const skills = shuffle([rand(0.9, 1.2), rand(0.65, 1.0), rand(0.35, 0.8)]); let si = 0; // one team close to you (sometimes just ahead), the others behind; different every game
+    let rows = TEAM_IDS.map(t => ({ team: t, name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: t === mine ? a.score : this.rival(def, a.score, skills[si++ % 3]) }));
     // times (lower is better, DNF last) are shown as text and ranked by a sort key
     if (def.lowerBetter) rows = rows.map(r => ({ ...r, raw: r.score, display: r.score == null ? 'DNF' : `${r.score}s`, score: r.score == null ? -9999 : -r.score }));
     const order = rows.slice().sort((x, y) => y.score - x.score); order.forEach((r, k) => { const pts = [3, 2, 1, 0][k]; this.total[r.team] = (this.total[r.team] || 0) + pts; if (q) q.bonus[r.team] += pts; });
@@ -66,6 +67,10 @@ export class MiniGames {
     await board({ kicker: `GAME ${ORDINAL[i]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +3 points' : `${order[0].name} win this one.`, secs: 5.5 });
     this.release(); this.tidy(a);
     return a.score;
+  }
+  rival(def, mine, skill) {
+    if (def.lowerBetter) { if (mine == null) return Math.random() < 0.5 ? null : Math.round(rand(70, 89)); const t = Math.round(mine / skill + rand(-3, 4)); return t > 90 ? null : Math.max(20, t); }
+    if (!mine) return Math.random() < 0.6 ? 0 : def.other(); return Math.max(0, Math.round(mine * skill + rand(-0.8, 0.8)));
   }
   overall() { const mine = this.me(); return TEAM_IDS.map(t => ({ name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: this.total[t] || 0 })); }
   tidy(a) { setTimeout(() => { for (const it of G.items.instances.slice()) if (!it.held && ['sprout', 'celebration', 'present_s', 'present_m', 'paper_ball', 'cracker', 'paper_crown', 'satsuma'].includes(it.id) && it.mg) G.items.remove(it); }, 1500); }
@@ -110,7 +115,7 @@ export class MiniGames {
   // you stand on one spot in the dining room; each opponent appears straight in front of you, the camera locks on them
   // and you can't walk off until the cracker goes bang; then the next one steps up
   setup_crackerDuel(a) {
-    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2];
+    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.22, 0.28), rand(0.3, 0.36), rand(0.38, 0.46)]); // a weak one, a decent one and a strong one, in a random order
     G.player.teleport(a.spot[0], a.spot[1], -Math.PI / 2); G.player.pitch = -0.08;
     this.park(a.opps, [[3.9, -4.7], [3.5, -5.1], [3.1, -5.3]], a.spot);
     this.diningCrowd(a.opps, a.spot);
@@ -125,12 +130,13 @@ export class MiniGames {
     const c = this.spawn('cracker', opp.handPos('R', new THREE.Vector3())); a.cracker = c;
     if (c) { c.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); c.attached = (out, q) => { const hp = opp.handPos('R', new THREE.Vector3()); const pp = G.player.headPos(new THREE.Vector3()).add(G.player.forward(new THREE.Vector3()).multiplyScalar(0.45)); pp.y -= 0.35; out.copy(hp).lerp(pp, 0.5); q.setFromEuler(new THREE.Euler(0, Math.atan2(pp.x - hp.x, pp.z - hp.z) + Math.PI / 2, 0)); return out; }; }
     opp.say(pick(['Come on then!', 'Pull it!', 'I always win these.', 'Ready?']), { prio: 1 });
-    card({ kicker: `DUEL ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = rand(0.28, 0.42); a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.075; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
+    card({ kicker: `DUEL ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = a.skills[a.round] ?? rand(0.28, 0.42); a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.075; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
   }
   tick_crackerDuel(a, dt) {
     if (!a.duelOn) { meters(null); return; }
     if (G.player.controls.btn('use').pressed || G.player.controls.btn('punch').pressed || G.player.controls.btn('jump').pressed) a.me += 0.075;
-    a.them += a.rate * dt * (0.7 + Math.random() * 0.6);
+    const gap = a.me - a.them; const band = gap > 0.18 ? 1.45 : gap < -0.25 ? 0.7 : 1; // they dig in when you pull ahead, ease off when you're well behind: it stays close
+    a.them += a.rate * band * dt * (0.7 + Math.random() * 0.6);
     meters([{ label: 'You', value: a.me, color: TEAMS[this.me()].color }, { label: a.opp.name, value: a.them, color: '#ffffff' }]);
     if (a.me >= 1 || a.them >= 1) {
       const win = a.me >= 1; a.duelOn = false; a.removeBtn?.(); meters(null);
@@ -166,10 +172,10 @@ export class MiniGames {
   begin_sumo(a) { this.nextBout(a); }
   nextBout(a) {
     const R = a.ring; if (a.round >= a.opps.length) return this.stop(a);
-    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4);
+    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.7, 0.85), rand(0.9, 1.05), rand(1.1, 1.3)]))[a.round]; // each opponent has their own strength
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2);
     this.place(opp, R.x + 0.75, R.z, [R.x - 0.75, R.z]); opp.gesture = 'sumo'; opp.sumoReady = false;
-    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.11)); sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
+    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.11) / (a.str || 1)); sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
       const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.pos.addScaledVector(d, 0.06); opp.gestureT = 0; };
     card({ kicker: `BOUT ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
   }
@@ -181,12 +187,20 @@ export class MiniGames {
     if (opp.state === 'anim' && opp.sumo) {
       const pp = G.player.pos; const d = new THREE.Vector3(pp.x - opp.pos.x, 0, pp.z - opp.pos.z); const dist = d.length(); d.normalize();
       opp.yaw = Math.atan2(d.x, d.z); a.lunge -= dt;
-      if (a.lunge < 0) { a.lunge = rand(1.2, 2.2) * (1 + a.meter); if (dist > 0.7) opp.pos.addScaledVector(d, Math.min(0.3, dist - 0.65)); else if (a.meter < 0.5) { const np = pp.clone().addScaledVector(d, 0.35); G.player.teleport(np.x, np.z, G.player.yaw); sfx('thud', pp, 0.8); G.ui?.toast('SHOVED!', 0.8, { game: true }); } }
+      if (a.lunge < 0) { a.lunge = rand(1.0, 1.9) * (1 + a.meter * 0.8) / a.str;
+        if (dist > 0.85) opp.pos.addScaledVector(d, Math.min(0.32, dist - 0.75)); // close the gap
+        else { // they hit you back: a big two-handed shove that knocks you towards the edge
+          opp.gesture = 'shove'; opp.gestureT = 0; setTimeout(() => { if (opp.gesture === 'shove') opp.gesture = 'sumo'; }, 450);
+          const push = (0.22 + Math.random() * 0.18) * a.str * (1 - a.meter * 0.5); const np = pp.clone().addScaledVector(d, push); G.player.teleport(np.x, np.z, G.player.yaw);
+          sfx('boff', pp, 0.9); sfx('oof', pp, 0.6); if (G.fx) G.fx.shake = Math.max(G.fx.shake, 0.02); G.player.fp?.punch?.('L');
+          try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(0.8, 120); } catch (e) { /* no haptics */ }
+          G.ui?.toast(pick(['SHOVED!', 'OOF!', 'They hit back!', 'WHACK!']), 0.8, { game: true }); } }
       const pr = Math.hypot(G.player.pos.x - R.x, G.player.pos.z - R.z); if (pr > R.r + 0.1) return this.boutOver(a, false, "You're out of the ring!");
       // keep them on the sand until they're beaten
       const or = Math.hypot(opp.pos.x - R.x, opp.pos.z - R.z); if (or > R.r - 0.15) { opp.pos.x = R.x + (opp.pos.x - R.x) * (R.r - 0.15) / or; opp.pos.z = R.z + (opp.pos.z - R.z) * (R.r - 0.15) / or; }
     }
-    meters([{ label: `${opp.name} · WOBBLE`, value: a.meter, color: a.meter > 0.8 ? '#ff4d4d' : '#ffd700' }]);
+    const edge = clamp(Math.hypot(G.player.pos.x - R.x, G.player.pos.z - R.z) / R.r, 0, 1);
+    meters([{ label: `${opp.name} · WOBBLE`, value: a.meter, color: a.meter > 0.8 ? '#ff4d4d' : '#ffd700' }, { label: edge > 0.75 ? 'YOU · NEARLY OUT!' : 'YOU · DISTANCE TO THE EDGE', value: edge, color: edge > 0.75 ? '#ff4d4d' : edge > 0.5 ? '#ffb020' : '#3bd16f' }]);
     if (a.meter >= 1 && !opp.sumoReady) {
       if (G.xr) { opp.sumoReady = true; G.ui?.toast('OFF BALANCE! GRAB THEM AND THROW THEM OUT!', 2.5, { game: true }); sfx('whistle', null, 0.6); }
       else { opp.sumoReady = true; const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.sumo = null; opp.knock(d.multiplyScalar(opp.mass * 7).setY(opp.mass * 3.2), 1, { force: true }); sfx('bigthud', opp.pos, 1); }
