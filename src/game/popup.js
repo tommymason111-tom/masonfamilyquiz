@@ -76,6 +76,12 @@ function ensure() {
   #pop .splash b { display:block; font:900 clamp(40px,13vw,80px) Impact,"Arial Black",Georgia,sans-serif; background:linear-gradient(180deg,#fff7b0,#ffd700 40%,#ff8a00); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:2px #5a0812; filter:drop-shadow(0 5px 0 #5a0812) drop-shadow(0 0 18px rgba(255,200,0,.8)); }
   #pop .splash small { display:block; font:900 18px system-ui; color:#fff; letter-spacing:.2em; text-shadow:0 2px 4px #000; }
   @keyframes splashIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-12deg); } 25% { opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(4deg); } 40% { transform:translate(-50%,-50%) scale(1) rotate(0); } 80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-110%) scale(.9); } }
+  #pop .banner { position:absolute; left:50%; top:max(96px,13vh); width:min(84vw,400px); transform:translate(-50%,-30px) scale(.8); opacity:0; border-radius:18px; padding:10px 14px 12px; text-align:center; color:#fff;
+    background:linear-gradient(180deg,var(--c1,#e01020),var(--c2,#5a0006)); border:3px solid #ffd700; box-shadow:0 10px 30px rgba(0,0,0,.5); transition: transform .35s cubic-bezier(.2,1.6,.4,1), opacity .25s; }
+  #pop .banner.in { transform:translate(-50%,0) scale(1); opacity:1; animation: bannerShake .5s .35s; } #pop .banner.out { opacity:0; transform:translate(-50%,-20px) scale(.9); }
+  #pop .banner .bk { font:900 12px system-ui; letter-spacing:.3em; color:#ffd700; } #pop .banner .bt { font:900 clamp(22px,7vw,32px)/1.05 Georgia,serif; margin:4px 0; text-shadow:0 3px 0 rgba(0,0,0,.4); } #pop .banner .bs { font:700 14px system-ui; opacity:.95; }
+  #pop .banner .bi { font-size:30px; line-height:1; }
+  @keyframes bannerShake { 0%,100% { margin-left:0; } 20% { margin-left:-8px; } 40% { margin-left:8px; } 60% { margin-left:-5px; } 80% { margin-left:4px; } }
   @keyframes popBounce { from { transform:translateY(0) rotate(-6deg); } to { transform:translateY(-8px) rotate(6deg); } }
   @keyframes rowIn { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
   @keyframes pulseT { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.07); } }
@@ -104,6 +110,14 @@ export function havoc(who = '', line = '', emojis = ['💥']) {
 // a quick big word that bursts on screen and floats away (GET IN!)
 export function splash(word, small = '') { ensure(); const el = document.createElement('div'); el.className = 'splash'; el.innerHTML = `<b>${esc(word)}</b>${small ? `<small>${esc(small)}</small>` : ''}`; root.appendChild(el); setTimeout(() => el.remove(), 1350);
   const rec = { kicker: small, title: word, sub: '', icon: '🎉', secs: 1.2, c1: '#2d8a4f', c2: '#0e3a20', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump(); setTimeout(() => { S.cards = S.cards.filter(c => c !== rec); bump(); }, 1250); }
+// a compact banner near the top (warnings, "what just happened"); resolves when it has gone
+export function banner({ kicker = '', title = '', sub = '', icon = '', secs = 2.8, c1, c2 } = {}) {
+  ensure(); const el = document.createElement('div'); el.className = 'banner'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
+  el.innerHTML = `${icon ? `<div class="bi">${icon}</div>` : ''}<div class="bk">${esc(kicker)}</div><div class="bt">${esc(title)}</div>${sub ? `<div class="bs">${esc(sub)}</div>` : ''}`; root.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('in'));
+  const rec = { kicker, title, sub, icon, secs, c1: c1 || '#e01020', c2: c2 || '#5a0006', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump();
+  return new Promise(res => setTimeout(() => { el.classList.replace('in', 'out'); setTimeout(() => { el.remove(); S.cards = S.cards.filter(c => c !== rec); bump(); res(); }, 300); }, secs * 1000));
+}
 // a big animated card; resolves when it has gone
 export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2, _rows = null, _unit = '', _footer = '' } = {}) {
   ensure(); const rec = { kicker, title, sub: _rows ? '' : plain(sub), icon, secs, c1: c1 || '#b3122a', c2: c2 || '#4a0a14', rows: _rows, unit: _unit, footer: plain(_footer), t0: performance.now() }; S.cards.push(rec); bump(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
@@ -141,4 +155,4 @@ export function questionCard(q, n, total, onPick, selected) {
 }
 export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
 export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); S.cards = []; S.tap = null; bump(); }
-G.popup = { havoc, splash, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };
+G.popup = { havoc, splash, banner, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };

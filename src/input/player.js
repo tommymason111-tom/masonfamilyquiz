@@ -40,7 +40,7 @@ export class Player {
     const d = new THREE.Vector3(this.pos.x - from.x, 0, this.pos.z - from.z); if (d.lengthSq() < 1e-4) d.set(0, 0, 1); d.normalize();
     this.releaseAll?.(); sfx('bigthud', this.pos, 1); sfx('oof', this.pos, 0.9);
     if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8, this.yaw); G.ui?.toast('KNOCKED FLAT!', 2, { game: true }); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
-    this.downT = 2.8; this.downPush = d.multiplyScalar(0.9); G.fx?.shake && (G.fx.shake = 0.03);
+    this.downT = 4.2; this.downPush = d.multiplyScalar(0.9); G.fx?.shake && (G.fx.shake = 0.03);
   }
   forward(out = new THREE.Vector3()) { return G.camera.getWorldDirection(out); }
 
@@ -75,7 +75,7 @@ export class Player {
     if (G.ui?.modalOpen) { c.look.x = c.look.y = 0; }
     this.yaw -= c.look.x; this.pitch = clamp(this.pitch - c.look.y, -1.45, 1.45);
     // knocked flat by an angry relative: thrown back, the view drops to the floor and rolls, then you get back up
-    if (this.downT > 0) { this.downT -= dt; const tt = 2.8 - this.downT; if (tt < 0.35 && this.downPush) { this.moveBy(this.downPush.x * dt / 0.35, 0, this.downPush.z * dt / 0.35); } c.move.x = c.move.z = 0; c.look.x = c.look.y = 0; c.btn('jump').pressed = false;
+    if (this.downT > 0) { this.downT -= dt; const tt = 4.2 - this.downT; if (tt < 0.35 && this.downPush) { this.moveBy(this.downPush.x * dt / 0.35, 0, this.downPush.z * dt / 0.35); } c.move.x = c.move.z = 0; c.look.x = c.look.y = 0; c.btn('jump').pressed = false;
       this.downK = tt < 0.35 ? tt / 0.35 : this.downT < 0.8 ? Math.max(0, this.downT / 0.8) : 1; } else this.downK = 0;
     // locked on someone (cracker pull): can't walk, the camera stays on them
     if (this.lockAt) { const t = typeof this.lockAt === 'function' ? this.lockAt() : this.lockAt; if (t) { const h = this.headPos(_v); const dx = t.x - h.x, dz = t.z - h.z; this.yaw = Math.atan2(-dx, -dz); this.pitch = clamp(Math.atan2(t.y - h.y, Math.hypot(dx, dz)), -0.8, 0.6); } c.move.x = c.move.z = 0; c.btn('jump').pressed = false; }

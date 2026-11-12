@@ -165,30 +165,35 @@ export class Systems {
   // Hit Chip, Mason or Harrison and their grown-up comes for you: a big red warning, they run over and flatten you.
   protectorComes(who) {
     if (!who || G.time < (this.protectT || 0)) return; const me = G.me;
+    const little = (c) => c && (c === G.dog || c.isDog || c.name === 'Mason' || c.name === 'Harrison');
+    if (little(me) && little(who)) return; // Chip, Mason and Harrison squabbling among themselves: nobody comes
     const map = who.isDog || who === G.dog ? { title: 'DON\'T HIT THE DOG!', guard: ['Martin', 'Julie'], icon: '🐶' } : who.name === 'Mason' ? { title: 'DON\'T HIT MASON!', guard: ['Harry', 'Jodie'], icon: '💙' } : who.name === 'Harrison' ? { title: 'DON\'T HIT HARRISON!', guard: ['Bradley', 'Hollie'], icon: '🧝' } : null;
     if (!map) return;
     const g = map.guard.map(n => G.charByName[n]).find(c => c && !c.isPlayer && c !== me && c.state === 'anim'); if (!g || !g.brain) return;
     this.protectT = G.time + 12;
     if (who.isDog || who === G.dog) { who.state = 'sit'; who.timer = 3; sfx('whine', who.pos, 0.8); } else { who.say?.('WAAAH!', { prio: 2 }); who.setMood?.('shock', 2); }
     sfx('drum', null, 0.8);
-    G.popup?.card({ kicker: '⚠️ WARNING ⚠️', title: map.title, sub: `${g.name} is coming to get you…`, icon: map.icon, secs: 2.8, c1: '#e01020', c2: '#3a0006' });
-    g.say(pick([`Oi! ${G.me?.name || 'You'}!`, 'RIGHT. That\'s it.', 'Did you just…?!', 'Come here, you!']), { prio: 2 }); g.setMood?.('angry', 6);
-    const b = g.brain; b.state = 'chase'; b.path = null; g.gesture = null; g.lookTarget = null;
-    const t0 = G.time; let lastPath = -9;
+    g.say(pick([`Oi! ${G.me?.name || 'You'}!`, 'RIGHT. That\'s it.', 'Did you just…?!', 'Come here, you!']), { prio: 2 }); g.setMood?.('angry', 8);
+    // first the warning (they stop and glare at you), and only once it's gone do they come for you
+    const b = g.brain; b.state = 'scripted'; b.timer = 99; b.path = null; g.base = 'stand'; g.gesture = 'point'; g.lookTarget = G.player.headPos(new THREE.Vector3());
+    const warned = G.popup?.banner({ kicker: '⚠️ WARNING ⚠️', title: map.title, sub: `${g.name} is coming to get you…`, icon: map.icon, secs: 2.8 }) || Promise.resolve();
+    const why = who.isDog || who === G.dog ? 'That\'s what you get for hitting the dog.' : who.name === 'Mason' ? 'Nobody touches Mason on Harry\'s watch.' : 'Bradley does not mess about where Harrison\'s concerned.';
+    let t0 = 0, lastPath = -9;
     const chase = (dt) => {
       if (b.state !== 'chase' && b.state !== 'walk' && b.state !== 'idle') return true; // knocked down or busy: give up
-      if (g.state !== 'anim' || G.time - t0 > 14) { b.state = 'idle'; G.ai?.goHome(b); return true; }
+      if (g.state !== 'anim' || G.time - t0 > 18) { b.state = 'idle'; G.ai?.goHome(b); return true; }
       const pp = G.player.pos; const d = Math.hypot(pp.x - g.pos.x, pp.z - g.pos.z);
       if (d < 0.95) { // shove
         g.yaw = Math.atan2(pp.x - g.pos.x, pp.z - g.pos.z); g.base = 'stand'; g.gesture = 'argue'; g.gestureT = 0; b.state = 'scripted'; b.timer = 3; b.path = null;
         setTimeout(() => { g.gesture = 'point'; }, 350); G.player.knockDown(g.pos); G.fx?.hit?.(G.player.headPos(new THREE.Vector3()), 'punch', 1.2);
+        setTimeout(() => G.popup?.banner({ kicker: 'WHAT JUST HAPPENED', title: `${g.name.toUpperCase()} FLATTENED YOU`, sub: why, icon: '💥', secs: 3, c1: '#3a3a4a', c2: '#14141c' }), 700);
         g.say(pick(['And STAY down.', who.isDog || who === G.dog ? 'Nobody touches the dog.' : 'Leave him alone!', 'Let that be a lesson.']), { prio: 2 });
         setTimeout(() => { g.gesture = null; if (b.state === 'scripted') { b.state = 'idle'; G.ai?.goHome(b); } }, 3200); return true; }
       if (G.time - lastPath > 0.8) { lastPath = G.time; G.ai?.goTo(b, new THREE.Vector3(pp.x, 0, pp.z), null, 3.6); b.state = 'walk'; }
       return false;
     };
     const up = (dt) => { if (chase(dt)) { const k = G.updaters.indexOf(up); if (k >= 0) G.updaters.splice(k, 1); } };
-    setTimeout(() => G.updaters.push(up), 600);
+    warned.then(() => { t0 = G.time; g.lookTarget = null; g.gesture = null; b.state = 'chase'; G.updaters.push(up); });
   }
   harrisonLaugh() {
     const h = G.charByName.Harrison; if (!h) return; h.setMood('laugh', 3); h.say('Hehehehe!', { prio: 0 });
