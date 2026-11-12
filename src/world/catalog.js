@@ -330,6 +330,7 @@ export function buildHinged() {
     for (const y of shelves) staticBox(cx, y, cz + s * 0.03, w / 2 - 0.04, 0.006, d / 2 - 0.05);
     const light = new THREE.PointLight('#e8f4ff', 0, 1.6, 2); light.position.set(cx, h * 0.8, cz + s * 0.05); G.scene.add(light);
     const dg = new Prop().rbox(w, h, 0.06, 0.02, color).box(0.03, h * 0.5, 0.04, '#999', -(w / 2 - 0.08), 0.1, s * 0.05); // handle on the left (opening) edge
+    if (name === 'Kitchen fridge') dg.box(0.21, 0.28, 0.004, '#ffffff', -0.16, 0.575, s * 0.033, 0, 0, 0.05).box(0.15, 0.1, 0.005, '#e63946', -0.17, 0.6, s * 0.035).box(0.21, 0.28, 0.004, '#fff8e0', 0.19, 0.525, s * 0.033, 0, 0, -0.08).box(0.12, 0.12, 0.005, '#3a86ff', 0.2, 0.55, s * 0.035); // Mason's drawings, stuck on the door
     for (let i = 0; i < 3; i++) dg.box(w - 0.12, 0.02, 0.1, '#e8eef2', 0, -h * 0.3 + i * h * 0.3, -s * 0.08).box(w - 0.12, 0.08, 0.01, '#e8eef2', 0, -h * 0.27 + i * h * 0.3, -s * 0.13);
     const hingeX = cx + w / 2; // hinged on the right, so it swings open left-to-right, clear of the cupboard beside it
     const door = hinge({ name, size: [w, h, 0.06], center: V(cx, h / 2, frontZ + s * 0.035), hinge: V(hingeX, h / 2, frontZ + s * 0.035), axis: { x: 0, y: 1, z: 0 }, limits: s > 0 ? [-0.02, 1.6] : [-1.6, 0.02], mass: 8, geo: dg.build(), kind: 'fridge' });

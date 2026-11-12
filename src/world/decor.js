@@ -134,7 +134,7 @@ export function buildDecor(P, add, M, solid, H) {
   const krx = (KX(1148) + KX(1212)) / 2;
   P.cyl(0.004, 0.004, 0.3, '#222', 3.9, 2.35, 2.6).cyl(0.3, 0.3, 0.06, '#f4f4f4', 3.9, 2.2, 2.6, 0, 0, 0, 20); glow.cyl(0.26, 0.26, 0.005, '#fff3d0', 3.9, 2.165, 2.6);
   for (const x of [3.5, 4.0, 4.5]) { P.cyl(0.004, 0.004, 0.75, '#222', x, 2.12, 0.2).cone(0.12, 0.16, '#1a1a1a', x, 1.7, 0.2, Math.PI, 0, 0, 16); glow.sph(0.03, '#fff3d0', x, 1.65, 0.2); } // pendants over the breakfast bar
-  P.box(0.21, 0.28, 0.003, '#ffffff', 5.35, 1.5, 0.48, 0, 0, 0.05).box(0.21, 0.28, 0.003, '#fff8e0', 5.7, 1.45, 0.48, 0, 0, -0.08); // Mason's drawings on the fridge
+  // (Mason's drawings are on the fridge door itself, see catalog.js, so they swing open with it)
   P.cyl(0.05, 0.045, 0.14, '#e8e0d0', krx + 0.15, 0.98, 2.2).cyl(0.004, 0.004, 0.25, '#c8a070', krx + 0.13, 1.08, 2.19, 0.1).cyl(0.004, 0.004, 0.25, '#888', krx + 0.17, 1.08, 2.21, -0.1);
   P.box(0.14, 0.22, 0.1, '#3a2216', krx + 0.15, 1.02, 1.85, 0, 0, 0.2); for (let i = 0; i < 5; i++) P.box(0.015, 0.08, 0.015, '#222', krx + 0.12 + Math.floor(i / 3) * 0.03, 1.16, 1.82 + (i % 3) * 0.02);
   for (let r2 = 0; r2 < 2; r2++) for (let c = 0; c < 4; c++) P.cyl(0.035, 0.035, 0.11, pick(['#2a0a12', '#1f4a2a', '#c8d890']), 4.25 + c * 0.1, 1.0 + r2 * 0.12, 5.86, Math.PI / 2, 0, 0, 10);
