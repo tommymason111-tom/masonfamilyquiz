@@ -184,6 +184,11 @@ export function buildFromModel(spec, model) {
     if (limbSeam) { const w1 = 0.5 * (1 - gap / 0.12); si[i * 4 + 1] = b1; sw[i * 4] = 1 - w1; sw[i * 4 + 1] = w1; }
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  // legs are separate: drop the triangles that join the left leg to the right leg (dresses and skirts in the scans
+  // bridge the legs, which stretched into a jelly web whenever the legs moved apart)
+  if (geo.index) { const I = geo.index.array, keep = []; const L = (b) => b === 7 || b === 8, R = (b) => b === 9 || b === 10;
+    for (let t = 0; t < I.length; t += 3) { const a = si[I[t] * 4], b2 = si[I[t + 1] * 4], c = si[I[t + 2] * 4]; if ((L(a) || L(b2) || L(c)) && (R(a) || R(b2) || R(c))) continue; keep.push(I[t], I[t + 1], I[t + 2]); }
+    geo.setIndex(keep); }
   // ---- skeleton (flat part bones like the procedural rig; extra face bones kept for compatibility) ----
   const root = new THREE.Group(); root.name = spec.name;
   const bones = BONES.map((nm) => { const b = new THREE.Bone(); b.name = nm; return b; });

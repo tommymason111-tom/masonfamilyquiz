@@ -10,6 +10,7 @@ import { startFlow } from './flow.js';
 import { dressGaryFor } from '../chars/people.js';
 import { setAvatar } from './avatar.js';
 import './popup.js';
+import { initVRHud } from './vrhud.js';
 import { initAudio, resumeAudio, sfx, unlockSpeech, voiceAvailable } from '../engine/audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -25,7 +26,7 @@ const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top
   { id: 'crouch', icon: '⬇️', label: 'CROUCH', pos: { right: 128, bottom: 116 } },
   { id: 'jump', icon: '⬆️', label: 'JUMP', pos: { right: 34, bottom: 136 } },
 ];
-export function initUI() { new UI(); new Ceremony(); }
+export function initUI() { new UI(); new Ceremony(); initVRHud(); }
 
 class UI {
   constructor() {

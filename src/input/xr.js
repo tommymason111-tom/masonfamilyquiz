@@ -180,6 +180,7 @@ export class XRInput {
   }
   onPinch(rec, head) {
     const p = this.player;
+    if (G.popup?.S?.tap) { G.popup.S.tap.onTap(); return; } // PULL! / TEAR! in the headset: pull the trigger
     // pinch an item held in the other hand = use it (pull cracker, open can, click pen)
     const held = p.heldItem(rec.key) || p.heldItem(rec.key === 'L' ? 'R' : 'L');
     const near = this.findGrab(rec.tip, 0.07);

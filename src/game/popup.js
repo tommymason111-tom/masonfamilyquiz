@@ -3,6 +3,10 @@
 import { G } from '../core.js';
 
 let root = null;
+// what's on screen, kept as plain data too so the headset panel (vrhud.js) can draw the same pop-ups
+export const S = { cards: [], timer: null, meters: null, q: null, tap: null, v: 0 };
+const bump = () => { S.v++; };
+const plain = (h) => String(h || '').replace(/<(br|\/div|\/p)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 function ensure() {
   if (root) return root;
   const st = document.createElement('style');
@@ -47,28 +51,29 @@ function ensure() {
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 // a big animated card; resolves when it has gone
-export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2 } = {}) {
-  ensure(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
+export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2, _rows = null, _unit = '', _footer = '' } = {}) {
+  ensure(); const rec = { kicker, title, sub: _rows ? '' : plain(sub), icon, secs, c1: c1 || '#b3122a', c2: c2 || '#4a0a14', rows: _rows, unit: _unit, footer: plain(_footer), t0: performance.now() }; S.cards.push(rec); bump(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
   el.innerHTML = `${icon ? `<div class="icon">${icon}</div>` : ''}<div class="kick">${esc(kicker)}</div><div class="title">${esc(title)}</div><div class="sub">${sub}</div><div class="bar"><i></i></div>`;
   root.appendChild(el); const bar = el.querySelector('.bar i'); bar.style.transition = `transform ${secs}s linear`;
   requestAnimationFrame(() => { el.classList.add('in'); requestAnimationFrame(() => { bar.style.transform = 'scaleX(0)'; }); });
-  return new Promise(res => setTimeout(() => { el.classList.replace('in', 'out'); setTimeout(() => { el.remove(); res(); }, 380); }, secs * 1000));
+  return new Promise(res => setTimeout(() => { el.classList.replace('in', 'out'); setTimeout(() => { el.remove(); S.cards = S.cards.filter(c => c !== rec); bump(); res(); }, 380); }, secs * 1000));
 }
 // leaderboard card: rows [{ name, score, color, me }]
 export function board({ kicker = '', title = '', rows = [], footer = '', secs = 5, unit = '' } = {}) {
   const sorted = rows.slice().sort((a, b) => b.score - a.score);
   const html = `<table class="board">${sorted.map((r, i) => `<tr class="${r.me ? 'me' : ''}" style="animation-delay:${0.15 + i * 0.12}s"><td class="rank">${['🥇', '🥈', '🥉', '4th', '5th'][i] || i + 1}</td><td><span class="sw" style="background:${r.color}"></span>${esc(r.name)}${r.me ? ' (you)' : ''}</td><td>${r.score}${unit}</td></tr>`).join('')}</table>${footer ? `<div class="sub" style="margin-top:10px">${footer}</div>` : ''}`;
-  return card({ kicker, title, sub: html, secs, c1: '#1d3557', c2: '#0b1426' });
+  return card({ kicker, title, sub: html, secs, c1: '#1d3557', c2: '#0b1426', _rows: sorted, _unit: unit, _footer: footer });
 }
-export function timer(text, label = '', urgent = false) { ensure(); const t = root.querySelector('#popTimer'); if (text == null) { t.style.display = 'none'; return; } t.style.display = 'block'; t.innerHTML = `${label ? `<small>${esc(label)}</small>` : ''}${esc(text)}`; t.classList.toggle('urgent', urgent); }
+export function timer(text, label = '', urgent = false) { ensure(); const nt = text == null ? null : { text: String(text), label, urgent }; if (JSON.stringify(nt) !== JSON.stringify(S.timer)) { S.timer = nt; bump(); } const t = root.querySelector('#popTimer'); if (text == null) { t.style.display = 'none'; return; } t.style.display = 'block'; t.innerHTML = `${label ? `<small>${esc(label)}</small>` : ''}${esc(text)}`; t.classList.toggle('urgent', urgent); }
 // a huge tap button (PULL!, TEAR!); returns a remover
-export function tapButton(label, onTap) { ensure(); const b = document.createElement('button'); b.className = 'tap'; b.textContent = label; const f = (e) => { e.preventDefault(); e.stopPropagation(); onTap(); }; b.addEventListener('pointerdown', f); root.appendChild(b); return () => b.remove(); }
+export function tapButton(label, onTap) { ensure(); const tp = { label, onTap }; S.tap = tp; bump(); const b = document.createElement('button'); b.className = 'tap'; b.textContent = label; const f = (e) => { e.preventDefault(); e.stopPropagation(); onTap(); }; b.addEventListener('pointerdown', f); root.appendChild(b); return () => { b.remove(); if (S.tap === tp) { S.tap = null; bump(); } }; }
 // tug-of-war style meters: [{ label, value 0..1, color }]
-export function meters(list) { ensure(); const m = root.querySelector('#popMeters'); if (!list) { m.style.display = 'none'; return; } m.style.display = 'block'; m.innerHTML = list.map(x => `<div>${esc(x.label)}<div class="m"><i style="width:${Math.round(Math.min(1, x.value) * 100)}%;background:${x.color || '#ffd700'}"></i></div></div>`).join(''); }
+export function meters(list) { ensure(); S.meters = list ? list.map(x => ({ ...x })) : null; bump(); const m = root.querySelector('#popMeters'); if (!list) { m.style.display = 'none'; return; } m.style.display = 'block'; m.innerHTML = list.map(x => `<div>${esc(x.label)}<div class="m"><i style="width:${Math.round(Math.min(1, x.value) * 100)}%;background:${x.color || '#ffd700'}"></i></div></div>`).join(''); }
 // the quiz question card with big tap answers
 let qEl = null;
 export function questionCard(q, n, total, onPick, selected) {
-  ensure(); if (!q) { if (qEl) { const e = qEl; qEl = null; e.classList.remove('in'); setTimeout(() => e.remove(), 400); } return; }
+  ensure(); S.q = q ? { q: q.q, opts: q.opts, round: q.round, n, total, selected, frac: S.q?.q === q.q ? S.q.frac : 1 } : null; bump();
+  if (!q) { if (qEl) { const e = qEl; qEl = null; e.classList.remove('in'); setTimeout(() => e.remove(), 400); } return; }
   const cols = ['#c1121f', '#1d6fd8', '#d39b00', '#2d8a4f'];
   if (!qEl || qEl.dataset.q !== q.q) { if (qEl) qEl.remove(); qEl = document.createElement('div'); qEl.className = 'qcard'; qEl.dataset.q = q.q;
     qEl.innerHTML = `<div class="qn">QUESTION ${n} OF ${total}${q.round ? ' · ' + esc(String(q.round).toUpperCase()) : ''}</div><div class="qq">${esc(q.q)}</div><div class="opts">${q.opts.map((o, i) => `<button data-i="${i}" style="background:${cols[i]};animation-delay:${0.1 + i * 0.08}s"><b>${'ABCD'[i]}</b>${esc(o)}</button>`).join('')}</div><div class="qt"><i></i></div>`;
@@ -77,6 +82,6 @@ export function questionCard(q, n, total, onPick, selected) {
   qEl.querySelectorAll('button').forEach(b => b.classList.toggle('sel', +b.dataset.i === selected));
   return qEl;
 }
-export function questionTime(frac) { if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
-export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); }
-G.popup = { card, board, timer, tapButton, meters, questionCard, questionTime, clearAll };
+export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
+export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); S.cards = []; S.tap = null; bump(); }
+G.popup = { card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };

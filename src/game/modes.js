@@ -163,14 +163,20 @@ export class Modes {
     return '';
   }
   drawHud() { if (!this.hud) return; this.hud.style.display = G.xr ? 'none' : 'block'; const b = this.best();
+    // the same lines for the headset panel (vrhud.js)
+    const strip = (h) => String(h || '').replace(/<(br|\/div|\/p|\/tr)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').split('\n').map(s => s.trim()).filter(Boolean);
+    this.vrLines = [`${this.def.icon} ${this.def.name}`, `${this.score}`, ...strip(this.extra()), ...(b != null ? [`Best: ${b}`] : [])];
     this.hud.innerHTML = `<div class="mh-name">${this.def.icon} ${this.def.name}</div><div class="mh-row"><b>${this.score}</b></div><div class="mh-extra">${this.extra()}</div>${b != null ? `<div class="mh-best">Best ${b}</div>` : ''}`; }
-  hudOff() { if (this.hud) this.hud.style.display = 'none'; }
+  hudOff() { if (this.hud) this.hud.style.display = 'none'; this.vrLines = null; }
   drawTV() { G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, (this.def.name).toUpperCase(), '#1d3557'); g.fillStyle = '#ffd700'; g.font = 'bold 120px sans-serif'; g.fillText(String(this.score), 60, 230); g.fillStyle = '#9fe0ff'; g.font = '22px sans-serif'; this.lines.slice(0, 5).forEach((l, i) => g.fillText(l, 60, 320 + i * 32)); }); }
   end() {
     if (!this.running) return; this.running = false; this.hudOff(); timer(null); const prev = this.best(); const isBest = prev == null || this.score > prev; if (isBest) saveStore('best.' + this.id, this.score);
     for (const o of this.orders || []) G.scene.remove(o.marker); this.orders = [];
     sfx(isBest ? 'cheer' : 'drum', null, 1); G.player.releaseAll();
     const lines = { fling: `Longest throw: ${Math.max(0, ...(this.dists || []).map(x => x.d)).toFixed(1)} m.`, beer: `${this.served} drinks served, ${this.missed} people gave up waiting.`, games: 'Dining room survived. Mostly.' }[this.id] || '';
+    const toRoam = () => { document.body.classList.remove('mode-' + this.id); this.id = 'sandbox'; this.def = modeById('sandbox'); for (const p of G.chars) if (p.brain && p.brain.state === 'scripted') { p.brain.state = 'idle'; G.ai?.goHome(p.brain); } };
+    // in the headset there's nothing to click: show the result on the floating panel and carry on in free roam
+    if (G.xr) { card({ kicker: `${this.def.name.toUpperCase()} · FINISHED`, title: String(this.score), icon: this.def.icon, sub: `${isBest ? 'New personal best!' : `Your best: ${prev}`} ${lines} Free roam is on now.`, secs: 8 }); toRoam(); return; }
     G.ui?.modal('scoreModal', `<h2>${this.def.icon} ${this.def.name}</h2><div style="font:900 64px Georgia,serif;color:#ffd700;text-align:center">${this.score}</div><p style="text-align:center">${isBest ? '🎉 New personal best!' : `Your best: ${prev}`}<br>${lines}</p>
       <div style="text-align:center"><button class="btn" id="mAgain">Play again</button><button class="btn alt" id="mModes">Main menu</button><button class="btn alt" id="mRoam">Free roam the house</button></div>`, (el) => {
       el.querySelector('#mAgain').onclick = () => { location.href = `?mode=${this.id}&as=${G.me?.name || 'Tommy'}&skip=1`; }; el.querySelector('#mModes').onclick = () => { location.href = '?'; };
