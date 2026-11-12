@@ -80,8 +80,11 @@ function drawGroups(f, sp, y0) {
       if (it.sub) text(it.sub, cx, cy + r + 36, fit(it.sub, tw - 6, 11, 'system-ui', '600'), 'rgba(255,255,255,0.7)', 'center', 'system-ui', '600'); }); });
   doneBtn(f, sp);
 }
+// what you're pointing at: a glowing gold outline round it, and a cursor dot where each beam lands
+function cursors() { for (const L of lasers || []) { if (L.px == null || !L.l.visible) continue; g.save(); g.shadowColor = '#ffd700'; g.shadowBlur = 14; g.beginPath(); g.arc(L.px, L.py, 13, 0, 7); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); g.restore(); g.beginPath(); g.arc(L.px, L.py, 5, 0, 7); g.fillStyle = '#fff'; g.fill(); } }
+function hoverGlow(f) { const r = f.rects[f.hover]; if (!r) return; g.save(); g.shadowColor = '#ffe680'; g.shadowBlur = 22; rr(r.x - 3, r.y - 3, r.w + 6, r.h + 6, 18); g.lineWidth = 5; g.strokeStyle = '#ffe680'; g.stroke(); g.restore(); }
 function doneBtn(f, sp) { const ok = !(sp.multi && f.toggle === sp.multiToggle && !f.sel.size); const bw = 300, bx = W / 2 - bw / 2, by = H - 80; const idx = f.rects.length; f.rects.push({ kind: 'done', x: bx, y: by, w: bw, h: 62 });
-  g.globalAlpha = ok ? 1 : 0.4; const bg = g.createLinearGradient(0, by, 0, by + 62); bg.addColorStop(0, f.hover === idx ? '#ff3a52' : '#e2283f'); bg.addColorStop(1, '#9c0f22'); rr(bx, by, bw, 62, 31); g.fillStyle = bg; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done || 'Next →', W / 2, by + 32, 30); g.globalAlpha = 1; tex.needsUpdate = true; }
+  g.globalAlpha = ok ? 1 : 0.4; const bg = g.createLinearGradient(0, by, 0, by + 62); bg.addColorStop(0, f.hover === idx ? '#ff3a52' : '#e2283f'); bg.addColorStop(1, '#9c0f22'); rr(bx, by, bw, 62, 31); g.fillStyle = bg; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done || 'Next →', W / 2, by + 32, 30); g.globalAlpha = 1; hoverGlow(f); cursors(); tex.needsUpdate = true; }
 function drawFlow(now) {
   const f = flow, sp = f.spec; g.clearRect(0, 0, W, H); f.rects = [];
   festive(now); const ty = 66;
@@ -116,14 +119,16 @@ function drawFlow(now) {
 // pointing: a laser from each controller / hand, hit-tested against the panel
 const _o = new THREE.Vector3(), _d = new THREE.Vector3(), _n = new THREE.Vector3(), _hit = new THREE.Vector3(); let lasers = null, flowInit = false;
 function flowRays(dt) {
-  const xr = G.renderer.xr; if (!lasers) { lasers = [0, 1].map(i => { const ctrl = xr.getController(i); const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]); const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.85 })); l.visible = false; ctrl.add(l); if (!ctrl.parent) G.scene.add(ctrl); return { ctrl, l, hover: -1 }; }); }
-  if (!flowInit) { flowInit = true; lasers.forEach((L, i) => L.ctrl.addEventListener('selectstart', () => { if (!flow) return; const h = L.hover >= 0 ? L.hover : flow.hover; if (h >= 0) flowClick(h); })); }
+  const xr = G.renderer.xr; if (!lasers) { lasers = [0, 1].map(i => { const ctrl = xr.getController(i); const geo = new THREE.CylinderGeometry(0.003, 0.003, 1, 8, 1, true); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, -0.5); const l = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.9, toneMapped: false })); l.frustumCulled = false; /* a proper gold beam, not a hairline */ l.visible = false; ctrl.add(l); if (!ctrl.parent) G.scene.add(ctrl); return { ctrl, l, hover: -1 }; }); }
+  if (!flowInit) { flowInit = true; lasers.forEach((L, i) => L.ctrl.addEventListener('selectstart', () => { if (flow) { const h = L.hover >= 0 ? L.hover : flow.hover; if (h >= 0) flowClick(h); } else if (menu.open && L.hover >= 0) { menu.trig = true; choose(MENU[L.hover].id); } })); }
+  const tgt = flow || (menu.open ? menu : null); if (!tgt) return;
   _n.set(0, 0, 1).applyQuaternion(mesh.quaternion); let any = -1;
-  for (const L of lasers) { L.ctrl.updateMatrixWorld(true); _o.setFromMatrixPosition(L.ctrl.matrixWorld); _d.set(0, 0, -1).transformDirection(L.ctrl.matrixWorld); L.hover = -1; L.l.visible = !!flow;
+  for (const L of lasers) { L.ctrl.updateMatrixWorld(true); _o.setFromMatrixPosition(L.ctrl.matrixWorld); _d.set(0, 0, -1).transformDirection(L.ctrl.matrixWorld); L.hover = -1; L.px = null; L.l.visible = true;
     const den = _d.dot(_n); if (Math.abs(den) < 1e-4) continue; const t = _hit.copy(mesh.position).sub(_o).dot(_n) / den; if (t <= 0 || t > 6) { L.l.scale.z = 3; continue; }
     _hit.copy(_o).addScaledVector(_d, t); L.l.scale.z = t; const loc = mesh.worldToLocal(_hit.clone()); const sc = mesh.scale.x; const px = (loc.x / (PW) + 0.5) * W, py = (0.5 - loc.y / (PH)) * H; void sc;
-    L.px = px; L.py = py; flow.rects.forEach((r, i) => { if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) L.hover = i; }); if (L.hover >= 0) any = L.hover; }
-  if (any >= 0 && any !== flow.hover) { flow.hover = any; S.v++; try { G.renderer.xr.getSession()?.inputSources.forEach(s => s.gamepad?.hapticActuators?.[0]?.pulse(0.15, 15)); } catch (e) { /* no haptics */ } }
+    L.px = px; L.py = py; if (px < 0 || px > W || py < 0 || py > H) L.px = null; (tgt.rects || []).forEach((r, i) => { if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) L.hover = i; }); if (L.hover >= 0) any = L.hover; }
+  if (tgt === menu) { if (any >= 0 && any !== menu.sel) menu.sel = any; S.v++; return; } // the in-game menu: point to highlight, trigger to choose
+  S.v++; if (any >= 0 && any !== flow.hover) { flow.hover = any; S.v++; try { G.renderer.xr.getSession()?.inputSources.forEach(s => s.gamepad?.hapticActuators?.[0]?.pulse(0.15, 15)); } catch (e) { /* no haptics */ } }
   // thumbstick fallback: move the highlight through the choices
   const s = xr.getSession(); if (!s) return; let ax = 0, ay = 0; for (const src of s.inputSources) { const gp = src.gamepad; if (!gp) continue; const x = gp.axes[2] ?? gp.axes[0] ?? 0, y = gp.axes[3] ?? gp.axes[1] ?? 0; if (Math.abs(x) > Math.abs(ax)) ax = x; if (Math.abs(y) > Math.abs(ay)) ay = y; }
   flow.axT = (flow.axT || 0) - dt; if ((Math.abs(ax) > 0.6 || Math.abs(ay) > 0.6) && flow.axT <= 0 && flow.rects.length) { flow.axT = 0.25; const cur = flow.rects[flow.hover] || flow.rects[0]; const cx = cur.x + cur.w / 2, cy = cur.y + cur.h / 2; let best = -1, bd = 1e9;
@@ -152,9 +157,9 @@ function menuInput(dt) {
 function drawMenu() {
   g.clearRect(0, 0, W, H); const w = 560, h = 90 + MENU.length * 66, x = W / 2 - w / 2, y = H / 2 - h / 2; panel(x, y, w, h, 'rgba(20,10,16,0.95)', '#ffd700', 26);
   text('MENU', W / 2, y + 44, 34, '#ffd700');
-  MENU.forEach((m, i) => { const yy = y + 84 + i * 66; const on = i === menu.sel; if (on) { rr(x + 24, yy, w - 48, 56, 14); g.fillStyle = '#b3122a'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#ffd700'; g.stroke(); }
+  menu.rects = []; MENU.forEach((m, i) => { const yy = y + 84 + i * 66; const on = i === menu.sel; menu.rects.push({ x: x + 24, y: yy, w: w - 48, h: 56 }); if (on) { rr(x + 24, yy, w - 48, 56, 14); g.fillStyle = '#b3122a'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#ffd700'; g.stroke(); }
     const cur = m.id === G.modes?.id; text(m.label + (cur ? '  (playing)' : ''), x + 50, yy + 28, 28, on ? '#fff' : 'rgba(255,255,255,0.85)', 'left', 'system-ui', '800'); });
-  text('Thumbstick to move · trigger to choose · Y to close', W / 2, y + h + 26, 20, '#fff', 'center', 'system-ui', '700'); tex.needsUpdate = true;
+  text('Point and pull the trigger (or thumbstick + trigger) · Y to close', W / 2, y + h + 26, 20, '#fff', 'center', 'system-ui', '700'); cursors(); tex.needsUpdate = true;
 }
 
 function active() { return flow || menu.open || S.cards.length || S.timer || S.meters || S.q || S.tap || G.modes?.vrLines || (G.ui?.vrToast && G.time < G.ui.vrToast.until); }
@@ -211,7 +216,7 @@ export function initVRHud() {
   mesh.renderOrder = 999; mesh.frustumCulled = false; mesh.visible = false; G.scene.add(mesh);
   G.vrHud = { mesh, draw: () => draw(performance.now()), toggleMenu: () => { menu.open = !menu.open; menu.sel = 0; menu.trig = true; S.v++; }, menuOpen: () => menu.open, drawMenu: () => drawMenu(), drawFlowNow: () => { if (flow) drawFlow(performance.now()); return canvas; } };
   G.updaters.push((dt) => {
-    if (lasers && !flow) lasers.forEach(L => L.l.visible = false);
+    if (lasers && !flow && !menu.open) lasers.forEach(L => L.l.visible = false);
     if (!G.xr || !active()) { mesh.visible = false; placed = false; mesh.scale.setScalar(1); return; }
     // the start-up screens: a big panel that stays put in front of you while you point at it
     if (flow) { const cam = G.camera; cam.getWorldPosition(_p); /* the game camera sits in the player rig; three's XR camera has no parent, so its world position ignores the rig */  cam.getWorldDirection(_f); _f.y = 0; if (_f.lengthSq() < 1e-4) _f.set(0, 0, -1); _f.normalize();
@@ -227,7 +232,7 @@ export function initVRHud() {
     if (!placed) { mesh.position.copy(_t); placed = true; } else { const d = mesh.position.distanceTo(_t); mesh.position.lerp(_t, Math.min(1, dt * (d > 0.45 ? 4 : 1.2))); }
     mesh.lookAt(_p); mesh.visible = true;
     const now = performance.now(); const animating = S.cards.length || S.tap || S.timer?.urgent || S.q;
-    if (menu.open) { menuInput(dt); if (S.v !== lastV || now - lastDraw > 250) { lastV = S.v; lastDraw = now; menu.open ? drawMenu() : draw(now); } return; }
+    if (menu.open) { flowRays(dt); menuInput(dt); if (S.v !== lastV || now - lastDraw > 250) { lastV = S.v; lastDraw = now; menu.open ? drawMenu() : draw(now); } return; }
     if (S.v !== lastV || (animating && now - lastDraw > 50) || now - lastDraw > 250) { lastV = S.v; lastDraw = now; draw(now); }
   });
 }

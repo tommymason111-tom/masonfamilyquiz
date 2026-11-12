@@ -160,7 +160,7 @@ export class Modes {
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.2), new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide })); fl.position.set(0.2, 0.6, 0); grp.add(fl); grp.position.set(x, 0, z); grp.lookAt(G.player.headPos(new THREE.Vector3()).setY(0)); G.scene.add(grp); this.flags.push(grp); }
   tickFling(dt) {
     const f = this.flying; if (!f) return; f.t += dt; const p = f.p; if (!p.bodies) return; const b = p.bodies[0]; const v = b.linvel(), t = b.translation();
-    if (f.t > 0.8 && Math.hypot(v.x, v.y, v.z) < 0.6) { this.flying = null; p.flung = true; const d = Math.max(0, t.x - this.lane.x0); this.dists.push({ name: p.name, d }); const pts = Math.max(100, Math.round(d) * 100); // 100 a metre this.add(pts, `${p.name}: ${d.toFixed(1)} m`);
+    if (f.t > 0.8 && Math.hypot(v.x, v.y, v.z) < 0.6) { this.flying = null; p.flung = true; const d = Math.max(0, t.x - this.lane.x0); this.dists.push({ name: p.name, d }); const pts = Math.max(100, Math.round(d) * 100); /* 100 a metre */ this.add(pts, `${p.name}: ${d.toFixed(1)} m`);
       const best = Math.max(...this.dists.map(x => x.d)); this.flag(t.x, t.z, d); sfx(d >= best ? 'cheer' : 'boing', null, 0.8);
       card({ kicker: `THROW ${this.throws} OF ${this.maxThrows}`, title: `${d.toFixed(1)} METRES`, sub: d >= best && this.dists.length > 1 ? `${p.name} — NEW BEST!` : `${p.name} landed.`, secs: 2.2, c1: '#2d6a4f', c2: '#0e3a20' })
         .then(() => { setTimeout(() => { if (p.brain) { p.brain.state = 'idle'; G.ai?.sendTo(p.name, new THREE.Vector3(-2.5 + rand(-1, 1), 0, -7.6 + rand(-0.3, 0.3)), () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = -Math.PI / 2; }); } }, 2500);
@@ -207,10 +207,20 @@ export class Modes {
     for (const o of this.orders.slice()) {
       const hp = o.p.headPos(new THREE.Vector3()); o.marker.position.copy(hp).add(new THREE.Vector3(0, 0.42 + Math.sin(G.time * 4) * 0.04, 0)); const anger = clamp((G.time - o.start) / o.patience, 0, 1); o.anger = anger; if (G.frame % 8 === 0) this.drawMarker(o.marker, anger);
       if (anger > 0.6 && !o.moaned) { o.moaned = true; o.p.say(pick(['Still waiting!', 'Hello?! Drink!', 'Is it being brewed?']), { prio: 1, order: true }); o.p.setMood('angry', 4); }
-      if (held && o.d.ids.includes(held.id) && hp.distanceTo(me) < 1.6) { this.serve(o, held); continue; }
+      // it only counts when the drink actually TOUCHES them (their hands, chest or face), held out or thrown
+      const touch = this.touching(o); if (touch) { this.serve(o, touch); continue; }
       if (G.time > o.until) { this.drop(o); this.missed++; this.score = Math.max(0, this.score - 100); this.streak = 0; this.lines.unshift(`-100  ${o.p.name} gave up`); o.p.say(pick(['Forget it, I\'ll get it myself.', 'Unbelievable.', 'I\'ll die of thirst.']), { prio: 1, order: true }); o.p.setMood('angry', 6); G.ui?.toast(`${o.p.name} gave up waiting!`, 2.5, { game: true }); }
     }
     if (G.frame % 600 === 0) this.restock();
+  }
+  touching(o) {
+    const p = o.p, pts = [p.chestPos(new THREE.Vector3()), p.headPos(new THREE.Vector3()), p.handPos('L', new THREE.Vector3()), p.handPos('R', new THREE.Vector3())];
+    for (const id of o.d.ids) for (const it of G.items.byType[id] || []) { if (!it.alive) continue; const t = it.body.translation(); const v = it.body.linvel();
+      if (!it.held && Math.hypot(v.x, v.y, v.z) < 0.2 && !it._flying) continue; // a drink just sitting on the side doesn't count
+      for (const q of pts.slice(2)) if (Math.hypot(t.x - q.x, t.y - q.y, t.z - q.z) < 0.24) return it; // into their hands
+      const ch = pts[0], hd = pts[1], lo = Math.min(ch.y, hd.y) - 0.45; // or against their body, anywhere from the lap/waist up to the head
+      if (t.y > lo && t.y < hd.y + 0.15 && Math.hypot(t.x - ch.x, t.z - ch.z) < 0.3) return it; }
+    return null;
   }
   serve(o, item) { G.player.releaseAll(); G.items.remove(item); this.drop(o); this.served++; this.streak = G.time - (this.lastServe ?? -99) < 20 ? Math.min(5, (this.streak || 1) + 1) : 1; this.lastServe = G.time; const pts = 100 * this.streak; this.add(pts, `${this.streak > 1 ? `x${this.streak} STREAK! ` : ''}${o.p.name} got their ${o.d.label}`); sfx('ding', null, 0.9);
     o.p.say(pick(['Lovely, ta!', 'You\'re a star.', 'About time!', 'Cheers!']), { prio: 1, order: true }); o.p.gesture = 'sip'; setTimeout(() => o.p.gesture === 'sip' && (o.p.gesture = null), 3000); G.ui?.toast(`+${pts} — ${o.p.name} is happy`, 2, { game: true }); }

@@ -323,7 +323,7 @@ export function installMoreGames(MiniGames) {
     if (f.hp <= 0) { const d = V(p.pos.x - s.m.position.x, 0, p.pos.z - s.m.position.z).normalize(); p.knock(d.multiplyScalar(p.mass * 2).setY(p.mass * 1.2), 1, { force: true }); }
   };
   P.snowHitMe = function (a, s) {
-    a.myHp--; G.popup?.flash?.('#ffffff'); if (G.fx) G.fx.shake = Math.max(G.fx.shake || 0, 0.03); G.popup?.splash?.(a.myHp > 0 ? 'SPLAT!' : 'YOU\'RE OUT!', '');
+    a.myHp--; if (G.fx) G.fx.shake = Math.max(G.fx.shake || 0, 0.03); sfx('splat', null, 0.9); // no big pop-up: the hearts in the timer show it
     s.owner?.say(pick(['GOT YOU!', 'Have that!', 'Bullseye!']), { prio: 1 });
     try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 120); } catch (e) { /* no haptics */ }
     if (a.myHp <= 0) { a.btn?.(); a.btn = null; G.player.knockDown?.(s.m.position); G.ui?.toast('You\'re out! Your team fights on…', 2.5, { game: true }); }

@@ -41,7 +41,7 @@ class UI {
     // floating name tag over whoever you're looking at
     this.tagTex = canvasTex(512, 160); this.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tagTex, depthTest: false, transparent: true }));
     this.tag.renderOrder = 40; this.tag.visible = false; G.scene.add(this.tag); this.tagFor = null;
-    this.wristTex = canvasTex(512, 336); this.wristTexture = this.wristTex; this.drawWrist();
+    this.wristTex = canvasTex(1024, 680); this.wristTexture = this.wristTex; this.drawWrist();
     this.buildTouch();
     this.startScreen();
   }
@@ -161,7 +161,7 @@ class UI {
       <label class="row"><span>Touch button transparency</span><input type="range" min="0.2" max="1" step="0.05" data-n="touchOpacity" value="${S.touchOpacity}"></label>
       <div><button class="btn alt small" id="mLayout">Edit touch layout</button><button class="btn alt small" id="mLayoutReset">Reset layout</button><button class="btn alt small" id="mRestart">Restart game</button><button class="btn alt small" id="mWipe">Clear saved history</button></div>
       <h2 style="margin-top:14px">Controls</h2>
-      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick (PC only), R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, T torch, Space jump, C crouch, V third person, Tab scores, Enter next</div>
+      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick (PC only), R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, Space jump, C crouch, V third person, Tab scores, Enter next</div>
       <div><b>Gamepad</b>: LS move, RS look, RT grab (release with an RS flick to throw, or RB throw), X punch, B kick, A use, Y hand up, LB drink, Start menu, D-pad answers</div>
       <div><b>Quest 3 hands</b>: fist = grab (both fists on Dad/Martin/Gary to lift), swing & open = throw, fist punch, pinch = use/write, pinch-drag left hand = walk, right = turn, palm up = wrist menu, hand above head = challenge, point 1s = accuse, thumbs up/down, clap, cover ears = mute, facepalm = eye-roll, food to mouth = eat, palm-down sweep or stamp = kick</div>
       <div><b>Touch</b>: left thumb = joystick, drag right side = look, big buttons as labelled. Tap answers at the bottom of the screen.</div></div>`, (el) => {
@@ -234,20 +234,23 @@ class UI {
   wristButtons() {
     const q = G.quiz; const B = [];
     const add = (x, y, w, h, label, fn, hot) => B.push({ x, y, w, h, label, fn, hot });
-    add(0.03, 0.30, 0.3, 0.16, q.phase === 'arrival' ? 'START QUIZ' : 'NEXT', () => emit('next'), q.phase === 'arrival' || q.phase === 'roundEnd');
-    for (let i = 0; i < 4; i++) add(0.03 + i * 0.24, 0.5, 0.22, 0.18, 'ABCD'[i], () => q.answer(i), q.cur?.answers[G.myTeam || 'paul'] === i);
-    add(0.03, 0.72, 0.3, 0.16, 'DISPUTE ✋', () => emit('handUp'), q.phase === 'marking');
-    add(0.35, 0.72, 0.3, 0.16, 'TORCH', () => G.player.toggleTorch());
-    add(0.67, 0.72, 0.3, 0.16, G.settings.smoothTurn ? 'SMOOTH TURN' : 'SNAP TURN', () => { G.settings.smoothTurn = !G.settings.smoothTurn; saveSettings(G.settings); });
+    if (q && (G.modes?.id === 'quick' || G.modes?.id === 'quiz')) { add(0.03, 0.32, 0.94, 0.18, q.phase === 'arrival' ? '▶ START QUIZ' : 'NEXT ▶', () => emit('next'), q.phase === 'arrival' || q.phase === 'roundEnd');
+      for (let i = 0; i < 4; i++) add(0.03 + i * 0.24, 0.53, 0.22, 0.19, 'ABCD'[i], () => q.answer(i), q.cur?.answers[G.myTeam || 'paul'] === i); }
+    add(0.03, 0.75, 0.46, 0.2, '☰ MENU', () => G.vrHud?.toggleMenu());
+    add(0.51, 0.75, 0.46, 0.2, G.settings.smoothTurn ? 'SMOOTH TURN' : 'SNAP TURN', () => { G.settings.smoothTurn = !G.settings.smoothTurn; saveSettings(G.settings); });
     return B;
   }
+  // the wrist menu in the headset: big, high-contrast text you can read at arm's length
   drawWrist() {
-    const g = this.wristTex.userData.ctx, W = 512, H = 336; const q = G.quiz;
-    g.fillStyle = 'rgba(20,16,30,0.92)'; roundRect(g, 0, 0, W, H, 24); g.fill(); g.strokeStyle = '#ffd700'; g.lineWidth = 4; roundRect(g, 2, 2, W - 4, H - 4, 22); g.stroke();
-    if (q) { g.font = 'bold 22px sans-serif'; let x = 16; for (const t of TEAM_IDS) { g.fillStyle = q.teamColor(t); g.fillText(`${q.teamName(t).replace('Team ', '')} ${q.total(t)}`, x, 34); x += 124; }
-      g.fillStyle = '#fff'; g.font = '18px sans-serif'; const s = G.systems; g.fillText(`Banter ${s.banterLevel()} · Havoc ${['Calm', 'Busy', 'Wild', 'CHAOS'][s.havocLevel()]} · ${q.phase === 'question' ? 'Q' + (q.qi + 1) + ' ' + Math.ceil(q.qTime - q.t) + 's' : q.phase}`, 16, 62);
-      if (this.vrToast && G.time < this.vrToast.until) { g.fillStyle = '#ffd700'; g.font = '16px sans-serif'; wrap(g, this.vrToast.text, 16, 84, 480, 18, 1); } }
-    for (const b of this.wristButtons()) { g.fillStyle = b.hot ? '#d23b3b' : '#1d3557'; roundRect(g, b.x * W, b.y * H, b.w * W, b.h * H, 12); g.fill(); g.fillStyle = '#fff'; g.font = 'bold 20px sans-serif'; g.textAlign = 'center'; g.fillText(b.label, (b.x + b.w / 2) * W, (b.y + b.h / 2) * H + 7); g.textAlign = 'left'; }
+    const g = this.wristTex.userData.ctx, W = 1024, H = 680; const q = G.quiz; g.clearRect(0, 0, W, H);
+    g.fillStyle = 'rgba(14,10,20,0.97)'; roundRect(g, 0, 0, W, H, 40); g.fill(); g.strokeStyle = '#ffd700'; g.lineWidth = 8; roundRect(g, 4, 4, W - 8, H - 8, 36); g.stroke();
+    g.textBaseline = 'middle';
+    if (q) { TEAM_IDS.forEach((t, i) => { const x = 24 + (i % 2) * 492, y = 22 + Math.floor(i / 2) * 64; const me = t === G.myTeam; g.fillStyle = me ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.06)'; roundRect(g, x, y, 476, 56, 14); g.fill(); g.fillStyle = q.teamColor(t); g.fillRect(x + 12, y + 12, 12, 32);
+        g.fillStyle = me ? '#ffd700' : '#fff'; g.font = '800 34px system-ui'; g.textAlign = 'left'; g.fillText(q.teamName(t).replace('Team ', '') + (me ? ' (you)' : ''), x + 38, y + 29); g.textAlign = 'right'; g.font = '900 40px system-ui'; g.fillText(String(q.total(t)), x + 460, y + 29); }); g.textAlign = 'left'; }
+    const tt = this.vrToast && G.time < this.vrToast.until ? this.vrToast.text : (q && (G.modes?.id === 'quick' || G.modes?.id === 'quiz') ? (q.phase === 'question' ? `Question ${q.qi + 1} · ${Math.max(0, Math.ceil(q.qTime - q.t))}s left` : q.phase) : (G.modes?.def?.name || ''));
+    if (tt) { g.fillStyle = '#ffd700'; g.font = '700 28px system-ui'; wrap(g, tt, 28, 176, W - 56, 30, 1); }
+    for (const b of this.wristButtons()) { const x = b.x * W, y = b.y * H, w = b.w * W, h = b.h * H; g.fillStyle = b.hot ? '#d23b3b' : '#22416e'; roundRect(g, x, y, w, h, 20); g.fill(); g.lineWidth = 4; g.strokeStyle = b.hot ? '#ffd700' : 'rgba(255,255,255,0.35)'; roundRect(g, x, y, w, h, 20); g.stroke();
+      g.fillStyle = '#fff'; g.font = `900 ${b.label.length <= 1 ? 64 : 40}px system-ui`; g.textAlign = 'center'; g.fillText(b.label, x + w / 2, y + h / 2 + 2); g.textAlign = 'left'; }
     this.wristTex.needsUpdate = true;
   }
   pressWrist(u, v) { for (const b of this.wristButtons()) if (u >= b.x && u <= b.x + b.w && v >= b.y && v <= b.y + b.h) { b.fn(); this.drawWrist(); return true; } return false; }

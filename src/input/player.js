@@ -179,7 +179,6 @@ export class Player {
     if (c.btn('drink').pressed) this.consume();
     if (c.btn('handUp').pressed) { G.tommy && (G.tommy.gesture = 'handUp', G.tommy.gestureT = 0, setTimeout(() => G.tommy.gesture === 'handUp' && (G.tommy.gesture = null), 1500)); emit('handUp'); }
     if (c.btn('accuse').pressed) { const p = this.personInView(this.headPos(new THREE.Vector3()), this.forward(new THREE.Vector3()), 8, false); emit('accuse', p); }
-    if (c.btn('torch').pressed) this.toggleTorch();
     for (let i = 1; i <= 4; i++) if (c.btn('a' + i).pressed) emit('answerKey', i - 1);
     if (c.btn('joker').pressed) emit('joker');
     if (c.btn('next').pressed) emit('next');

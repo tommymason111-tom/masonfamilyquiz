@@ -33,7 +33,7 @@ export class XRInput {
       ctrl.addEventListener('disconnected', () => { if (rec.key && this.hands[rec.key] === rec) this.hands[rec.key] = null; if (rec.vis) rec.vis.visible = false; if (rec.paw) { G.scene.remove(rec.paw); rec.paw = null; } if (rec.model) { rec.model.root.parent?.remove(rec.model.root); } rec.vis = null; rec.model = null; });
     }
     // wrist menu panel
-    this.panel = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.17), new THREE.MeshBasicMaterial({ transparent: true, depthTest: true }));
+    this.panel = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.24), new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, toneMapped: false })); this.panel.renderOrder = 60; // big and always drawn on top so it's easy to read
     this.panel.visible = false; G.scene.add(this.panel);
     this.locoStart = null; this.turnStart = null; this.prevHeadY = null; this.headVy = 0;
     G.renderer.xr.addEventListener('sessionstart', () => { emit('xrstart'); this.placeOnStart(); });
@@ -139,6 +139,8 @@ export class XRInput {
       const b4 = gp?.buttons[4]?.pressed, b5 = gp?.buttons[5]?.pressed;
       if (b4 && !rec.b4) { if (rec.key === 'R') emit('handUp'); else this.player.kick(this.player.forward(new THREE.Vector3()).setY(0).normalize()); }
       if (b5 && !rec.b5) { if (rec.key === 'R') this.player.consume(rec.key); else emit('menu'); }
+      // the menu: Y, a click of the left thumbstick, or the left ☰ menu button if the browser passes it on (Quest Browser often keeps that one for itself)
+      const bm = rec.key === 'L' && (gp?.buttons[3]?.pressed || [...(gp?.buttons || [])].slice(6).some(b => b?.pressed)); if (bm && !rec.bm) emit('menu'); rec.bm = bm;
       rec.b4 = b4; rec.b5 = b5;
       this.poke(rec);
     }
@@ -274,7 +276,7 @@ export class XRInput {
     this.panel.visible = show; G.ui && (G.ui.wristVisible = show);
     if (!show) return;
     if (G.ui?.wristTexture && this.panel.material.map !== G.ui.wristTexture) { this.panel.material.map = G.ui.wristTexture; this.panel.material.needsUpdate = true; }
-    this.panel.position.copy(L.palm).add(new THREE.Vector3(0, 0.13, 0));
+    this.panel.position.copy(L.palm).add(new THREE.Vector3(0, 0.17, 0)).lerp(head, 0.15); // a little up and towards your face
     this.panel.lookAt(head);
   }
   poke(rec) {
@@ -283,7 +285,7 @@ export class XRInput {
     // wrist menu (only the other hand pokes)
     if (this.panel.visible && rec.key === 'R') {
       const local = this.panel.worldToLocal(tip.clone());
-      if (Math.abs(local.z) < 0.02 && Math.abs(local.x) < 0.13 && Math.abs(local.y) < 0.085) { const u = local.x / 0.26 + 0.5, v = 0.5 - local.y / 0.17; if (G.ui?.pressWrist(u, v)) { rec.pokeCD = 0.5; sfx('click', tip, 0.5); this.haptic(rec, 0.3, 20); } }
+      if (Math.abs(local.z) < 0.025 && Math.abs(local.x) < 0.18 && Math.abs(local.y) < 0.12) { const u = local.x / 0.36 + 0.5, v = 0.5 - local.y / 0.24; if (G.ui?.pressWrist(u, v)) { rec.pokeCD = 0.5; sfx('click', tip, 0.5); this.haptic(rec, 0.3, 20); } }
     }
     // answer sheet clipboard options
     const sheet = G.quiz?.sheetItem; if (sheet && sheet.alive) {

@@ -249,7 +249,7 @@ export class Systems {
   // ---------------- rounds & the Chaos Director ----------------
   onRoundStart(r) {
     this.havoc = Math.min(100, this.havoc + 12);
-    const pool = ['corkPop', 'phoneCheat', 'pcBlue', 'paulOverRoast', 'weddingTakeover', 'jamesTest', 'wineSpill', 'deadPens', 'remoteMissing', 'masonSheets', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'channelChange', 'volume100', 'doorbell', 'beerRun', 'puddingFire', 'siriBetrayal', 'toiletTrip', 'harrisonCries', 'fuse', 'chipOnSheets'];
+    const pool = ['corkPop', 'phoneCheat', 'pcBlue', 'paulOverRoast', 'weddingTakeover', 'jamesTest', 'wineSpill', 'deadPens', 'remoteMissing', 'masonSheets', 'chipZoomies', 'baubleBarrage', 'sippyStrike', 'channelChange', 'volume100', 'doorbell', 'beerRun', 'puddingFire', 'siriBetrayal', 'toiletTrip', 'harrisonCries', 'chipOnSheets'];
     const n = 2 + Math.floor(Math.random() * 3);
     const picks = shuffle(pool).slice(0, n);
     if (r === 2) picks.push('paulAsleep');

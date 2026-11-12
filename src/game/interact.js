@@ -26,8 +26,7 @@ function useItem(inst, player, handKey) {
     case 'present': return unwrap(inst);
     case 'shake': sfx('clink', p); inst.body.applyImpulse({ x: 0, y: 1.5, z: 0 }, true); toast('It\'s snowing in Essex! (in the globe)'); return;
     case 'squeak': sfx('squeak', p); emit('squeak', inst); return;
-    case 'phone': return player.toggleTorch();
-    case 'torch': return player.toggleTorch();
+    case 'phone': case 'torch': return;
     case 'kettle': {
       sfx('kettle', p); toast('Kettle on... (leave a mug next to it)'); emit('kettleOn');
       setTimeout(() => { const kp = pos(inst); const mug = (G.items.byType.mug || []).filter(m => m.alive).sort((a, b) => pos(a).distanceTo(kp) - pos(b).distanceTo(kp))[0];

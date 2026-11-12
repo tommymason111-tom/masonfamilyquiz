@@ -23,11 +23,11 @@ export class Person {
     this.root.userData.person = this;
     G.scene.add(this.root);
     this.H = this.dims.H;
-    this.heavy = spec.build === 'bigger' || spec.weight === 'heavy';
+    this.big = spec.build === 'bigger' || spec.weight === 'heavy'; this.heavy = false; // everyone weighs the same to pick up and throw; 'big' is only their shape
     this.protected = !!spec.protected;
     this.isPlayer = !!spec.player;
     this.voice = spec.voice; this.lines = spec.lines || {};
-    this.mass = (spec.build === 'bigger' ? 105 : spec.build === 'slim' ? 56 : spec.sex === 'f' ? 63 : 76) * (spec.build === 'toddler' ? 0.2 : spec.build === 'baby' ? 0.13 : 1);
+    this.mass = 70 * (spec.build === 'toddler' ? 0.2 : spec.build === 'baby' ? 0.13 : 1); // all grown-ups the same weight
     if (spec.inflate) this.mass *= 1.05;
     this.state = 'anim';
     this.pos = new THREE.Vector3(); this.yaw = 0;
@@ -65,7 +65,7 @@ export class Person {
     const thighLen = O[7].y - O[8].y, shinLen = O[8].y - d.p.ankle * H;
     const defs = [
       [0, 0.16, (c) => c.push(R.ColliderDesc.roundCuboid(0.075 * H * wm, 0.035 * H, 0.05 * H * wm, 0.02 * H).setTranslation(0, -0.01 * H, 0))],
-      [1, 0.34, (c) => c.push(R.ColliderDesc.roundCuboid(0.07 * H * wm, 0.085 * H, 0.04 * H * (this.heavy ? 1.25 : 1) * (this.spec.inflate || 1), 0.025 * H).setTranslation(0, 0.11 * H, this.heavy ? 0.012 * H : 0))],
+      [1, 0.34, (c) => c.push(R.ColliderDesc.roundCuboid(0.07 * H * wm, 0.085 * H, 0.04 * H * (this.big ? 1.25 : 1) * (this.spec.inflate || 1), 0.025 * H).setTranslation(0, 0.11 * H, this.big ? 0.012 * H : 0))],
       [2, 0.08, (c) => c.push(R.ColliderDesc.ball(hd.ry * 0.82).setTranslation(0, hd.cy - O[2].y, hd.cz + 0.005))],
       [3, 0.028, (c) => c.push(R.ColliderDesc.capsule(Math.max(0.01, armLen / 2 - d.armR), d.armR).setTranslation(0, -armLen / 2, 0))],
       [4, 0.022, (c) => c.push(R.ColliderDesc.capsule(Math.max(0.01, foreLen / 2 - d.armR * 0.8), d.armR * 0.8).setTranslation(0, -foreLen / 2, 0))],
