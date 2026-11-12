@@ -227,9 +227,14 @@ function addExtras(p, list) {
     }
     if (e === 'elf') {
       // zig-zag tunic hem, pointy collar with bells, belt and buckle, curly shoes, the hat with a bell, pointy ears
-      const bl = M.belly, hp = M.hips, nk = M.neck; const r = Math.max(hp.hx, hp.rz) + 0.03;
-      p.attach(mk(P => { for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; P.cone(0.06 * S, 0.12 * S, k % 2 ? '#1f8a3a' : '#c41e1e', Math.sin(a) * r, -0.05, hp.cz + Math.cos(a) * r * 0.92, Math.PI, 0, 0, 4); }
-        P.box(r * 2.05, 0.05 * S, 0.02, '#6b3a1f', 0, 0.06, hp.cz + r * 0.9).box(0.07 * S, 0.06 * S, 0.012, '#ffd700', 0, 0.06, hp.cz + r * 0.92); }), 'hips', at('hips', O[7].y + 0.02 * H));
+      const hp = M.hips, nk = M.neck; const cx = hp.cx - O[0].x, cz = hp.cz - O[0].z, rx = hp.hx * 0.92 + 0.012, rz = hp.rz + 0.014; // hugging his own hips, centred on his body
+      p.attach(mk(P => {
+        // zig-zag hem just below the belt, all the way round
+        for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; P.cone(0.045 * S, 0.1 * S, k % 2 ? '#1f8a3a' : '#c41e1e', cx + Math.sin(a) * (rx + 0.006), -0.045, cz + Math.cos(a) * (rz + 0.006), Math.PI, 0, 0, 4); }
+        // the belt: a band of short segments that wraps the waist (no straight bar sticking out to the hands)
+        for (let k = 0; k < 36; k++) { const a = k / 36 * Math.PI * 2; P.box(0.032, 0.045 * S, 0.012, '#4a2a14', cx + Math.sin(a) * rx, 0.05, cz + Math.cos(a) * rz, 0, a, 0); }
+        P.box(0.07 * S, 0.06 * S, 0.012, '#ffd700', cx, 0.05, cz + rz + 0.008).box(0.04 * S, 0.03 * S, 0.014, '#4a2a14', cx, 0.05, cz + rz + 0.01);
+      }), 'hips', at('hips', O[7].y + 0.02 * H));
       p.attach(mk(P => { for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; P.cone(0.035 * S, 0.08 * S, k % 2 ? '#c41e1e' : '#1f8a3a', Math.sin(a) * (nk.hx + 0.03), -0.02, nk.cz + Math.cos(a) * (nk.rz + 0.03), Math.PI / 2 + 0.6, a, 0, 4); P.sph(0.012 * S, '#ffd700', Math.sin(a) * (nk.hx + 0.07), -0.05, nk.cz + Math.cos(a) * (nk.rz + 0.07)); } }, shiny), 'spine', at('spine', O[2].y - 0.01 * H));
       boots('#1f8a3a', null, true);
       hat('#1f8a3a', 0.34, (k) => k % 2 ? '#c41e1e' : '#f6f6f6', '#ffd700', 0.032);
