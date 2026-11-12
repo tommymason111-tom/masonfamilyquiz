@@ -139,6 +139,7 @@
   #modeHud .hvbar { height:12px; border-radius:6px; background:rgba(0,0,0,.5); border:2px solid #fff; overflow:hidden; margin:4px 0; min-width:180px; } #modeHud .hvbar i { display:block; height:100%; background:linear-gradient(90deg,#ffd700,#ff8a00,#ff2a2a); transition:width .2s; }
   #modeHud .hvcombo { font:900 20px Georgia,serif; color:#ffd700; text-shadow:0 2px 0 #7a1020; animation: pulseT .3s infinite alternate; }
   body.paused #pop, body.paused #toasts, body.paused #subs, body.paused #modeHud, body.paused #bubbles { display:none !important; } /* the pause menu is never covered by pop-ups */
+  body.touch #prompt { top:auto; left:14px; bottom:max(6px, env(safe-area-inset-bottom)); transform:none; font-size:12px; max-width:46vw; white-space:normal; padding:3px 8px; } /* phones: the 'what's this' hint sits under the joystick, out of the way */
 </style>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }
