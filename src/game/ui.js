@@ -20,7 +20,6 @@ const BUTTONS = [ // id, icon, label, default position (right/bottom or left/top
   { id: 'grab', icon: '✋', label: 'GRAB', pos: { right: 128, bottom: 116 } }, // only shown in Fling the Relative
   { id: 'punch', icon: '👊', label: 'PUNCH', pos: { right: 128, bottom: 26 } },
   { id: 'use', icon: '🖊️', label: 'USE', pos: { right: 104, top: 12 } },
-  { id: 'handUp', icon: '🙋', label: 'HAND UP', pos: { right: 20, top: 12 } },
   { id: 'drink', icon: '🍺', label: 'DRINK', pos: { right: 188, top: 12 } },
   { id: 'menu', icon: '☰', label: 'MENU', pos: { left: 10, top: 10 } },
   { id: 'crouch', icon: '⬇️', label: 'CROUCH', pos: { right: 128, bottom: 116 } },

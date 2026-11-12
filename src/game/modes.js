@@ -92,16 +92,16 @@ export class Modes {
     this.score = 0; this.hv = { meter: 0, combo: 0, lastHit: -9, hits: 0, things: 0, seen: new Map() };
     if (this._hvOn) return; this._hvOn = true;
     on('ragdoll', (p) => { if (this.id !== 'roam' || !this.hv || p.isPlayer || G.time - (p.playerHitT ?? -9) > 1.5) return; const h = this.hv;
-      h.combo = G.time - h.lastHit < 2.6 ? Math.min(8, h.combo + 1) : 1; h.lastHit = G.time; h.hits++; const pts = 10 * h.combo; this.score += pts; h.meter = Math.min(100, h.meter + 9 + h.combo * 4);
+      h.combo = G.time - h.lastHit < 2.6 ? Math.min(8, h.combo + 1) : 1; h.lastHit = G.time; h.hits++; const pts = 100 * h.combo; this.score += pts; h.meter = Math.min(100, h.meter + 9 + h.combo * 4);
       this.lines.unshift(`+${pts}  ${p.name} flattened${h.combo > 1 ? ` (x${h.combo})` : ''}`); this.lines.length = Math.min(this.lines.length, 5);
       if (h.combo > 1) { G.ui?.toast(`💥 x${h.combo} COMBO! +${pts}`, 1.6, { game: true }); sfx('ding', null, 0.4 + h.combo * 0.05); } this.drawHud(); });
-    on('thrown', () => { if (this.id !== 'roam' || !this.hv) return; this.score += 3; this.hv.things++; this.hv.meter = Math.min(100, this.hv.meter + 3); });
+    on('thrown', () => { if (this.id !== 'roam' || !this.hv) return; this.score += 100; this.hv.things++; this.hv.meter = Math.min(100, this.hv.meter + 3); });
   }
   tickHavoc(dt) {
     const h = this.hv; if (!h) return; h.meter = Math.max(0, h.meter - dt * 2.2); if (G.time - h.lastHit > 2.6) h.combo = 0;
     if (G.frame % 15) return; // things knocked flying (by you, Chip's paws or something you threw)
     for (const it of G.items.instances) { if (it.held || it.type.fixed || it.body.isSleeping()) continue; const v = it.body.linvel(); if (Math.hypot(v.x, v.y, v.z) < 1.6) continue;
-      if (G.time - (it.playerT ?? -9) > 3 && !it.releasedRecently) continue; const last = h.seen.get(it) ?? -9; if (G.time - last < 4) continue; h.seen.set(it, G.time); this.score += 2; h.things++; h.meter = Math.min(100, h.meter + 2); }
+      if (G.time - (it.playerT ?? -9) > 3 && !it.releasedRecently) continue; const last = h.seen.get(it) ?? -9; if (G.time - last < 4) continue; h.seen.set(it, G.time); this.score += 100; h.things++; h.meter = Math.min(100, h.meter + 2); }
   }
   // ---------------- Quick Quiz: in the living room, straight in ----------------
   quickSetup() {
@@ -116,8 +116,8 @@ export class Modes {
     mg.releaseAll();
     const rows = mg.overall(); const mine = rows.find(r => r.me); const top = rows.slice().sort((a, b) => b.score - a.score)[0];
     sfx(top.me ? 'cheer' : 'drum', null, 1);
-    await board({ kicker: 'MINI GAMES — FINAL STANDINGS', title: top.me ? 'YOU WIN!' : `${top.name.toUpperCase()} WIN`, rows, unit: ' pts', footer: '3 points for a win, 2 for second, 1 for third.', secs: 7 });
-    this.running = true; this.score = (mine?.score || 0) * 100; this.end();
+    await board({ kicker: 'MINI GAMES — FINAL STANDINGS', title: top.me ? 'YOU WIN!' : `${top.name.toUpperCase()} WIN`, rows, unit: ' pts', footer: '300 points for a win, 200 for second, 100 for third.', secs: 7 });
+    this.running = true; this.score = mine?.score || 0; this.end();
   }
   // ---------------- Fling the Relative (garden only) ----------------
   flingSetup() {
@@ -135,10 +135,10 @@ export class Modes {
     on('thrown', (h) => { if (this.id !== 'fling' || h.kind !== 'char' || !this.running) return; this.throws++; this.flying = { p: h.ref, t: 0 }; this.holding = null; });
     card({ kicker: 'FLING THE RELATIVE', title: '10 THROWS', sub: 'GRAB whoever\'s at the front, hold THROW to wind up, let go to launch them down the lawn. The tape measures it.', icon: '🚀', secs: 4 });
   }
-  toQueue(p, i) { const s = new THREE.Vector3(-7.0 + (i % 2) * 0.55, 0, -10.1 + Math.floor(i / 2) * 0.7); G.ai?.sendTo(p.name, s, () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = Math.PI; p.gesture = Math.random() < 0.3 ? 'armsFolded' : null; }, 1.4); }
+  toQueue(p, i) { const x = -7.0 + (i % 2) * 0.55, z = -10.1 + Math.floor(i / 2) * 0.7; G.minigames.place(p, x, z, [x, z - 1]); p.gesture = Math.random() < 0.3 ? 'armsFolded' : null; } // already lined up on the patio when you arrive
   nextUp() {
     if (this.throws >= this.maxThrows) return; const p = this.queue.find(c => !c.flung && c.state === 'anim'); if (!p) return; this.up = p;
-    G.ai?.sendTo(p.name, new THREE.Vector3(this.lane.x0 + 0.2, 0, this.lane.z), () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = -Math.PI / 2; p.say(pick(['Go on then.', 'Not the face!', 'I\'ve just eaten!', 'Ten metres. Easy.', 'Mind the fence!']), { prio: 1 }); }, 1.6);
+    G.minigames.place(p, this.lane.x0 + 0.2, this.lane.z, [this.lane.x0 - 1, this.lane.z]); p.say(pick(['Go on then.', 'Not the face!', 'I\'ve just eaten!', 'Ten metres. Easy.', 'Mind the fence!']), { prio: 1 });
     G.ui?.toast(`Next up: ${p.name}. GRAB, then hold THROW.`, 3, { game: true });
   }
   buildRuler() {
@@ -155,7 +155,7 @@ export class Modes {
     const fl = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.2), new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide })); fl.position.set(0.2, 0.6, 0); grp.add(fl); grp.position.set(x, 0, z); grp.lookAt(G.player.headPos(new THREE.Vector3()).setY(0)); G.scene.add(grp); this.flags.push(grp); }
   tickFling(dt) {
     const f = this.flying; if (!f) return; f.t += dt; const p = f.p; if (!p.bodies) return; const b = p.bodies[0]; const v = b.linvel(), t = b.translation();
-    if (f.t > 0.8 && Math.hypot(v.x, v.y, v.z) < 0.6) { this.flying = null; p.flung = true; const d = Math.max(0, t.x - this.lane.x0); this.dists.push({ name: p.name, d }); const pts = Math.round(d * 100); this.add(pts, `${p.name}: ${d.toFixed(1)} m`);
+    if (f.t > 0.8 && Math.hypot(v.x, v.y, v.z) < 0.6) { this.flying = null; p.flung = true; const d = Math.max(0, t.x - this.lane.x0); this.dists.push({ name: p.name, d }); const pts = Math.max(100, Math.round(d) * 100); // 100 a metre this.add(pts, `${p.name}: ${d.toFixed(1)} m`);
       const best = Math.max(...this.dists.map(x => x.d)); this.flag(t.x, t.z, d); sfx(d >= best ? 'cheer' : 'boing', null, 0.8);
       card({ kicker: `THROW ${this.throws} OF ${this.maxThrows}`, title: `${d.toFixed(1)} METRES`, sub: d >= best && this.dists.length > 1 ? `${p.name} — NEW BEST!` : `${p.name} landed.`, secs: 2.2, c1: '#2d6a4f', c2: '#0e3a20' })
         .then(() => { setTimeout(() => { if (p.brain) { p.brain.state = 'idle'; G.ai?.sendTo(p.name, new THREE.Vector3(-2.5 + rand(-1, 1), 0, -7.6 + rand(-0.3, 0.3)), () => { p.base = 'stand'; p.brain.state = 'scripted'; p.brain.timer = 9999; p.yaw = -Math.PI / 2; }); } }, 2500);
@@ -203,11 +203,11 @@ export class Modes {
       const hp = o.p.headPos(new THREE.Vector3()); o.marker.position.copy(hp).add(new THREE.Vector3(0, 0.42 + Math.sin(G.time * 4) * 0.04, 0)); const anger = clamp((G.time - o.start) / o.patience, 0, 1); o.anger = anger; if (G.frame % 8 === 0) this.drawMarker(o.marker, anger);
       if (anger > 0.6 && !o.moaned) { o.moaned = true; o.p.say(pick(['Still waiting!', 'Hello?! Drink!', 'Is it being brewed?']), { prio: 1, order: true }); o.p.setMood('angry', 4); }
       if (held && o.d.ids.includes(held.id) && hp.distanceTo(me) < 1.6) { this.serve(o, held); continue; }
-      if (G.time > o.until) { this.drop(o); this.missed++; this.score = Math.max(0, this.score - 40); this.lines.unshift(`-40  ${o.p.name} gave up`); o.p.say(pick(['Forget it, I\'ll get it myself.', 'Unbelievable.', 'I\'ll die of thirst.']), { prio: 1, order: true }); o.p.setMood('angry', 6); G.ui?.toast(`${o.p.name} gave up waiting!`, 2.5, { game: true }); }
+      if (G.time > o.until) { this.drop(o); this.missed++; this.score = Math.max(0, this.score - 100); this.streak = 0; this.lines.unshift(`-100  ${o.p.name} gave up`); o.p.say(pick(['Forget it, I\'ll get it myself.', 'Unbelievable.', 'I\'ll die of thirst.']), { prio: 1, order: true }); o.p.setMood('angry', 6); G.ui?.toast(`${o.p.name} gave up waiting!`, 2.5, { game: true }); }
     }
     if (G.frame % 600 === 0) this.restock();
   }
-  serve(o, item) { G.player.releaseAll(); G.items.remove(item); this.drop(o); this.served++; const fast = Math.max(0, o.until - G.time); const pts = 100 + Math.round(fast * 4); this.add(pts, `${o.p.name} got their ${o.d.label}`); sfx('ding', null, 0.9);
+  serve(o, item) { G.player.releaseAll(); G.items.remove(item); this.drop(o); this.served++; this.streak = G.time - (this.lastServe ?? -99) < 20 ? Math.min(5, (this.streak || 1) + 1) : 1; this.lastServe = G.time; const pts = 100 * this.streak; this.add(pts, `${this.streak > 1 ? `x${this.streak} STREAK! ` : ''}${o.p.name} got their ${o.d.label}`); sfx('ding', null, 0.9);
     o.p.say(pick(['Lovely, ta!', 'You\'re a star.', 'About time!', 'Cheers!']), { prio: 1, order: true }); o.p.gesture = 'sip'; setTimeout(() => o.p.gesture === 'sip' && (o.p.gesture = null), 3000); G.ui?.toast(`+${pts} — ${o.p.name} is happy`, 2, { game: true }); }
   drop(o) { this.orders.splice(this.orders.indexOf(o), 1); G.scene.remove(o.marker); }
   // ---------------- loop + HUD ----------------

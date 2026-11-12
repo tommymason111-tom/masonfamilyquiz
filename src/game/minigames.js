@@ -53,7 +53,6 @@ export class MiniGames {
     const how = typeof def.how === 'function' ? def.how() : def.how;
     G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, `GAME ${ORDINAL[i]}: ${def.title}`, '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, how, 60, 170, 900, 42); });
     await card({ kicker: `GAME ${ORDINAL[i]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
-    await card({ kicker: 'GET READY', title: '3 · 2 · 1 · GO!', secs: 1.6, c1: '#2d8a4f', c2: '#0e3a20' });
     sfx('whistle', null, 1); a.live = true; this.active = a; document.body.classList.add('mg', 'mg-' + def.id); this['begin_' + def.id]?.(a);
     await new Promise(res => { a.done = res; });
     this.active = null; timer(null); meters(null); stopMusic(); document.body.classList.remove('mg', 'mg-' + def.id); this['end_' + def.id]?.(a); if (a.beams) await new Promise(r => setTimeout(r, 6400));
@@ -62,9 +61,9 @@ export class MiniGames {
     let rows = TEAM_IDS.map(t => ({ team: t, name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: t === mine ? a.score : this.rival(def, a.score, skills[si++ % 3]) }));
     // times (lower is better, DNF last) are shown as text and ranked by a sort key
     if (def.lowerBetter) rows = rows.map(r => ({ ...r, raw: r.score, display: r.score == null ? 'DNF' : `${r.score}s`, score: r.score == null ? -9999 : -r.score }));
-    const order = rows.slice().sort((x, y) => y.score - x.score); order.forEach((r, k) => { const pts = [3, 2, 1, 0][k]; this.total[r.team] = (this.total[r.team] || 0) + pts; if (q) q.bonus[r.team] += pts; });
+    const order = rows.slice().sort((x, y) => y.score - x.score); order.forEach((r, k) => { const pts = [3, 2, 1, 0][k]; this.total[r.team] = (this.total[r.team] || 0) + pts * 100; if (q) q.bonus[r.team] += pts; }); // standings in hundreds: 300 / 200 / 100
     sfx(order[0].me ? 'cheer' : 'drum', null, 0.9);
-    await board({ kicker: `GAME ${ORDINAL[i]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +3 points' : `${order[0].name} win this one.`, secs: 5.5 });
+    await board({ kicker: `GAME ${ORDINAL[i]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +300 points' : `${order[0].name} win this one.`, secs: 5.5 });
     this.release(); this.tidy(a);
     return a.score;
   }
