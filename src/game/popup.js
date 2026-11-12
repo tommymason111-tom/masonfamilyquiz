@@ -72,6 +72,10 @@ function ensure() {
   @keyframes hvEmo { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 15% { opacity:1; } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.3) rotate(var(--r)); } }
   @keyframes hvCrack { 0% { opacity:1; transform:scaleX(0); } 40% { opacity:1; transform:scaleX(1); } 100% { opacity:0; transform:scaleX(1.2); } }
   @keyframes hvUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  #pop .splash { position:absolute; left:50%; top:34%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; animation: splashIn 1.3s cubic-bezier(.2,1.6,.4,1) forwards; }
+  #pop .splash b { display:block; font:900 clamp(40px,13vw,80px) Impact,"Arial Black",Georgia,sans-serif; background:linear-gradient(180deg,#fff7b0,#ffd700 40%,#ff8a00); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:2px #5a0812; filter:drop-shadow(0 5px 0 #5a0812) drop-shadow(0 0 18px rgba(255,200,0,.8)); }
+  #pop .splash small { display:block; font:900 18px system-ui; color:#fff; letter-spacing:.2em; text-shadow:0 2px 4px #000; }
+  @keyframes splashIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-12deg); } 25% { opacity:1; transform:translate(-50%,-50%) scale(1.15) rotate(4deg); } 40% { transform:translate(-50%,-50%) scale(1) rotate(0); } 80% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-110%) scale(.9); } }
   @keyframes popBounce { from { transform:translateY(0) rotate(-6deg); } to { transform:translateY(-8px) rotate(6deg); } }
   @keyframes rowIn { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
   @keyframes pulseT { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.07); } }
@@ -97,6 +101,9 @@ export function havoc(who = '', line = '', emojis = ['💥']) {
   const rec = { kicker: who ? `PLAYING AS ${who.toUpperCase()}` : '', title: 'CAUSE HAVOC', sub: line, icon: emojis[0], secs: 4, c1: '#d4001a', c2: '#2a0006', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump();
   return new Promise(res => setTimeout(() => { el.remove(); S.cards = S.cards.filter(c => c !== rec); bump(); res(); }, 4300));
 }
+// a quick big word that bursts on screen and floats away (GET IN!)
+export function splash(word, small = '') { ensure(); const el = document.createElement('div'); el.className = 'splash'; el.innerHTML = `<b>${esc(word)}</b>${small ? `<small>${esc(small)}</small>` : ''}`; root.appendChild(el); setTimeout(() => el.remove(), 1350);
+  const rec = { kicker: small, title: word, sub: '', icon: '🎉', secs: 1.2, c1: '#2d8a4f', c2: '#0e3a20', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump(); setTimeout(() => { S.cards = S.cards.filter(c => c !== rec); bump(); }, 1250); }
 // a big animated card; resolves when it has gone
 export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2, _rows = null, _unit = '', _footer = '' } = {}) {
   ensure(); const rec = { kicker, title, sub: _rows ? '' : plain(sub), icon, secs, c1: c1 || '#b3122a', c2: c2 || '#4a0a14', rows: _rows, unit: _unit, footer: plain(_footer), t0: performance.now() }; S.cards.push(rec); bump(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
@@ -134,4 +141,4 @@ export function questionCard(q, n, total, onPick, selected) {
 }
 export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
 export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); S.cards = []; S.tap = null; bump(); }
-G.popup = { havoc, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };
+G.popup = { havoc, splash, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };

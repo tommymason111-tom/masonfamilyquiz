@@ -13,8 +13,8 @@ import { staticBox, staticCyl } from '../engine/physics.js';
 const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 export const GAMES = [
   { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'A sprout appears in your hand. Hold THROW to build up power (watch the bar and the dotted line), let go to lob it into the red and white cups. 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
-  { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Three relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
-  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 30 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 30 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
+  { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Five relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker. They get stronger…', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
+  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 5 opponents, 25 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 5 opponents, 25 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
   { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it reaches you, hit PASS to send it on. When the music stops with it in your hands, hit TEAR!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
 ];
@@ -89,22 +89,31 @@ export class MiniGames {
     this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);
     for (const c of G.items.byType.pong_cup || []) { c.body.setTranslation({ x: 1.25, y: 0.95, z: -3.5 - Math.random() * 0.5 }, true); c.dirty = true; } // the little cups go on the sideboard
     // six big red-and-white party cups, tilted a little towards you, fixed to the far end of the table
-    const R0 = 0.075, R1 = 0.115, CH = 0.19, TILT = 0.22; a.R0 = R0; a.R1 = R1; a.CH = CH;
+    const R0 = 0.085, R1 = 0.13, CH = 0.21, TILT = 0.22; a.R0 = R0; a.R1 = R1; a.CH = CH;
     const P = new Prop().lathe([[0, 0], [R0, 0], [R1, CH], [R1 - 0.004, CH], [R0 - 0.004, 0.006], [0, 0.006]], '#d0101e', 0, 0, 0, 26);
     P.lathe([[0, 0.007], [R0 - 0.005, 0.007], [R1 - 0.005, CH - 0.002], [R1 - 0.006, CH - 0.002], [R0 - 0.006, 0.008], [0, 0.008]], '#f6f6f6', 0, 0, 0, 26); // white inside
     P.torus(R1, 0.006, '#ffffff', 0, CH, 0, Math.PI / 2).torus(R1 - 0.011, 0.004, '#ffffff', 0, CH - 0.026, 0, Math.PI / 2); // white rim + stripe
     const geo = P.build(); const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, side: THREE.DoubleSide });
     const qT = new THREE.Quaternion().setFromEuler(new THREE.Euler(TILT, 0, 0)); a.qTi = qT.clone().invert();
     a.cups = []; a.cupStatics = [];
-    const pts = [[-0.25, 0], [0, 0], [0.25, 0], [-0.125, 0.22], [0.125, 0.22], [0, 0.44]];
-    for (const [dx, dz] of pts) { const base = new THREE.Vector3(TABLE.x + dx, TABLE.y, TABLE.z0 + 0.18 + dz);
+    const pts = [[-0.29, 0], [0, 0], [0.29, 0], [-0.145, 0.25], [0.145, 0.25], [0, 0.5]];
+    for (const [dx, dz] of pts) { const base = new THREE.Vector3(TABLE.x + dx, TABLE.y, TABLE.z0 + 0.21 + dz);
       const m = new THREE.Mesh(geo, mat); m.position.copy(base); m.quaternion.copy(qT); m.castShadow = true; G.scene.add(m); a.cups.push({ x: base.x, z: base.z, y: base.y, base, mesh: m });
       const W = (v) => v.clone().applyQuaternion(qT).add(base);
       const c0 = W(new THREE.Vector3(0, 0.005, 0)); a.cupStatics.push(staticBox(c0.x, c0.y, c0.z, R0 * 0.8, 0.005, R0 * 0.8, qT)); // base
       for (let k = 0; k < 14; k++) { const ang = k / 14 * Math.PI * 2, r = (R0 + R1) / 2 + 0.003; const wp = W(new THREE.Vector3(Math.cos(ang) * r, CH / 2, Math.sin(ang) * r)); const q = qT.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -ang, 0)));
-        a.cupStatics.push(staticBox(wp.x, wp.y, wp.z, 0.003, CH / 2, 0.028, q)); } }
+        a.cupStatics.push(staticBox(wp.x, wp.y, wp.z, 0.003, CH / 2, 0.033, q)); } }
+    // a backboard behind the cups, so long throws bounce back in
+    { const bw = TABLE.x1 - TABLE.x0, bh = 0.55, bz = TABLE.z0 + 0.03; const cv = document.createElement('canvas'); cv.width = 512; cv.height = 300; const g = cv.getContext('2d');
+      const gr = g.createLinearGradient(0, 0, 0, 300); gr.addColorStop(0, '#b3122a'); gr.addColorStop(1, '#5a0812'); g.fillStyle = gr; g.fillRect(0, 0, 512, 300); g.strokeStyle = '#ffd700'; g.lineWidth = 14; g.strokeRect(10, 10, 492, 280);
+      g.fillStyle = '#ffd700'; g.font = '900 72px Georgia'; g.textAlign = 'center'; g.fillText('SPROUT', 256, 120); g.fillText('PONG', 256, 200); g.font = '40px serif'; g.fillText('🥬 🎯 🥬', 256, 262);
+      const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+      const board = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.03), [0, 1, 2, 3, 4, 5].map(k => new THREE.MeshStandardMaterial(k === 4 ? { map: tex, roughness: 0.6 } : { color: '#6b3a1f', roughness: 0.7 })));
+      board.position.set(TABLE.x, TABLE.y + bh / 2, bz); G.scene.add(board); a.board = board;
+      a.cupStatics.push(staticBox(TABLE.x, TABLE.y + bh / 2, bz, bw / 2, bh / 2, 0.015, null, { restitution: 0.45 })); }
     // the dotted line showing where the sprout will go
-    a.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.012, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9, depthWrite: false }), 40);
+    a.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.016, 8, 6), new THREE.MeshBasicMaterial({ color: '#fff3a0', transparent: true, opacity: 0.95, depthWrite: false, depthTest: false }), 40);
+    a.land = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.06, 24), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthTest: false })); a.land.rotation.x = -Math.PI / 2; a.land.renderOrder = 6; a.land.visible = false; G.scene.add(a.land);
     a.dots.frustumCulled = false; a.dots.visible = false; a.dots.renderOrder = 5; G.scene.add(a.dots);
     G.player.teleport(TABLE.x, TABLE.z1 + 0.65, 0); G.player.pitch = -0.3;
     this.park(this.reps(2), [[4.15, -3.25], [4.15, -4.2]], [TABLE.x, TABLE.z]); this.diningCrowd([]);
@@ -125,22 +134,39 @@ export class MiniGames {
     if (a.dots) { a.dots.visible = !G.xr && !!held && held.id === 'sprout';
       if (a.dots.visible) { const t = held.body.translation(); const p = new THREE.Vector3(t.x, t.y, t.z), v = this.sproutLaunch(new THREE.Vector3()); const mm = new THREE.Matrix4(); let n = 0;
         for (let s = 0; s < 4; s++) { v.y -= 9.81 * 0.01; p.addScaledVector(v, 0.01); } // start just in front of your hand
-        for (let k = 0; k < 40; k++) { for (let s = 0; s < 2; s++) { v.y -= 9.81 * 0.012; v.multiplyScalar(1 - 0.4 * 0.012); p.addScaledVector(v, 0.012); } if (p.y < TABLE.y - 0.03) break; mm.makeTranslation(p.x, p.y, p.z); a.dots.setMatrixAt(n++, mm); }
-        a.dots.count = n; a.dots.instanceMatrix.needsUpdate = true; } }
+        for (let k = 0; k < 40; k++) { for (let s = 0; s < 2; s++) { v.y -= 9.81 * 0.012; v.multiplyScalar(1 - 0.4 * 0.012); p.addScaledVector(v, 0.012); } if (p.y < TABLE.y + 0.01) break; mm.makeTranslation(p.x, p.y, p.z); a.dots.setMatrixAt(n++, mm); }
+        a.dots.count = n; a.dots.instanceMatrix.needsUpdate = true; a.land.position.set(p.x, TABLE.y + 0.012, p.z); a.land.scale.setScalar(1 + Math.sin(G.time * 8) * 0.15); } a.land.visible = a.dots.visible; }
     if (G.frame % 3) return;
     for (const s of G.items.byType.sprout || []) { if (a.counted.has(s) || s.held) continue; const p = s.body.translation();
       for (const c of a.cups) { const l = new THREE.Vector3(p.x, p.y, p.z).sub(c.base).applyQuaternion(a.qTi); const rr = a.R0 + (a.R1 - a.R0) * Math.max(0, l.y / a.CH);
-        if (l.y > 0 && l.y < a.CH * 0.9 && Math.hypot(l.x, l.z) < rr - 0.012) { a.counted.add(s); a.score++; sfx('ding', p, 0.7); G.ui?.toast(`IN THE CUP! (${a.score})`, 1.2, { game: true }); c.mesh.scale.setScalar(1.1); setTimeout(() => c.mesh.scale.setScalar(1), 160); this.cheer(); break; } } }
+        if (l.y > 0 && l.y < a.CH * 0.9 && Math.hypot(l.x, l.z) < rr - 0.012) { a.counted.add(s); a.score++; this.cupCelebrate(a, c); break; } } }
   }
-  end_sproutPong(a) { if (a.dots) G.scene.remove(a.dots); G.player.releaseAll(); for (const c of a.cups || []) G.scene.remove(c.mesh); for (const st of a.cupStatics || []) { G.colliderMap.delete(st.collider.handle); G.world.removeRigidBody(st.body); } a.cups = []; a.cupStatics = []; }
+  // GET IN! confetti bursting out of the cup, a gold ring, the cup bouncing, a big word on screen and the crowd going up
+  cupCelebrate(a, c) {
+    sfx('ding', c.base, 1); sfx('cheer', null, 0.6); setTimeout(() => sfx('ding', c.base, 0.7), 140); this.cheer(); this.cheer();
+    G.popup?.splash?.(pick(['GET IN!', 'SPLASH!', 'SPROUT-TACULAR!', 'IN THE CUP!', 'BULLSEYE!']), `${a.score} IN`);
+    const rim = c.base.clone().add(new THREE.Vector3(0, a.CH, 0).applyQuaternion(c.mesh.quaternion));
+    const cols = ['#ffd700', '#ff3b3b', '#3bd16f', '#3a86ff', '#ffffff', '#ff7ad9']; const bits = [];
+    const geo = new THREE.PlaneGeometry(0.03, 0.018);
+    for (let k = 0; k < 36; k++) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: cols[k % cols.length], side: THREE.DoubleSide, transparent: true })); m.position.copy(rim); G.scene.add(m);
+      bits.push({ m, v: new THREE.Vector3(rand(-1.2, 1.2), rand(1.8, 3.4), rand(-1.2, 1.2)), r: new THREE.Vector3(rand(-12, 12), rand(-12, 12), rand(-12, 12)) }); }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(a.R1, 0.012, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true })); ring.position.copy(rim); ring.quaternion.copy(c.mesh.quaternion).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0))); G.scene.add(ring);
+    const t0 = G.time; const step = () => { const t = G.time - t0, dt = 1 / 60;
+      for (const b of bits) { b.v.y -= 6 * dt; b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += b.r.x * dt; b.m.rotation.y += b.r.y * dt; b.m.material.opacity = Math.max(0, 1 - t / 1.4); }
+      ring.scale.setScalar(1 + t * 4); ring.material.opacity = Math.max(0, 1 - t * 2);
+      const bounce = t < 0.5 ? 1 + Math.sin(t * 25) * 0.12 * (1 - t * 2) : 1; c.mesh.scale.set(bounce, 2 - bounce, bounce);
+      if (t < 1.5) requestAnimationFrame(step); else { for (const b of bits) G.scene.remove(b.m); G.scene.remove(ring); c.mesh.scale.setScalar(1); } };
+    requestAnimationFrame(step);
+  }
+  end_sproutPong(a) { if (a.dots) G.scene.remove(a.dots); if (a.board) G.scene.remove(a.board); if (a.land) G.scene.remove(a.land); G.player.releaseAll(); for (const c of a.cups || []) G.scene.remove(c.mesh); for (const st of a.cupStatics || []) { G.colliderMap.delete(st.collider.handle); G.world.removeRigidBody(st.body); } a.cups = []; a.cupStatics = []; }
 
   // ---------- 2. Cracker pull ----------
   // you stand on one spot in the dining room; each opponent appears straight in front of you, the camera locks on them
   // and you can't walk off until the cracker goes bang; then the next one steps up
   setup_crackerDuel(a) {
-    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.22, 0.28), rand(0.3, 0.36), rand(0.38, 0.46)]); // a weak one, a decent one and a strong one, in a random order
+    a.round = 0; a.opps = this.reps(5); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.3, 0.34), rand(0.35, 0.39), rand(0.4, 0.44), rand(0.45, 0.5), rand(0.52, 0.58)]); // five opponents, weakest to strongest, in a random order
     G.player.teleport(a.spot[0], a.spot[1], -Math.PI / 2); G.player.pitch = -0.08;
-    this.park(a.opps, [[3.9, -4.7], [3.5, -5.1], [3.1, -5.3]], a.spot);
+    this.park(a.opps, [[3.9, -4.7], [3.5, -5.1], [3.1, -5.3], [2.7, -5.4], [2.3, -5.3]], a.spot);
     this.diningCrowd(a.opps, a.spot);
   }
   begin_crackerDuel(a) { this.nextDuel(a); }
@@ -153,12 +179,12 @@ export class MiniGames {
     const c = this.spawn('cracker', opp.handPos('R', new THREE.Vector3())); a.cracker = c;
     if (c) { c.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); c.attached = (out, q) => { const hp = opp.handPos('R', new THREE.Vector3()); const pp = G.player.headPos(new THREE.Vector3()).add(G.player.forward(new THREE.Vector3()).multiplyScalar(0.45)); pp.y -= 0.35; out.copy(hp).lerp(pp, 0.5); q.setFromEuler(new THREE.Euler(0, Math.atan2(pp.x - hp.x, pp.z - hp.z) + Math.PI / 2, 0)); return out; }; }
     opp.say(pick(['Come on then!', 'Pull it!', 'I always win these.', 'Ready?']), { prio: 1 });
-    card({ kicker: `DUEL ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = a.skills[a.round] ?? rand(0.28, 0.42); a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.075; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
+    card({ kicker: `DUEL ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = a.skills[a.round] ?? rand(0.28, 0.42); a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.062; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
   }
   tick_crackerDuel(a, dt) {
     if (!a.duelOn) { meters(null); return; }
-    if (G.player.controls.btn('use').pressed || G.player.controls.btn('punch').pressed || G.player.controls.btn('jump').pressed) a.me += 0.075;
-    const gap = a.me - a.them; const band = gap > 0.18 ? 1.45 : gap < -0.25 ? 0.7 : 1; // they dig in when you pull ahead, ease off when you're well behind: it stays close
+    if (G.player.controls.btn('use').pressed || G.player.controls.btn('punch').pressed || G.player.controls.btn('jump').pressed) a.me += 0.062;
+    const gap = a.me - a.them; const band = gap > 0.15 ? 1.6 : gap < -0.3 ? 0.8 : 1; // they dig in when you pull ahead, ease off when you're well behind: it stays close
     a.them += a.rate * band * dt * (0.7 + Math.random() * 0.6);
     meters([{ label: 'You', value: a.me, color: TEAMS[this.me()].color }, { label: a.opp.name, value: a.them, color: '#ffffff' }]);
     if (a.me >= 1 || a.them >= 1) {
@@ -177,7 +203,7 @@ export class MiniGames {
   // a little sumo stage on the lawn. Every hit fills the opponent's wobble meter (and it drains if you stop); full
   // meter on a phone = they fly out of the ring; in the headset = grab them and throw them out. They shove back.
   setup_sumo(a) {
-    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(3); a.limitEach = 30;
+    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(5); a.limitEach = 25;
     const P = new Prop(); P.cyl(R.r + 0.28, R.r + 0.34, 0.07, '#b89a6a', 0, 0.035, 0, 0, 0, 0, 40).cyl(R.r, R.r, 0.006, '#e6d3a2', 0, 0.075, 0, 0, 0, 0, 40); // raised clay platform + sand
     for (let k = 0; k < 90; k++) { const ang = k / 90 * Math.PI * 2; P.sph(0.055, k % 2 ? '#c8a960' : '#b8964c', Math.cos(ang) * R.r, 0.09, Math.sin(ang) * R.r, 1.6, 0.9, 1.6, 8); } // the straw-bale rope round the edge
     for (const s of [-1, 1]) P.box(0.04, 0.006, 0.42, '#ffffff', s * 0.45, 0.08, 0); // the two start lines
@@ -186,35 +212,36 @@ export class MiniGames {
     for (const [x0, z0, x1, z1] of [[1, 1, -1, 1], [-1, 1, -1, -1], [-1, -1, 1, -1], [1, -1, 1, 1]]) { const k = R.r + 0.45; const cx = (x0 + x1) / 2 * k, cz = (z0 + z1) / 2 * k; P.box(Math.abs(x1 - x0) * k + 0.1, 0.08, Math.abs(z1 - z0) * k + 0.1, '#7b2cbf', cx, 2.02, cz); } // purple roof frame
     a.ringMesh = new THREE.Mesh(P.build(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 })); a.ringMesh.position.set(R.x, 0, R.z); a.ringMesh.receiveShadow = false; a.ringMesh.castShadow = false; G.scene.add(a.ringMesh);
     a.light = new THREE.PointLight('#ffe2a8', 6, 7, 1.6); a.light.position.set(R.x, 2.6, R.z); G.scene.add(a.light);
-    this.park(a.opps, [[R.x - 2.4, R.z - 1.7], [R.x - 2.7, R.z - 1.2], [R.x - 3.0, R.z - 0.7]], [R.x, R.z]);
+    this.park(a.opps, [[R.x - 2.4, R.z - 1.7], [R.x - 2.7, R.z - 1.2], [R.x - 3.0, R.z - 0.7], [R.x - 3.2, R.z - 0.2], [R.x - 3.3, R.z + 0.3]], [R.x, R.z]);
     const ring = []; for (let k = 0; k < 14; k++) { const ang = Math.PI * 0.15 + k / 14 * Math.PI * 1.5; ring.push([R.x + Math.cos(ang) * (R.r + 1.25), R.z + Math.sin(ang) * (R.r + 1.25)]); }
     this.crowd(ring, [R.x, R.z], a.opps);
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2); G.player.pitch = -0.1;
-    a.label = () => `ROUND ${Math.min(3, a.round + 1)} · WINS ${a.score}`;
+    a.label = () => `ROUND ${Math.min(a.opps.length, a.round + 1)} · WINS ${a.score}`;
   }
   begin_sumo(a) { this.nextBout(a); }
   nextBout(a) {
     const R = a.ring; if (a.round >= a.opps.length) return this.stop(a);
-    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.95, 1.1), rand(1.15, 1.3), rand(1.35, 1.6)]))[a.round]; // each opponent has their own strength
+    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.85, 0.95), rand(0.95, 1.05), rand(1.05, 1.15), rand(1.15, 1.25), rand(1.25, 1.4)]))[a.round]; // each opponent has their own strength
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2);
     this.place(opp, R.x + 0.75, R.z, [R.x - 0.75, R.z]); opp.gesture = 'sumo'; opp.sumoReady = false;
-    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.045 : 0.065) / (a.str || 1)); // lots of hits needed sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
+    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.1) / (a.str || 1)); // about 10-15 quick hits sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
       const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.pos.addScaledVector(d, 0.06); opp.gestureT = 0; };
-    card({ kicker: `BOUT ${a.round + 1} OF 3`, title: `VS ${opp.name.toUpperCase()}`, sub: G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
+    card({ kicker: `BOUT ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
   }
   tick_sumo(a, dt) {
     const R = a.ring, opp = a.opp; if (!opp) return;
     if (!a.boutOn) { meters(null); return; }
-    a.boutT += dt; a.meter = Math.max(0, a.meter - dt * 0.3 * (a.str || 1)); // drains faster against the strong ones
+    a.boutT += dt; a.meter = Math.max(0, a.meter - dt * 0.24 * (a.str || 1)); // drains faster against the strong ones
     // they edge forward and shove you back (out of the ring = you lose the bout)
     if (opp.state === 'anim' && opp.sumo) {
       const pp = G.player.pos; const d = new THREE.Vector3(pp.x - opp.pos.x, 0, pp.z - opp.pos.z); const dist = d.length(); d.normalize();
       opp.yaw = Math.atan2(d.x, d.z); a.lunge -= dt;
-      if (a.lunge < 0) { a.lunge = rand(1.0, 1.9) * (1 + a.meter * 0.8) / a.str;
-        if (dist > 0.85) opp.pos.addScaledVector(d, Math.min(0.32, dist - 0.75)); // close the gap
-        else { // they hit you back: a big two-handed shove that knocks you towards the edge
+      if (a.lunge < 0) { a.lunge = rand(0.6, 1.1) / a.str; // they come at you often
+        if (dist > 1.6) opp.pos.addScaledVector(d, Math.min(0.45, dist - 1.0)); // too far: charge in
+        else { // close enough: lunge in and shove you back (a little at a time: it takes several to put you out)
+          if (dist > 0.75) opp.pos.addScaledVector(d, Math.min(0.3, dist - 0.7));
           opp.gesture = 'shove'; opp.gestureT = 0; setTimeout(() => { if (opp.gesture === 'shove') opp.gesture = 'sumo'; }, 450);
-          const push = (0.22 + Math.random() * 0.18) * a.str * (1 - a.meter * 0.5); const np = pp.clone().addScaledVector(d, push); G.player.teleport(np.x, np.z, G.player.yaw);
+          const push = (0.1 + Math.random() * 0.1) * a.str * (1 - a.meter * 0.5); const np = pp.clone().addScaledVector(d, push); G.player.teleport(np.x, np.z, G.player.yaw);
           sfx('boff', pp, 0.9); sfx('oof', pp, 0.6); if (G.fx) G.fx.shake = Math.max(G.fx.shake, 0.02); G.player.fp?.punch?.('L');
           try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(0.8, 120); } catch (e) { /* no haptics */ }
           G.ui?.toast(pick(['SHOVED!', 'OOF!', 'They hit back!', 'WHACK!']), 0.8, { game: true }); } }
