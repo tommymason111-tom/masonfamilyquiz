@@ -198,9 +198,9 @@ export class Player {
     let body;
     if (f.kind === 'item') { body = f.ref.body; if (f.ref.inMouth && G.dog) { G.dog.mouth = null; f.ref.inMouth = false; G.dog.wag = 3; } if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; if (f.ref.type.mass < 5) { holder.attach = true; holder.radius = itemRadius(f.ref.type.shape); body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); } sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
     else if (f.kind === 'char') {
-      const p = f.ref; if (p.sumo && !p.sumoReady) { p.sumo(null, true); return false; } // sumo: they plant their feet until they're off balance if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
+      const p = f.ref; if (p.sumo && !p.sumoReady) { p.sumo(null, true); return false; } /* sumo: they plant their feet until they're off balance */ if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
       p.knock(null, f.part ?? 1, { muscle: 0.12 }); body = p.bodies[f.part ?? 1]; p.heldBy.add(holder);
-      holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; if (G.modes?.id === 'fling') { holder.totalMass *= 0.4; holder.maxF *= 1.7; } // Fling the Relative: they feel light so you can really launch them holder.part = f.part ?? 1; holder.person = p;
+      holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; if (G.modes?.id === 'fling') { holder.totalMass *= 0.4; holder.maxF *= 1.7; } /* Fling the Relative: they feel light so you can really launch them */ holder.part = f.part ?? 1; holder.person = p;
       sfx('oof', f.point, 0.8); p.setMood('shock', 2);
       if (Math.random() < 0.6) setTimeout(() => p.bark('thrown', { prio: 1 }), 300);
       emit('grabPerson', p);

@@ -168,7 +168,7 @@ export class MiniGames {
   // you stand on one spot in the dining room; each opponent appears straight in front of you, the camera locks on them
   // and you can't walk off until the cracker goes bang; then the next one steps up
   setup_crackerDuel(a) {
-    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.34, 0.39), rand(0.42, 0.47), rand(0.5, 0.56)]); // three opponents, all decent, one strong, in a random order
+    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = [rand(0.41, 0.44), rand(0.47, 0.5), rand(0.53, 0.56)]; // three opponents, each one stronger than the last
     G.player.teleport(a.spot[0], a.spot[1], -Math.PI / 2); G.player.pitch = -0.08;
     this.park(a.opps, [[3.9, -4.7], [3.5, -5.1], [3.1, -5.3], [2.7, -5.4], [2.3, -5.3]], a.spot);
     this.diningCrowd(a.opps, a.spot);
@@ -183,12 +183,12 @@ export class MiniGames {
     const c = this.spawn('cracker', opp.handPos('R', new THREE.Vector3())); a.cracker = c;
     if (c) { c.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); c.attached = (out, q) => { const hp = opp.handPos('R', new THREE.Vector3()); const pp = G.player.headPos(new THREE.Vector3()).add(G.player.forward(new THREE.Vector3()).multiplyScalar(0.45)); pp.y -= 0.35; out.copy(hp).lerp(pp, 0.5); q.setFromEuler(new THREE.Euler(0, Math.atan2(pp.x - hp.x, pp.z - hp.z) + Math.PI / 2, 0)); return out; }; }
     opp.say(pick(['Come on then!', 'Pull it!', 'I always win these.', 'Ready?']), { prio: 1 });
-    card({ kicker: `DUEL ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = a.skills[a.round] ?? rand(0.28, 0.42); a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.062; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
+    card({ kicker: `DUEL ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: ['Hammer PULL!', 'They\'re stronger. Pull faster!', 'The champion. Pull like mad!'][a.round] || 'Hammer PULL!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.duelOn = true; a.rate = a.skills[a.round] ?? 0.6; a.removeBtn = tapButton('PULL!', () => { if (a.duelOn) { a.me += 0.062; G.player.fp.punch?.('R'); sfx('tap', null, 0.25); } }); });
   }
   tick_crackerDuel(a, dt) {
     if (!a.duelOn) { meters(null); return; }
     if (G.player.controls.btn('use').pressed || G.player.controls.btn('punch').pressed || G.player.controls.btn('jump').pressed) a.me += 0.062;
-    const gap = a.me - a.them; const band = gap > 0.15 ? 1.6 : gap < -0.3 ? 0.8 : 1; // they dig in when you pull ahead, ease off when you're well behind: it stays close
+    const gap = a.me - a.them; const band = gap > 0.15 ? 1.6 + a.round * 0.25 : gap < -0.3 ? 0.85 + a.round * 0.07 : 1; // they dig in when you pull ahead (harder each round), ease off a little when you're well behind
     a.them += a.rate * band * dt * (0.7 + Math.random() * 0.6);
     meters([{ label: 'You', value: a.me, color: TEAMS[this.me()].color }, { label: a.opp.name, value: a.them, color: '#ffffff' }]);
     if (a.me >= 1 || a.them >= 1) {
@@ -225,12 +225,12 @@ export class MiniGames {
   begin_sumo(a) { this.nextBout(a); }
   nextBout(a) {
     const R = a.ring; if (a.round >= a.opps.length) return this.stop(a);
-    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(0.6, 1.0); a.windup = false; a.str = (a.strs ||= shuffle([rand(0.95, 1.05), rand(1.1, 1.2), rand(1.25, 1.4)]))[a.round]; // each opponent has their own strength
+    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(0.6, 1.0); a.windup = false; a.str = (a.strs ||= [rand(1.12, 1.18), rand(1.3, 1.36), rand(1.48, 1.55)])[a.round]; // each opponent is stronger than the last
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2);
     this.place(opp, R.x + 0.75, R.z, [R.x - 0.75, R.z]); opp.gesture = 'sumo'; opp.sumoReady = false;
-    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.1) / (a.str || 1)); // about 10-15 quick hits sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
+    opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.1) / (a.str || 1)); /* about 10-15 quick hits */ sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
       const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.pos.addScaledVector(d, 0.06); opp.gestureT = 0; };
-    card({ kicker: `BOUT ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!', secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
+    card({ kicker: `BOUT ${a.round + 1} OF ${a.opps.length}`, title: `VS ${opp.name.toUpperCase()}`, sub: (G.xr ? 'Fill the wobble meter, then GRAB and THROW!' : 'Keep hitting them!') + ['', ' · They\'re tougher!', ' · The champion!'][a.round], secs: 1.8, c1: '#7b2cbf', c2: '#2a0b44' }).then(() => { a.boutOn = true; a.boutT = 0; opp.say(pick(['Come on then!', 'I\'ve been training.', 'You\'re going in the hedge.', 'Hakkeyoi!']), { prio: 1 }); });
   }
   tick_sumo(a, dt) {
     const R = a.ring, opp = a.opp; if (!opp) return;
@@ -248,7 +248,7 @@ export class MiniGames {
           const p2 = G.player.pos; const dd = new THREE.Vector3(p2.x - opp.pos.x, 0, p2.z - opp.pos.z); const dl = dd.length(); dd.normalize();
           if (dl > 1.4) return; // you got out of reach in time
           opp.gesture = 'shove'; opp.gestureT = 0; setTimeout(() => { if (opp.gesture === 'shove') opp.gesture = 'sumo'; }, 450); opp.pos.addScaledVector(dd, Math.min(0.25, Math.max(0, dl - 0.6)));
-          const push = (0.22 + Math.random() * 0.12) * a.str * (1 - a.meter * 0.4); G.player.shove(dd.multiplyScalar(push));
+          const push = (0.2 + Math.random() * 0.1) * Math.min(a.str, 1.4) * (1 - a.meter * 0.4); G.player.shove(dd.multiplyScalar(push));
           sfx('boff', p2, 1); sfx('oof', p2, 0.8); if (G.fx) G.fx.shake = Math.max(G.fx.shake, 0.035); G.popup?.flash?.('#ff2a2a'); G.popup?.splash?.(pick(['WHACK!', 'OOF!', 'SHOVED!', 'BOSH!']), '');
           try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 160); } catch (e) { /* no haptics */ } }, 280); }
       const pr = Math.hypot(G.player.pos.x - R.x, G.player.pos.z - R.z); if (pr > R.r + 0.1) return this.boutOver(a, false, "You're out of the ring!");
@@ -323,6 +323,9 @@ export class MiniGames {
   }
 
   // ---------- 3. Pass the parcel ----------
+  // a proper wrapped present: patterned paper (a new pattern under every layer), a gold ribbon, a bow and a lid on a
+  // hinge. It hops from hand to hand, gets shaken when the music stops, the paper flies off in strips when someone
+  // tears a layer, and on the last layer the lid swings open and the prize floats up out of it.
   setup_parcel(a) {
     a.layers = 6; const c = { x: 2.9, z: -3.7 }, r = 1.0; a.circle = c;
     this.clearArea(1.6, 4.2, -5.1, -2.3);
@@ -330,30 +333,82 @@ export class MiniGames {
     for (let k = 0; k < 5; k++) { const ang = k / 5 * Math.PI * 2; slots.push([c.x + Math.sin(ang) * r, c.z + Math.cos(ang) * r]); }
     G.player.teleport(slots[0][0], slots[0][1], 0); G.player.pitch = -0.15;
     this.park(a.people, slots.slice(1), [c.x, c.z]); a.slots = slots; a.holder = 0; this.diningCrowd(a.people, [c.x, c.z]);
-    const pc = this.spawn('parcel', new THREE.Vector3(c.x, 1.0, c.z)); a.parcel = pc;
-    if (pc) { pc.body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); pc.attached = (out, q) => { const h = a.holder; const lift = a.tearing ? 0.15 * Math.sin(G.time * 30) : 0; if (h === 0) { G.player.headPos(out).add(G.player.forward(new THREE.Vector3()).setY(0).normalize().multiplyScalar(0.45)); out.y -= 0.45; } else { const p = a.people[h - 1]; if (p) { p.handPos('R', out); out.add(new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)).multiplyScalar(0.12)); } } out.y += lift; q.setFromEuler(new THREE.Euler(0, G.time, 0)); return out; }; }
+    a.pres = makePresent(a.layers); G.scene.add(a.pres.root); a.bits = [];
+    a.hop = null; a.anim = null; this.holderPose(a, a.holder, a.pres.root.position, true);
   }
-  begin_parcel(a) { this.parcelMusic(a); }
-  parcelMusic(a) { if (!a.live) return; a.playing = true; a.tearing = false; playMusic('wewish', true, 0.35); a.passT = 0; a.stopAt = a.t + rand(2.8, 6.5); timer('♪ MUSIC ♪', `PASS THE PARCEL · ${a.layers} LAYERS LEFT`); }
+  // where the present sits for whoever holds it, and which way it faces (lid front towards them)
+  holderPose(a, h, out, snap) {
+    if (h === 0) { const f = G.player.forward(new THREE.Vector3()).setY(0).normalize(); G.player.headPos(out).add(f.clone().multiplyScalar(0.45)); out.y -= 0.42; a.faceYaw = Math.atan2(-f.x, -f.z); }
+    else { const p = a.people[h - 1]; if (p) { const fw = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw)); p.handPos('L', out).lerp(p.handPos('R', new THREE.Vector3()), 0.5).addScaledVector(fw, 0.12); out.y = Math.max(out.y, p.pos.y + 0.75); a.faceYaw = p.yaw + Math.PI; } }
+    return out;
+  }
+  passTo(a, h) {
+    const from = a.pres.root.position.clone(); const prev = a.holder; a.holder = h; a.hop = { from, t: 0, dur: 0.32, spin: (Math.random() < 0.5 ? -1 : 1) * Math.PI * 2 };
+    const pp = a.people[prev - 1]; if (pp && pp.state === 'anim') { pp.gesture = 'throwOver'; pp.gestureT = 0; setTimeout(() => { if (pp.gesture === 'throwOver') pp.gesture = 'reach'; }, 300); }
+    const np = a.people[h - 1]; if (np && np.state === 'anim') { np.gesture = 'reach'; np.gestureT = 0; }
+    sfx('tap', null, h === 0 ? 0.35 : 0.2);
+  }
+  begin_parcel(a) { for (const p of a.people) if (p.state === 'anim') p.gesture = 'reach'; this.parcelMusic(a); }
+  parcelMusic(a) { if (!a.live) return; a.playing = true; a.tearing = false; a.shake = 0; playMusic('wewish', true, 0.35); a.passT = 0; a.stopAt = a.t + rand(2.8, 6.5); timer('♪ MUSIC ♪', `PASS THE PARCEL · ${a.layers} LAYERS LEFT`); }
   tick_parcel(a, dt) {
     // while the music plays: everyone else passes it on by themselves; when it's in your hands you press PASS
-    if (a.playing && a.holder === 0 && !a.passBtn) { a.passBtn = tapButton('PASS ➜', () => { if (!a.playing || a.holder !== 0) return; a.holder = 1; a.passT = 0; sfx('tap', null, 0.3); a.passBtn?.(); a.passBtn = null; }); }
-    if (a.playing && a.holder !== 0) { a.passT += dt; if (a.passT > 0.55) { a.passT = 0; a.holder = (a.holder + 1) % 5; sfx('tap', null, 0.2); } }
+    if (a.playing && a.holder === 0 && !a.passBtn && !a.hop) { a.passBtn = tapButton('PASS ➜', () => { if (!a.playing || a.holder !== 0) return; this.passTo(a, 1); a.passT = 0; a.passBtn?.(); a.passBtn = null; }); }
+    if (a.playing && a.holder !== 0 && !a.hop) { a.passT += dt; if (a.passT > 0.42) { a.passT = 0; this.passTo(a, (a.holder + 1) % 5); } }
     if (a.playing) {
-      if (a.t > a.stopAt) { a.playing = false; stopMusic(); sfx('click', null, 1); a.passBtn?.(); a.passBtn = null;
+      if (a.t > a.stopAt && !a.hop) { a.playing = false; stopMusic(); sfx('click', null, 1); a.passBtn?.(); a.passBtn = null; a.shake = 1;
         if (a.holder === 0) { timer('IT\'S YOU!', 'TEAR IT!', true); a.tearing = true; const until = a.t + 2.2; a.tearUntil = until; a.removeBtn = tapButton('TEAR!', () => { if (!a.tearing) return; a.tearing = false; a.removeBtn?.(); this.tore(a, true); }); }
-        else { const p = a.people[a.holder - 1]; timer(`${p.name}!`, 'MUSIC STOPPED'); setTimeout(() => this.tore(a, false, p), 1100); } } }
+        else { const p = a.people[a.holder - 1]; timer(`${p.name}!`, 'MUSIC STOPPED'); if (p.state === 'anim') { p.gesture = 'cheer'; p.gestureT = 0; } setTimeout(() => this.tore(a, false, p), 1100); } } }
     if (a.tearing && a.t > a.tearUntil) { a.tearing = false; a.removeBtn?.(); G.ui?.toast('Too slow! It goes round again.', 2, { game: true }); G.ai.say('Paul', 'Tear it, then!', 1); setTimeout(() => this.parcelMusic(a), 1200); }
+    this.animPresent(a, dt);
+  }
+  animPresent(a, dt) {
+    const P = a.pres; if (!P) return; const root = P.root; const tgt = this.holderPose(a, a.holder, new THREE.Vector3());
+    let spin = 0, sq = 1;
+    if (a.hop) { // a little lob from one pair of hands to the next, spinning as it goes
+      const h = a.hop; h.t += dt; const k = Math.min(1, h.t / h.dur); const e = k * k * (3 - 2 * k);
+      root.position.copy(h.from).lerp(tgt, e); root.position.y += Math.sin(k * Math.PI) * 0.28; spin = h.spin * e; sq = 1 + Math.sin(k * Math.PI) * 0.08;
+      if (k >= 1) { a.hop = null; spin = 0; const np = a.people[a.holder - 1]; if (np && np.state === 'anim' && a.playing) np.gesture = 'reach'; }
+    } else root.position.lerp(tgt, Math.min(1, dt * 18));
+    // it bobs while the music plays; when it stops whoever has it gives it a shake (and a frantic one while you're tearing)
+    a.shake = Math.max(0, (a.shake || 0) - dt * 1.2); const jig = a.tearing ? 0.9 : a.shake;
+    const bob = a.playing ? Math.sin(G.time * 9) * 0.012 : 0;
+    root.position.y += bob + Math.sin(G.time * 38) * 0.025 * jig;
+    root.rotation.set(Math.sin(G.time * 31) * 0.12 * jig, a.faceYaw + spin + Math.sin(G.time * 27) * 0.18 * jig, Math.sin(G.time * 23) * 0.1 * jig);
+    // tear / open animation
+    const an = a.anim; let lid = 0;
+    if (an) { an.t += dt;
+      if (an.kind === 'tear') { const k = an.t / 0.75; lid = Math.sin(Math.min(1, k) * Math.PI) * 0.45; sq *= 1 + Math.sin(Math.min(1, k * 1.4) * Math.PI) * 0.18 * (1 - Math.min(1, k)); if (k >= 1) a.anim = null; }
+      else if (an.kind === 'open') { const k = Math.min(1, an.t / 0.9); lid = (1 - Math.pow(1 - k, 3)) * 2.05 + Math.sin(an.t * 10) * 0.05 * Math.max(0, 1 - an.t);
+        if (an.glow) { an.glow.intensity = Math.min(1.2, an.t * 2) * (0.8 + Math.sin(G.time * 12) * 0.2); an.rays.material.opacity = Math.min(0.3, an.t * 0.4); an.rays.rotation.y += dt * 1.5; an.rays.scale.setScalar(0.6 + Math.min(1, an.t) * 0.6); }
+        if (an.prize) { const kk = clamp((an.t - 0.4) / 1.0, 0, 1); an.prize.position.y = 0.02 + kk * 0.26 + Math.sin(an.t * 3) * 0.015 * kk; an.prize.rotation.y += dt * 3; an.prize.scale.setScalar(0.4 + kk * 0.6); } } }
+    P.lid.rotation.x = -lid; P.body.scale.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq));
+    // flying paper strips
+    for (const b of a.bits) { b.t += dt; b.v.y -= 4.5 * dt; b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += b.w.x * dt; b.m.rotation.y += b.w.y * dt; b.m.rotation.z += b.w.z * dt; if (b.m.position.y < 0.02) { b.m.position.y = 0.02; b.v.set(0, 0, 0); b.w.set(0, 0, 0); } if (b.t > 3.5) { b.m.material.opacity = Math.max(0, 1 - (b.t - 3.5) * 2); if (b.t > 4) { G.scene.remove(b.m); b.dead = true; } } }
+    if (a.bits.some(b => b.dead)) a.bits = a.bits.filter(b => !b.dead);
+  }
+  // a layer comes off: the old paper flies off in strips, the box squashes and the next paper is underneath
+  ripLayer(a) {
+    const P = a.pres; const old = P.papers[P.layer]; P.layer = Math.min(P.papers.length - 1, P.layer + 1); P.setPaper(P.layer);
+    const c = P.root.getWorldPosition(new THREE.Vector3());
+    for (let k = 0; k < 12; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(rand(0.06, 0.13), rand(0.04, 0.09)), new THREE.MeshStandardMaterial({ map: old, side: THREE.DoubleSide, transparent: true, roughness: 0.7 }));
+      m.position.copy(c).add(new THREE.Vector3(rand(-0.12, 0.12), rand(0, 0.12), rand(-0.1, 0.1))); m.rotation.set(rand(0, 6), rand(0, 6), rand(0, 6)); G.scene.add(m);
+      const out = new THREE.Vector3(m.position.x - c.x, 0, m.position.z - c.z).normalize().multiplyScalar(rand(0.6, 1.6)); a.bits.push({ m, t: 0, v: out.setY(rand(1.2, 2.4)), w: new THREE.Vector3(rand(-9, 9), rand(-9, 9), rand(-9, 9)) }); }
+    a.anim = { kind: 'tear', t: 0 }; a.shake = 0.6;
   }
   tore(a, mine, p) {
-    if (!a.live) return; a.layers--; sfx('rip', a.parcel?.body.translation(), 1);
-    const b = this.spawn('paper_ball', new THREE.Vector3().copy(a.parcel.body.translation()).add(new THREE.Vector3(0, 0.25, 0))); b?.body.setLinvel({ x: rand(-1, 1), y: 2, z: rand(-1, 1) }, true);
-    if (mine) { a.score++; G.ui?.toast(`You tear a layer! (${a.score})`, 1.5, { game: true }); } else { p?.say(pick(['Mine!', 'Ooh!', 'Is it a satsuma?']), { prio: 0 }); }
-    if (a.layers <= 0) { const prize = this.spawn('satsuma', new THREE.Vector3().copy(a.parcel.body.translation()).add(new THREE.Vector3(0, 0.3, 0))); prize?.body.setLinvel({ x: 0, y: 1.5, z: 0 }, true);
-      if (mine) a.score += 2; card({ kicker: 'THE PRIZE IS…', title: 'A SATSUMA', sub: mine ? 'All yours. +2' : `${p?.name || 'They'} got it.`, secs: 2.2 }).then(() => this.stop(a)); return; }
+    if (!a.live) return; a.layers--; sfx('rip', a.pres.root.position, 1); this.ripLayer(a);
+    if (p && p.state === 'anim') { p.gesture = 'pull'; p.gestureT = 0; setTimeout(() => { if (p.gesture === 'pull') p.gesture = 'reach'; }, 900); }
+    if (mine) { a.score++; G.player.fp?.punch?.('R'); G.ui?.toast(`You tear a layer! (${a.score})`, 1.5, { game: true }); } else { p?.say(pick(['Mine!', 'Ooh!', 'Is it a satsuma?', 'Come on, come on…', 'Another layer?!']), { prio: 0 }); }
+    if (a.layers <= 0) { // the last layer: the lid swings open, light pours out and the prize floats up
+      const P = a.pres; const glow = new THREE.PointLight('#ffd27a', 0, 1.8, 1.5); glow.position.set(0, 0.2, 0); P.root.add(glow);
+      const rays = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.1, 0.4, 16, 1, true), new THREE.MeshBasicMaterial({ color: '#fff0b0', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); rays.position.y = 0.3; P.root.add(rays);
+      const prize = new THREE.Mesh(new Prop().sph(0.04, '#f77f00', 0, 0, 0, 1, 0.85, 1, 14).sph(0.008, '#2d6a4f', 0, 0.034, 0).cone(0.012, 0.03, '#3a9d5d', 0.012, 0.04, 0, 0, 0, -1.2, 6).build(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, emissive: new THREE.Color('#5a2a00'), emissiveIntensity: 0.4 })); P.root.add(prize);
+      setTimeout(() => { a.anim = { kind: 'open', t: 0, glow, rays, prize }; sfx('ding', a.pres.root.position, 1); sfx('cheer', null, 0.6); }, 700);
+      if (mine) a.score += 2; this.cheer();
+      setTimeout(() => card({ kicker: 'THE PRIZE IS…', title: 'A SATSUMA', sub: mine ? 'All yours. +2' : `${p?.name || 'They'} got it.`, icon: '🍊', secs: 2.6 }).then(() => this.stop(a)), 1700); return; }
     setTimeout(() => this.parcelMusic(a), 1300);
   }
-  end_parcel(a) { a.removeBtn?.(); a.passBtn?.(); if (a.parcel?.alive) G.items.remove(a.parcel); stopMusic(); }
+  end_parcel(a) { a.removeBtn?.(); a.passBtn?.(); if (a.pres) G.scene.remove(a.pres.root); for (const b of a.bits || []) G.scene.remove(b.m); a.bits = []; for (const p of a.people || []) if (p.gesture === 'reach' || p.gesture === 'pull') p.gesture = null; stopMusic(); }
 
   // ---------- 4. Stack the Celebrations ----------
   setup_stack(a) { a.limit = 30; this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);
@@ -377,4 +432,39 @@ export class MiniGames {
   // hooks from interact.js
   unwrapParcel() { G.ui?.toast('Save it for Pass the Parcel!'); }
   clapStart() {}
+}
+
+// ---- the pass-the-parcel present: patterned paper for every layer, gold ribbon, a bow and a lid on a hinge ----
+const PAPERS = [['#c1121f', '#ffffff', 'stars'], ['#1f6f43', '#ffd700', 'dots'], ['#1d4ed8', '#e0f2ff', 'flakes'], ['#7b2cbf', '#ffd700', 'stripes'], ['#ff006e', '#ffffff', 'hearts'], ['#f77f00', '#5a1a00', 'checks'], ['#0b6e4f', '#c1121f', 'candy']];
+function paperTex(bg, fg, kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.fillStyle = bg; g.fillRect(0, 0, 128, 128); g.fillStyle = fg; g.strokeStyle = fg;
+  const star = (x, y, r) => { g.beginPath(); for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5 - Math.PI / 2, rr = k % 2 ? r * 0.45 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.closePath(); g.fill(); };
+  if (kind === 'stars') for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) star(16 + x * 32 + (y % 2) * 16, 16 + y * 32, 8);
+  if (kind === 'dots') for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) { g.beginPath(); g.arc(10 + x * 22 + (y % 2) * 11, 10 + y * 22, 5, 0, 7); g.fill(); }
+  if (kind === 'flakes') { g.lineWidth = 2.5; for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) { const cx = 22 + x * 42 + (y % 2) * 21, cy = 22 + y * 42; for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3; g.beginPath(); g.moveTo(cx - Math.cos(a) * 12, cy - Math.sin(a) * 12); g.lineTo(cx + Math.cos(a) * 12, cy + Math.sin(a) * 12); g.stroke(); } } }
+  if (kind === 'stripes') { for (let k = -4; k < 8; k++) { g.beginPath(); g.moveTo(k * 24, 0); g.lineTo(k * 24 + 12, 0); g.lineTo(k * 24 + 140, 128); g.lineTo(k * 24 + 128, 128); g.fill(); } }
+  if (kind === 'hearts') for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { const cx = 16 + x * 32 + (y % 2) * 16, cy = 14 + y * 32; g.beginPath(); g.arc(cx - 4, cy, 5, Math.PI, 0); g.arc(cx + 4, cy, 5, Math.PI, 0); g.lineTo(cx, cy + 11); g.closePath(); g.fill(); }
+  if (kind === 'checks') { g.globalAlpha = 0.5; for (let k = 0; k < 8; k += 2) { g.fillRect(k * 16, 0, 16, 128); g.fillRect(0, k * 16, 128, 16); } g.globalAlpha = 1; }
+  if (kind === 'candy') { g.lineWidth = 7; for (let k = -4; k < 8; k++) { g.beginPath(); g.moveTo(k * 26, 128); g.lineTo(k * 26 + 128, 0); g.stroke(); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.4, 1.4); return t;
+}
+function makePresent(layers) {
+  const W = 0.3, H = 0.19, D = 0.24, LH = 0.05, gold = new THREE.MeshStandardMaterial({ color: '#f2c230', metalness: 0.55, roughness: 0.3, emissive: '#3a2a00', emissiveIntensity: 0.3 });
+  const papers = []; const order = shuffle(PAPERS.slice()); for (let k = 0; k < layers + 1; k++) papers.push(paperTex(...order[k % order.length]));
+  const paper = new THREE.MeshStandardMaterial({ map: papers[0], roughness: 0.55 });
+  const root = new THREE.Group(); const body = new THREE.Group(); root.add(body);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), paper); box.position.y = -0.02; body.add(box);
+  const inside = new THREE.Mesh(new THREE.BoxGeometry(W - 0.02, 0.004, D - 0.02), new THREE.MeshStandardMaterial({ color: '#f6e7c8', roughness: 0.9 })); inside.position.y = H / 2 - 0.018; body.add(inside); // tissue paper inside
+  for (const [w, d] of [[W + 0.004, 0.035], [0.035, D + 0.004]]) { const rb = new THREE.Mesh(new THREE.BoxGeometry(w, H + 0.004, d), gold); rb.position.y = -0.02; body.add(rb); }
+  // the lid hinges on the back top edge
+  const lid = new THREE.Group(); lid.position.set(0, H / 2 - 0.02, -D / 2 - 0.006); body.add(lid);
+  const lidBox = new THREE.Mesh(new THREE.BoxGeometry(W + 0.014, LH, D + 0.014), paper); lidBox.position.set(0, LH / 2 - 0.012, D / 2 + 0.006); lid.add(lidBox);
+  for (const [w, d] of [[W + 0.018, 0.036], [0.036, D + 0.018]]) { const rb = new THREE.Mesh(new THREE.BoxGeometry(w, LH + 0.004, d), gold); rb.position.copy(lidBox.position); lid.add(rb); }
+  const bow = new THREE.Group(); bow.position.set(0, LH - 0.008, D / 2 + 0.006); lid.add(bow);
+  for (const s of [-1, 1]) { const loop = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 18), gold); loop.scale.set(1, 0.75, 0.55); loop.position.set(s * 0.045, 0.032, 0); loop.rotation.set(0, 0, s * 0.35); bow.add(loop);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.004, 0.09), gold); tail.position.set(s * 0.03, 0.004, 0.05); tail.rotation.set(0.15, s * 0.5, 0); bow.add(tail); }
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 10, 8), gold); knot.position.y = 0.022; knot.scale.set(1, 0.85, 0.9); bow.add(knot);
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.035), new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 0.9, side: THREE.DoubleSide })); tag.position.set(0.11, -0.01, D / 2 + 0.003); tag.rotation.z = 0.25; body.add(tag); // gift tag on the front
+  root.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  return { root, body, lid, papers, layer: 0, setPaper(k) { paper.map = papers[k]; paper.needsUpdate = true; } };
 }

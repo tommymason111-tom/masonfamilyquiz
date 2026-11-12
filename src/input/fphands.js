@@ -47,7 +47,7 @@ export class FPHands {
     return outP;
   }
   update(dt, player) {
-    const show = !G.xr && !player.thirdPerson && !G.ui?.modalOpen && !G.dog?.playerControlled; // no human hands when you're Chip this.group.visible = show; if (!show) return;
+    const show = !G.xr && !player.thirdPerson && !G.ui?.modalOpen && !G.dog?.playerControlled; /* no human hands when you're Chip */ this.group.visible = show; if (!show) return;
     const h = player.holders.D; const item = h && h.kind === 'item' && h.attach;
     const heavy = h && !item; // people, doors, heavy furniture: both hands reach forward
     const moving = (player.speedXZ || 0) > 0.2; this.bob += dt * (moving ? 9 : 2);
