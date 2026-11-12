@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '12 Nov 2026 · hats + VR menu v15';
+export const BUILD = '12 Nov 2026 · havoc v16';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -38,7 +38,7 @@ async function boot() {
   await initPhysics();
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, G.settings.quality === 'low' ? 1 : 2));
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(document.documentElement.clientWidth || innerWidth, document.documentElement.clientHeight || innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = !!G.settings.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -51,7 +51,9 @@ async function boot() {
   scene.fog = new THREE.Fog('#0b1022', 28, 110);
   const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.03, 600); G.camera = camera;
   // field of view: keep at least ~78° across the screen, so a phone held upright isn't zoomed in and held things aren't cut off
-  const fitFov = () => { const a = innerWidth / innerHeight; const hf = THREE.MathUtils.degToRad(a < 1 ? 80 : 90); const vf = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(hf / 2) / a)); camera.fov = Math.min(a < 1 ? 98 : 80, Math.max(70, vf)); camera.aspect = a; camera.updateProjectionMatrix(); };
+  // the screen size: the layout viewport (not affected by pinch-zoom or a half-finished rotation)
+  const vw = () => document.documentElement.clientWidth || innerWidth, vh = () => document.documentElement.clientHeight || innerHeight;
+  const fitFov = () => { const a = vw() / vh(); const hf = THREE.MathUtils.degToRad(a < 1 ? 80 : 90); const vf = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(hf / 2) / a)); camera.fov = Math.min(a < 1 ? 98 : 80, Math.max(70, vf)); camera.aspect = a; camera.updateProjectionMatrix(); };
   fitFov();
   G.clock = new THREE.Clock();
   status('Building Martin\'s house…', 0.12);
@@ -69,7 +71,12 @@ async function boot() {
   new Systems(); new Replay(); new Quiz(); new MiniGames(); new FX(); new Modes();
   initUI();
   setDaylight(1);
-  addEventListener('resize', () => { fitFov(); renderer.setSize(innerWidth, innerHeight); });
+  // keep the 3D view exactly the size of the screen. iOS can report a smaller size mid-zoom/rotation and never send
+  // another resize, which left the game drawn in one corner of a black screen, so this is re-checked constantly
+  const fitView = () => { if (G.xr) return; const w = vw(), h = vh(); const s = renderer.getSize(new THREE.Vector2()); if (Math.abs(s.x - w) > 1 || Math.abs(s.y - h) > 1) { renderer.setSize(w, h, false); fitFov(); } };
+  addEventListener('resize', () => { fitView(); setTimeout(fitView, 300); }); addEventListener('orientationchange', () => setTimeout(fitView, 300)); window.visualViewport?.addEventListener('resize', fitView);
+  G.updaters.push(() => { if (G.frame % 20 === 0) fitView(); });
+  document.addEventListener('gesturestart', (e) => e.preventDefault()); // no pinch-zoom of the whole page on iOS
   const unlock = () => { initAudio(); resumeAudio(); };
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
   status('Taking the family photo…', 0.95);

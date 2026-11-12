@@ -28,6 +28,12 @@ export function setAvatar(name) {
     pl.teleport(at.x, at.z, (p.pos.lengthSq() < 0.01 && h ? h.yaw : p.yaw) + Math.PI);
     if (p.name === 'Harrison' && G.ai) { G.ai.harrison = null; p.base = 'stand'; }
   }
+  // the little ones start in the clearest open spot of the living room, looking into the room (not nose-to-knees with a relative)
+  if (ROAMERS.includes(name)) {
+    const spots = [[-2.2, -1.75], [-1.6, -1.5], [-2.8, -1.6], [-2.2, -1.15], [-1.3, -2.1]]; let best = spots[0], bd = -1;
+    for (const [x, z] of spots) { let d = 9; for (const c of G.chars) if (!c.isPlayer) d = Math.min(d, Math.hypot(c.pos.x - x, c.pos.z - z)); if (d > bd) { bd = d; best = [x, z]; } }
+    pl.teleport(best[0], best[1], 0.67); if (name === 'Chip') G.dog.pos.set(best[0], 0, best[1]); else { const p = G.charByName[name]; p.pos.set(best[0], 0, best[1]); }
+  }
   G.quiz?.jokers && (G.quiz.jokers = Object.fromEntries(Object.keys(G.quiz.jokers).map(t => [t, t === G.myTeam ? null : G.quiz.jokers[t] ?? 2])));
   document.body.classList.toggle('as-dog', name === 'Chip');
   document.body.classList.toggle('as-little', name === 'Mason' || name === 'Harrison');

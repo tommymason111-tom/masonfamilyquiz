@@ -42,6 +42,36 @@ function ensure() {
   #pop .qcard.min { padding:8px 10px; } #pop .qcard.min .qq { display:none; } #pop .qcard.min .opts { grid-template-columns:repeat(4,1fr); gap:6px; margin-top:6px; }
   #pop .qcard.min .opts button { min-height:40px; text-align:center; padding:4px; } #pop .qcard.min .opts button span { display:none; } #pop .qcard.min .opts button b { width:auto; }
   #pop .qcard.min .qt { margin-top:6px; height:5px; }
+  /* CAUSE HAVOC (Chip, Mason, Harrison) */
+  #pop .havoc { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; pointer-events:none;
+    background:radial-gradient(70% 55% at 50% 50%, rgba(160,10,20,.62), rgba(10,0,4,.88)); animation: hvBg 4.2s ease forwards; }
+  #pop .havoc .flash { position:absolute; inset:0; background:#fff; opacity:0; animation: hvFlash .5s .55s ease-out; }
+  #pop .havoc .stage { position:relative; display:flex; flex-direction:column; align-items:center; animation: hvShake .5s 1.05s both; }
+  #pop .havoc .w1, #pop .havoc .w2 { display:flex; font-family: Impact, "Arial Black", Georgia, sans-serif; font-weight:900; letter-spacing:.04em; line-height:.92; }
+  #pop .havoc .w1 { font-size:clamp(40px,12vw,84px); color:#fff; -webkit-text-stroke:2px #b3122a; text-shadow:0 6px 0 #4a0a14, 0 0 24px rgba(255,80,80,.6); }
+  #pop .havoc .w2 { font-size:clamp(78px,25vw,180px); position:relative; }
+  #pop .havoc .w2 span { background:linear-gradient(180deg,#fff7b0 0%,#ffd700 30%,#ff8a00 62%,#d4001a 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:3px #2a0006; filter: drop-shadow(0 8px 0 #4a0a14) drop-shadow(0 0 28px rgba(255,120,0,.85)); }
+  #pop .havoc .w1 span, #pop .havoc .w2 span { display:inline-block; opacity:0; animation: hvSlam .5s cubic-bezier(.2,1.8,.4,1) forwards; }
+  #pop .havoc .w2 span { animation: hvSlam .55s cubic-bezier(.2,1.8,.4,1) forwards, hvJitter .12s 1.6s steps(2) 6; }
+  #pop .havoc .streak { position:absolute; top:-10%; left:-40%; width:30%; height:120%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent); transform:skewX(-20deg); mix-blend-mode:overlay; animation: hvStreak .7s 1.35s ease-in-out forwards; opacity:0; }
+  #pop .havoc .ring { position:absolute; left:50%; top:50%; width:40px; height:40px; margin:-20px; border-radius:50%; border:6px solid #ffd700; opacity:0; animation: hvRing .9s .55s ease-out forwards; }
+  #pop .havoc .ring.r2 { border-color:#ff3b3b; animation-delay:.75s; }
+  #pop .havoc .spark { position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%; background:#ffd700; box-shadow:0 0 10px #ff8a00; opacity:0; animation: hvSpark .9s .58s ease-out forwards; }
+  #pop .havoc .emo { position:absolute; left:50%; top:50%; font-size:34px; opacity:0; animation: hvEmo 1.6s .6s ease-out forwards; }
+  #pop .havoc .crack { position:absolute; left:50%; top:50%; width:min(90vw,620px); height:6px; margin-left:calc(min(90vw,620px) / -2); background:linear-gradient(90deg,transparent,#fff,transparent); opacity:0; animation: hvCrack .6s .55s ease-out forwards; }
+  #pop .havoc .who { margin-top:18px; font:800 clamp(15px,4.4vw,20px) system-ui; color:#ffe9a8; text-align:center; max-width:86vw; opacity:0; animation: hvUp .5s 1.5s ease-out forwards; text-shadow:0 2px 6px #000; }
+  #pop .havoc .who b { color:#fff; font-size:1.25em; letter-spacing:.06em; }
+  @keyframes hvBg { 0% { opacity:0; } 8% { opacity:1; } 85% { opacity:1; } 100% { opacity:0; } }
+  @keyframes hvFlash { 0% { opacity:.85; } 100% { opacity:0; } }
+  @keyframes hvSlam { 0% { opacity:0; transform:translateY(-60px) scale(3.2) rotate(var(--r,0deg)); filter:blur(6px); } 60% { opacity:1; filter:blur(0); } 100% { opacity:1; transform:none; } }
+  @keyframes hvJitter { 0% { transform:translate(0,0); } 50% { transform:translate(2px,-2px) rotate(1deg); } 100% { transform:translate(-2px,1px); } }
+  @keyframes hvShake { 0%,100% { transform:none; } 15% { transform:translate(-10px,6px) rotate(-1.5deg); } 30% { transform:translate(9px,-7px) rotate(1.2deg); } 50% { transform:translate(-6px,4px); } 70% { transform:translate(4px,-3px); } }
+  @keyframes hvStreak { 0% { opacity:1; left:-40%; } 100% { opacity:1; left:120%; } }
+  @keyframes hvRing { 0% { opacity:1; transform:scale(.2); } 100% { opacity:0; transform:scale(22); } }
+  @keyframes hvSpark { 0% { opacity:1; transform:translate(0,0) scale(1.4); } 100% { opacity:0; transform:translate(var(--dx),var(--dy)) scale(.3); } }
+  @keyframes hvEmo { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 15% { opacity:1; } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.3) rotate(var(--r)); } }
+  @keyframes hvCrack { 0% { opacity:1; transform:scaleX(0); } 40% { opacity:1; transform:scaleX(1); } 100% { opacity:0; transform:scaleX(1.2); } }
+  @keyframes hvUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
   @keyframes popBounce { from { transform:translateY(0) rotate(-6deg); } to { transform:translateY(-8px) rotate(6deg); } }
   @keyframes rowIn { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
   @keyframes pulseT { from { transform:translateX(-50%) scale(1); } to { transform:translateX(-50%) scale(1.07); } }
@@ -54,6 +84,19 @@ function ensure() {
 }
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
+// CAUSE HAVOC: the big slam-in title when you play as Chip, Mason or Harrison (resolves when it has gone)
+export function havoc(who = '', line = '', emojis = ['💥']) {
+  ensure(); const el = document.createElement('div'); el.className = 'havoc';
+  const letters = (w, d0) => [...w].map((c, i) => `<span style="animation-delay:${(d0 + i * 0.07).toFixed(2)}s;--r:${(Math.random() * 50 - 25).toFixed(0)}deg">${c}</span>`).join('');
+  let fx = '<div class="ring"></div><div class="ring r2"></div><div class="crack"></div>';
+  for (let i = 0; i < 26; i++) { const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 260; fx += `<i class="spark" style="--dx:${(Math.cos(a) * d).toFixed(0)}px;--dy:${(Math.sin(a) * d).toFixed(0)}px;animation-delay:${(0.55 + Math.random() * 0.15).toFixed(2)}s;background:${['#ffd700', '#ff8a00', '#fff', '#ff3b3b'][i % 4]}"></i>`; }
+  for (let i = 0; i < 12; i++) { const a = Math.random() * Math.PI * 2, d = 140 + Math.random() * 200; fx += `<i class="emo" style="--dx:${(Math.cos(a) * d).toFixed(0)}px;--dy:${(Math.sin(a) * d).toFixed(0)}px;--r:${(Math.random() * 120 - 60).toFixed(0)}deg;animation-delay:${(0.6 + Math.random() * 0.4).toFixed(2)}s">${emojis[i % emojis.length]}</i>`; }
+  el.innerHTML = `<div class="flash"></div>${fx}<div class="stage"><div class="w1">${letters('CAUSE', 0.05)}</div><div class="w2">${letters('HAVOC', 0.45)}<div class="streak"></div></div>${who ? `<div class="who">Playing as <b>${esc(who.toUpperCase())}</b><br>${esc(line)}</div>` : ''}</div>`;
+  root.appendChild(el);
+  // the headset gets it on the floating panel
+  const rec = { kicker: who ? `PLAYING AS ${who.toUpperCase()}` : '', title: 'CAUSE HAVOC', sub: line, icon: emojis[0], secs: 4, c1: '#d4001a', c2: '#2a0006', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump();
+  return new Promise(res => setTimeout(() => { el.remove(); S.cards = S.cards.filter(c => c !== rec); bump(); res(); }, 4300));
+}
 // a big animated card; resolves when it has gone
 export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2, _rows = null, _unit = '', _footer = '' } = {}) {
   ensure(); const rec = { kicker, title, sub: _rows ? '' : plain(sub), icon, secs, c1: c1 || '#b3122a', c2: c2 || '#4a0a14', rows: _rows, unit: _unit, footer: plain(_footer), t0: performance.now() }; S.cards.push(rec); bump(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
@@ -91,4 +134,4 @@ export function questionCard(q, n, total, onPick, selected) {
 }
 export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
 export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); S.cards = []; S.tap = null; bump(); }
-G.popup = { card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };
+G.popup = { havoc, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };

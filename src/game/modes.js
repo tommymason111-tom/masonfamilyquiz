@@ -51,6 +51,8 @@ export class Modes {
     if (id === 'fling') return this.flingSetup();
     if (id === 'beer') return this.beerSetup();
     this.running = false; this.hudOff();
+    if (id === 'roam') { const who = G.me?.name || 'Chip'; const L = { Chip: ['Paw-punch the family, steal the sausage rolls, sit on the answer sheets.', ['🐾', '🦴', '💥', '🌭']], Mason: ['Throw everything. Climb everything. Shout DINOSAUR.', ['🦖', '💥', '🧱', '🚗']], Harrison: ['Tiny elf. Maximum chaos. Jingle bells!', ['🧝', '🔔', '💥', '🎄']] }[who] || ['Cause havoc.', ['💥']];
+      setTimeout(() => { sfx('bigthud', null, 1); setTimeout(() => sfx('crack', null, 0.9), 450); setTimeout(() => sfx('cheer', null, 0.5), 1300); G.popup.havoc(who, L[0], L[1]); }, 400); }
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, 'FREE ROAM'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, 'No quiz tonight. Martin is devastated. Throw whatever you like (except the tree).', 60, 170, 900, 42); });
   }
   // ---------------- Quick Quiz: in the living room, straight in ----------------
