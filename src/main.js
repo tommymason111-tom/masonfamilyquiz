@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '13 Nov 2026 · warnings v30';
+export const BUILD = '13 Nov 2026 · fridge space v31';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 

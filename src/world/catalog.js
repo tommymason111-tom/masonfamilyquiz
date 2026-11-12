@@ -249,7 +249,7 @@ export const PLACEMENTS = [
   ['coleslaw', 2.3, 0.91, 5.72], ['potato_salad', 5.45, 0.91, 5.5],
   ['trifle', 5.95, 0.91, 4.1], ['serving_spoon', 5.78, 0.91, 3.95, 0.4],
   ['cheeseboard', 5.98, 0.91, 3.68], ['brie', 6.0, 0.95, 3.6], ['cracker_bis', 5.9, 0.91, 3.85, 0, 3, 0, 0, 0.007],
-  ['scotch_egg', 5.8, 0.95, 0.75, 0, 3, 0, 0.1], ['crisps_bowl', 6.1, 0.91, 0.85],
+  ['scotch_egg', 5.8, 0.95, 1.9, 0, 3, 0, 0.1], ['crisps_bowl', 6.1, 0.91, 2.0],
   ['sprout', 5.9, 0.95, 3.25, 0, 4, 0.0, -0.04], ['roasting_tin', 6.0, 0.92, 2.6], ['turkey', 6.0, 0.96, 2.6], ['frying_pan', 5.9, 0.92, 3.1],
   // kettle corner + the drinks on the breakfast bar
   ['kettle', 6.0, 0.91, 4.85], ['mug', 6.08, 0.91, 4.6, 0, 3, 0, -0.12], ['tea_caddy', 6.15, 0.91, 5.05],
@@ -257,7 +257,7 @@ export const PLACEMENTS = [
   ['squash', 4.2, 1.025, -0.05], ['juice', 4.4, 1.025, -0.05], ['baileys', 4.6, 1.025, -0.05],
   ['toaster', 2.0, 0.91, 5.78], ['tea_towel', 3.9, 0.91, 5.5], ['kitchen_roll', 5.55, 0.91, 5.78], ['oven_glove', 5.82, 0.91, 2.15],
   ['chopping_board', 5.85, 0.91, 4.35, 1.5],
-  ['fruit_bowl', 6.05, 0.925, 0.6], ['satsuma', 6.05, 0.96, 0.6, 0, 2, 0.06, 0], ['banana', 5.95, 0.96, 0.62, 1.2],
+  ['fruit_bowl', 6.05, 0.925, 1.75], ['satsuma', 6.05, 0.96, 1.75, 0, 2, 0.06, 0], ['banana', 5.95, 0.96, 1.77, 1.2],
   ['spray', 3.85, 0.91, 5.8], ['bin', 2.35, 0, -0.05],
   // kitchen fridge contents (fridge x=5.51, z≈0.1; shelves y=0.12, 0.57, 1.02, 1.42)
   ['prosecco', 5.25, 0.13, 0.12], ['white_wine', 5.45, 0.13, 0.12], ['red_wine', 5.65, 0.13, 0.08], ['lager', 5.75, 0.58, 0.05, 0, 3, -0.07, 0.0],

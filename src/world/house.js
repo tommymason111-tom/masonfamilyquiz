@@ -345,7 +345,7 @@ function kitchen(P, add, M, solid, H) {
   // Plan: fridge top-right, worktop down the right wall (hob halfway), worktop along the front wall with the sink under the window.
   const xR = KX(1212), zF = PZ(1880), xL = PX(858), xW = KX(1148); // right-hand run shifted by KW (wider kitchen)
   const fx = KX(1137), fz = PZ(1356);
-  const rx = (xW + xR) / 2, rd = xR - xW, rz0 = PZ(1388), rz1 = PZ(1815);
+  const rx = (xW + xR) / 2, rd = xR - xW, rz0 = PZ(1388) + 1.05, rz1 = PZ(1815); // the run starts a metre past the fridge so its door can swing open
   const bz = (PZ(1815) + zF) / 2, bd = zF - PZ(1815);
   const door = (x, z, w, rot) => { if (rot) P.box(0.02, 0.7, w - 0.06, '#f4f1ea', x, 0.47, z).box(0.02, 0.02, 0.16, '#999', x - 0.015, 0.75, z); else P.box(w - 0.06, 0.7, 0.02, '#f4f1ea', x, 0.47, z).box(0.16, 0.02, 0.02, '#999', x, 0.75, z + 0.015 * Math.sign(-z)); };
   // carcasses
