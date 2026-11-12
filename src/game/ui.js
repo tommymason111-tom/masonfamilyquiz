@@ -54,18 +54,19 @@ class UI {
     const prep = () => { const m = qs.get('mode'); if (m) { G.modes.id = m; } if (['Chip', 'Mason', 'Harrison'].includes(qs.get('as'))) G.modes.id = 'roam'; dressGaryFor(G.modes.id); setAvatar(qs.get('as') || 'Tommy'); };
     const quick = () => { prep(); go(); };
     $('btnPlay').onclick = () => { initAudio(); resumeAudio(); unlockSpeech(); if (qs.get('skip')) return quick(); startFlow(go); };
-    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = () => { if (this.started) return; initAudio(); resumeAudio(); if (qs.get('skip')) { prep(); go(); this.enterVR(); return; } startFlow(() => { go(); this.enterVR(); }, { vr: true }); }; $('btnVR').onclick = enter; $('vrbtn').onclick = enter;
+    if (navigator.xr) navigator.xr.isSessionSupported('immersive-vr').then(ok => { if (!ok) return; $('btnVR').style.display = 'inline-block'; $('vrbtn').style.display = 'block'; const enter = async () => { if (this.started || this.vrFlow) return; initAudio(); resumeAudio(); if (qs.get('skip')) { prep(); go(); this.enterVR(); return; } this.vrFlow = true; const ok = await this.enterVR(true); if (!ok) { this.vrFlow = false; return; } startFlow(() => { this.vrFlow = false; go(); }, { vr: true }); }; // straight into the headset, then the setup screens in there $('btnVR').onclick = enter; $('vrbtn').onclick = enter;
       // changed mode from the headset menu: the Quest browser hands the VR session straight back after the reload
       if (qs.get('vr')) { navigator.xr.addEventListener?.('sessiongranted', enter); $('btnVR').textContent = '🥽 Back into VR'; } }).catch(() => {});
     addEventListener('touchstart', () => { if (!this.touchMode) { this.touchMode = true; if (this.started) { $('touch').classList.add('on'); document.body.classList.add('touch'); } } }, { once: true });
   }
-  async enterVR() {
-    this.started = true;
+  async enterVR(setupFirst) {
+    if (!setupFirst) this.started = true;
     try {
       const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'] });
       G.renderer.xr.setSession(s); $('hud').style.display = 'none'; $('loading').style.display = 'none'; $('touch').classList.remove('on');
-      s.addEventListener('end', () => { $('hud').style.display = ''; this.started = true; });
-    } catch (e) { this.toast('Could not start VR: ' + e.message, 5); }
+      s.addEventListener('end', () => { $('hud').style.display = ''; if (this.vrFlow) { location.reload(); return; } this.started = true; });
+      return true;
+    } catch (e) { this.toast('Could not start VR: ' + e.message, 5); return false; }
   }
   // ---------------- toasts / subtitles / bubbles ----------------
   toast(text, secs = 3, opts = {}) {
@@ -109,7 +110,7 @@ class UI {
       // phones: name the on-screen buttons, not keyboard keys
       if (this.touchMode && txt) txt = txt.replace(/^R: /, 'USE: ').replace(/ · R use/g, ' · USE').replace(/RMB throw/g, 'THROW').replace(/hold RMB to throw/g, 'hold THROW').replace(/ · G eat\/drink/g, ' · DRINK').replace(/ · LMB drop/g, '').replace(/LMB grab/g, 'Tap to pick up');
       $('prompt').textContent = txt;
-      const ch = G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
+      const ch = G.minigames?.active?.charge || G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
       this.updateTouchReady(f, held);
     }
     if (G.xr && G.frame % 12 === 0) this.drawWrist();
@@ -140,8 +141,8 @@ class UI {
   askNumber(title, cb) { this.modal('pickModal', `<h2>${title}</h2><input id="numIn" type="number" value="100" style="font-size:22px;width:140px;padding:6px"> <button class="btn" id="numOk">Guess</button>`, (el) => { el.querySelector('#numOk').onclick = () => { const n = +el.querySelector('#numIn').value || 0; this.closeModal('pickModal'); cb(n); }; }); if (G.xr) cb(Math.round(60 + Math.random() * 60)); }
   showAwards(list) { this.modal('scoreModal', `<h2>🏆 Family Awards</h2><table>${list.map(([a, b]) => `<tr><td>${a}</td><td style="text-align:right;color:#ffd700">${b}</td></tr>`).join('')}</table><p style="opacity:.7">The cup stays on the mantelpiece with the winners' names for next time.</p><button class="btn" data-close>Close</button> <button class="btn alt" id="photoBtn">📸 Save team photo</button>`, (el) => { el.querySelector('#photoBtn').onclick = () => this.photo(); }); }
   photo() { G.renderer.render(G.scene, G.camera); const a = document.createElement('a'); a.href = G.renderer.domElement.toDataURL('image/png'); a.download = 'mason-quiz-team-photo.png'; a.click(); this.toast('Team photo saved.'); }
-  scoreboard(v) { const q = G.quiz; if (!v) return this.closeModal('scoreModal'); const s = G.systems; const pc = q.pcScores(); this.modal('scoreModal', `<h2>Scoreboard</h2><table><tr><td></td><td>TV</td><td>PC</td></tr>${TEAM_IDS.map(t => `<tr><td style="color:${q.teamColor(t)}">${q.teamName(t)}</td><td>${q.total(t)}</td><td>${pc[t]}</td></tr>`).join('')}</table><p style="font-size:13px;opacity:.75">The TV and the PC disagree by 2. Nobody knows which is right.</p><div class="grid2"><div>Told You So (Charli)</div><div>${q.stats.toldYou}</div><div>Paul argued vs reality</div><div>${q.stats.argued}</div><div>Biased rulings</div><div>${q.stats.biased}</div><div>Your throws</div><div>${G.player.stats.throws}</div><div>Coaster warnings</div><div>${s.stats.coaster}</div><div>Gary dignity</div><div>${Math.round(s.dignity)}</div><div>Eye-rolls</div><div>${s.stats.eyeRolls}</div></div>`); }
-  modal(id, html, after) { const m = $(id); m.firstElementChild.innerHTML = html; m.classList.add('open'); this.modalOpen = true; document.body.classList.add('paused'); document.exitPointerLock?.(); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => this.closeModal(id)); after && after(m); m.onpointerdown = (e) => e.stopPropagation(); }
+  scoreboard(v, back) { const q = G.quiz; if (!v) return this.closeModal('scoreModal'); const s = G.systems; const pc = q.pcScores(); this.modal('scoreModal', `<h2>Scoreboard</h2><table><tr><td></td><td>TV</td><td>PC</td></tr>${TEAM_IDS.map(t => `<tr><td style="color:${q.teamColor(t)}">${q.teamName(t)}</td><td>${q.total(t)}</td><td>${pc[t]}</td></tr>`).join('')}</table><p style="font-size:13px;opacity:.75">The TV and the PC disagree by 2. Nobody knows which is right.</p><div class="grid2"><div>Told You So (Charli)</div><div>${q.stats.toldYou}</div><div>Paul argued vs reality</div><div>${q.stats.argued}</div><div>Biased rulings</div><div>${q.stats.biased}</div><div>Your throws</div><div>${G.player.stats.throws}</div><div>Coaster warnings</div><div>${s.stats.coaster}</div><div>Gary dignity</div><div>${Math.round(s.dignity)}</div><div>Eye-rolls</div><div>${s.stats.eyeRolls}</div></div>`, null, back); }
+  modal(id, html, after, back) { const m = $(id); m.firstElementChild.innerHTML = `<button class="mx" data-close aria-label="Close">✕</button>` + html + (back ? `<div style="margin-top:12px"><button class="btn" data-back>← Back to menu</button></div>` : ''); m.classList.add('open'); this.modalOpen = true; document.body.classList.add('paused'); document.exitPointerLock?.(); m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => this.closeModal(id)); m.querySelectorAll('[data-back]').forEach(b => b.onclick = () => { this.closeModal(id); this.toggleMenu(); }); after && after(m); m.onpointerdown = (e) => e.stopPropagation(); }
   closeModal(id) { $(id).classList.remove('open'); this.modalOpen = [...document.querySelectorAll('.modal.open')].length > 0; document.body.classList.toggle('paused', this.modalOpen); if (!this.modalOpen && !this.touchMode && this.started && !G.xr) G.renderer.domElement.requestPointerLock?.(); }
   // ---------------- menu & settings ----------------
   toggleMenu() {
@@ -149,7 +150,7 @@ class UI {
     const S = G.settings; const unlocked = loadStore('unlockedOutfits', OUTFITS.map(o => o.id));
     const chk = (k, l) => `<label class="row"><span>${l}</span><input type="checkbox" data-k="${k}" ${S[k] ? 'checked' : ''}></label>`;
     this.modal('menu', `<h2>Menu</h2>
-      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mJoker">Play joker</button><button class="btn alt" id="mKaren">Ask Karen ("Paul.")</button><button class="btn alt" id="mScore">Scoreboard</button><button class="btn alt" id="mMode">Change game mode</button></div>
+      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mScore">Scoreboard</button><button class="btn alt" id="mMode">Change game mode</button></div>
       <h2 style="margin-top:14px">Settings</h2>
       ${chk('voices', 'Character voices (speech)')}${chk('subtitles', 'Subtitles')}${chk('softDrinks', 'Soft drinks mode (all alcohol → squash)')}${chk('drunkSway', 'Wobbly-after-drinks effect')}${chk('thirdPerson', 'Start in third person (V toggles)')}${chk('shadows', 'Shadows (reload)')}${chk('smoothTurn', 'VR smooth turn (instead of snap)')}${chk('leftHanded', 'Left-handed (swap VR pinch walk/turn, touch buttons)')}${chk('invertY', 'Invert look Y')}
       <label class="row"><span>Mouse / look sensitivity</span><input type="range" min="0.3" max="2.5" step="0.1" data-n="mouseSens" value="${S.mouseSens}"></label>
@@ -160,14 +161,12 @@ class UI {
       <label class="row"><span>Touch button transparency</span><input type="range" min="0.2" max="1" step="0.05" data-n="touchOpacity" value="${S.touchOpacity}"></label>
       <div><button class="btn alt small" id="mLayout">Edit touch layout</button><button class="btn alt small" id="mLayoutReset">Reset layout</button><button class="btn alt small" id="mRestart">Restart game</button><button class="btn alt small" id="mWipe">Clear saved history</button></div>
       <h2 style="margin-top:14px">Controls</h2>
-      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick (PC only), R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, J joker, T torch, Space jump, C crouch, V third person, Tab scores, Enter next</div>
+      <div class="grid2"><div><b>PC</b>: WASD move, mouse look, LMB grab/drop, hold RMB + release throw, F punch, E kick (PC only), R use/give/talk, G eat/drink, Q hand up, X accuse, 1–4 answer, T torch, Space jump, C crouch, V third person, Tab scores, Enter next</div>
       <div><b>Gamepad</b>: LS move, RS look, RT grab (release with an RS flick to throw, or RB throw), X punch, B kick, A use, Y hand up, LB drink, Start menu, D-pad answers</div>
       <div><b>Quest 3 hands</b>: fist = grab (both fists on Dad/Martin/Gary to lift), swing & open = throw, fist punch, pinch = use/write, pinch-drag left hand = walk, right = turn, palm up = wrist menu, hand above head = challenge, point 1s = accuse, thumbs up/down, clap, cover ears = mute, facepalm = eye-roll, food to mouth = eat, palm-down sweep or stamp = kick</div>
       <div><b>Touch</b>: left thumb = joystick, drag right side = look, big buttons as labelled. Tap answers at the bottom of the screen.</div></div>`, (el) => {
       el.querySelector('#mNext').onclick = () => { this.closeModal('menu'); emit('next'); };
-      el.querySelector('#mJoker').onclick = () => { this.closeModal('menu'); emit('joker'); };
-      el.querySelector('#mKaren').onclick = () => { this.closeModal('menu'); G.systems.askKaren(); };
-      el.querySelector('#mScore').onclick = () => { this.closeModal('menu'); this.scoreboard(true); };
+      el.querySelector('#mScore').onclick = () => { this.closeModal('menu'); this.scoreboard(true, true); };
       el.querySelector('#mMode').onclick = () => { location.href = '?'; };
       if (G.modes?.running) { const b = el.querySelector('#mNext'); b.textContent = 'End this game now'; b.onclick = () => { this.closeModal('menu'); G.modes.end(); }; }
       el.querySelector('#mRestart').onclick = () => location.reload();
@@ -236,8 +235,6 @@ class UI {
     const q = G.quiz; const B = [];
     const add = (x, y, w, h, label, fn, hot) => B.push({ x, y, w, h, label, fn, hot });
     add(0.03, 0.30, 0.3, 0.16, q.phase === 'arrival' ? 'START QUIZ' : 'NEXT', () => emit('next'), q.phase === 'arrival' || q.phase === 'roundEnd');
-    add(0.35, 0.30, 0.3, 0.16, 'JOKER', () => emit('joker'));
-    add(0.67, 0.30, 0.3, 0.16, 'ASK KAREN', () => G.systems.askKaren());
     for (let i = 0; i < 4; i++) add(0.03 + i * 0.24, 0.5, 0.22, 0.18, 'ABCD'[i], () => q.answer(i), q.cur?.answers[G.myTeam || 'paul'] === i);
     add(0.03, 0.72, 0.3, 0.16, 'DISPUTE ✋', () => emit('handUp'), q.phase === 'marking');
     add(0.35, 0.72, 0.3, 0.16, 'TORCH', () => G.player.toggleTorch());

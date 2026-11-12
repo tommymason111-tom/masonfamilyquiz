@@ -55,7 +55,7 @@ export class Quiz {
     on('handUp', () => this.handUp());
     on('thumbsDown', () => this.handUp());
     on('next', () => this.next());
-    on('joker', () => this.playJoker());
+    
     on('accuse', (p) => this.accuse(p));
     G.updaters.push((dt) => this.update(dt));
     this.drawSheet();
@@ -113,7 +113,7 @@ export class Quiz {
     this.mSay(`Quiet please! ${R.name}.`);
     emit('roundStart', r);
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, R.name.toUpperCase()); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, `${this.questions.length} questions. Write your answers on the sheet (keys 1–4, tap the buttons, or poke the sheet in VR).`, 60, 170, 900, 42);
-      g.fillStyle = '#ffd700'; g.font = 'bold 30px sans-serif'; g.fillText(this.jokers[ME()] === null ? `${this.teamName(ME())}: you can still play your JOKER on this round (J / menu) for double points!` : `${this.teamName(ME())} joker played on round ` + '' + (this.jokers[ME()] + 1), 60, 330); this.drawScoresMini(g, W, H); });
+      this.drawScoresMini(g, W, H); });
     setTimeout(() => this.nextQuestion(), 6000);
   }
   nextQuestion() {
@@ -294,7 +294,7 @@ export class Quiz {
     this.phase = 'roundEnd'; this.t = 0;
     const lead = TEAM_IDS.slice().sort((a, b) => this.total(b) - this.total(a))[0];
     this.mSay(`End of round. ${TEAM_IDS.map(t => `${this.teamName(t)} ${gained[t]}`).join(', ')}.${lead === 'julie' ? ' Team Julie leading. I\'m saying nothing.' : ''}`, 2);
-    if (this.jokers[ME()] === null && this.round >= 1 && Math.random() < 0.7) setTimeout(() => G.charByName.Paul?.say('JOKER! We were playing the joker on that! ...Weren\'t we?'), 3000);
+    if (false) setTimeout(() => G.charByName.Paul?.say('JOKER! We were playing the joker on that! ...Weren\'t we?'), 3000);
     G.screens.setTV((g, W, H) => { tvFrame(g, W, H, `END OF ${ROUNDS[this.round].name.split(':')[0].toUpperCase()}`); this.drawBigScores(g, W, H); g.fillStyle = '#ffd700'; g.font = 'bold 28px sans-serif'; g.fillText(this.round < this.lastRound ? 'Next: mini-game in the dining room (or press NEXT)' : 'Final scores are in...', 60, 520); });
     emit('roundEnd', this.round);
     this.roundEndTimer = setTimeout(() => this.afterRound(), 12000);

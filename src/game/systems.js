@@ -164,7 +164,7 @@ export class Systems {
   }
   // Hit Chip, Mason or Harrison and their grown-up comes for you: a big red warning, they run over and flatten you.
   protectorComes(who) {
-    if (!who || G.time < (this.protectT || 0)) return; const me = G.me;
+    if (!who || G.time < (this.protectT || 0) || G.minigames?.active) return; const me = G.me; // not in the middle of a mini game
     const little = (c) => c && (c === G.dog || c.isDog || c.name === 'Mason' || c.name === 'Harrison');
     if (little(me) && little(who)) return; // Chip, Mason and Harrison squabbling among themselves: nobody comes
     const map = who.isDog || who === G.dog ? { title: 'DON\'T HIT THE DOG!', guard: ['Martin', 'Julie'], icon: '🐶' } : who.name === 'Mason' ? { title: 'DON\'T HIT MASON!', guard: ['Harry', 'Jodie'], icon: '💙' } : who.name === 'Harrison' ? { title: 'DON\'T HIT HARRISON!', guard: ['Bradley', 'Hollie'], icon: '🧝' } : null;

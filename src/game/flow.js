@@ -6,9 +6,11 @@ import { G, shuffle } from '../core.js';
 import { CAST, TEAMS, TEAM_IDS, OUTFITS } from '../chars/cast.js';
 import { dressGaryFor } from '../chars/people.js';
 import { MODES, modeById } from './modes.js';
+import { GAMES, gamePlaylist } from './minigames.js';
 import { FAMILIES, ROAMERS, setAvatar } from './avatar.js';
 import { saveStore, loadStore } from './settings.js';
 import { sfx } from '../engine/audio.js';
+import { vrPick, vrShow } from './vrhud.js';
 
 let el = null;
 function ensure() {
@@ -43,21 +45,22 @@ function ensure() {
   document.head.appendChild(st);
   el = document.createElement('div'); el.id = 'flow'; document.body.appendChild(el); return el;
 }
+let VR = false; // in the headset: the same screens, drawn on the floating panel
 const P = () => G.portraits || {};
 const face = (n) => P()[n] ? `<img src="${P()[n]}" alt="">` : `<div class="ph">${n === 'Mason' ? '💙' : n === 'Harrison' ? '🧝' : n === 'Chip' ? '🐶' : '🎄'}</div>`;
 
 // entry point from the Play button. launch() starts the game (and VR when asked)
 export async function startFlow(launch, opts = {}) {
-  ensure(); el.classList.add('on'); document.getElementById('loading').style.display = 'none';
+  ensure(); VR = !!opts.vr; if (!VR) el.classList.add('on'); document.getElementById('loading').style.display = 'none';
   const who = await characterStep();
   let mode = 'roam', random = false;
   if (!ROAMERS.includes(who)) ({ mode, random } = await modeStep());
+  if (mode === 'games') await gamesStep();
   // Gary's outfit wheel comes last; Mini Games and Fling the Relative get plain Gary
   if (mode !== 'games' && mode !== 'fling') await wheelStep();
   dressGaryFor(mode);
   setAvatar(who); if (random) randomTeams();
   G.modes.id = mode; G.modes.def = modeById(mode); if (mode !== 'roam') saveStore('mode', mode); saveStore('lastAs', who);
-  if (opts.vr) { el.classList.remove('on'); launch(); return; }
   await summaryStep(who, mode);
   el.classList.remove('on'); launch();
 }
@@ -65,6 +68,15 @@ export async function startFlow(launch, opts = {}) {
 // 2. the outfit wheel
 function wheelStep() {
   G.wheelShown = true;
+  if (VR) { const list = OUTFITS; const n = list.length; const target = Math.max(0, list.findIndex(o => o.id === G.garyOutfit?.id)); const final = Math.PI * 2 * 6 - ((target + 0.5) / n) * Math.PI * 2; const cols = ['#c1121f', '#2d6a4f', '#d4af37', '#1d6fd8', '#7b2cbf', '#e76f51']; let tickA = 0, cheered = false;
+    const name = (G.garyOutfit?.label || '').split(' (')[0];
+    return vrShow({ title: 'Gary\'s Outfit Wheel', lead: 'What\'s Gary wearing this year?', secs: 7.5, draw: (g, W, H, ms) => { const k = Math.min(1, ms / 4200), e = 1 - Math.pow(1 - k, 3), a = final * e, R = 230, cx = W / 2, cy = 390;
+      g.save(); g.translate(cx, cy); for (let i = 0; i < n; i++) { const a0 = a + i / n * Math.PI * 2 - Math.PI / 2, a1 = a0 + Math.PI * 2 / n; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R, a0, a1); g.closePath(); g.fillStyle = cols[i % cols.length]; g.fill(); g.strokeStyle = '#ffd700'; g.lineWidth = 4; g.stroke();
+        g.save(); g.rotate((a0 + a1) / 2); g.fillStyle = '#fff'; g.textAlign = 'right'; g.textBaseline = 'middle'; const lb = list[i].label.split(' (')[0]; let fs = 24; g.font = `bold ${fs}px Georgia`; while (g.measureText(lb).width > 160 && fs > 12) { fs--; g.font = `bold ${fs}px Georgia`; } g.fillText(lb, R - 16, 0); g.restore(); }
+      g.beginPath(); g.arc(0, 0, 40, 0, 7); g.fillStyle = '#ffd700'; g.fill(); g.fillStyle = '#7a1020'; g.font = 'bold 20px Georgia'; g.textAlign = 'center'; g.fillText('GARY', 0, 2); g.restore();
+      g.fillStyle = '#fff'; g.beginPath(); g.moveTo(cx, cy - R + 26); g.lineTo(cx - 20, cy - R - 16); g.lineTo(cx + 20, cy - R - 16); g.closePath(); g.fill();
+      const ti = Math.floor(a / (Math.PI * 2 / n)); if (ti !== tickA) { tickA = ti; sfx('tap', null, 0.25); }
+      if (k >= 1) { if (!cheered) { cheered = true; sfx('cheer', null, 0.7); } g.fillStyle = '#ffd700'; g.font = '900 34px Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(`Gary will be wearing the ${name} outfit!`, W / 2, H - 60); } } }); }
   return new Promise(res => {
     const list = OUTFITS; const target = Math.max(0, list.findIndex(o => o.id === G.garyOutfit?.id)); const n = list.length;
     el.innerHTML = `<h2>Gary's Outfit Wheel</h2><p class="lead">What's Gary wearing this year?</p><canvas class="wheel" width="600" height="600"></canvas><h2 id="wRes" style="min-height:1.3em;color:#ffd700"></h2><button class="go" id="wGo" disabled>Let's play →</button>`;
@@ -83,6 +95,9 @@ function wheelStep() {
 
 // 3. choose your character, by family
 function characterStep() {
+  if (VR) { let sel = loadStore('lastAs', 'Tommy'); if (!G.charByName[sel] && sel !== 'Chip') sel = 'Tommy';
+    const items = FAMILIES.flatMap(f => f.people.filter(n => n === 'Chip' || G.charByName[n]).map(n => ({ id: n, label: n, img: P()[n], icon: n === 'Chip' ? '🐶' : '🎄' })));
+    return vrPick({ title: 'Who are you playing as?', lead: 'Point and pull the trigger (or pinch). Chip, Mason and Harrison just roam the house causing trouble.', items, selected: sel, cols: 6, done: 'Done ✓' }).then(r => { sfx('ding', null, 0.6); return r.sel; }); }
   return new Promise(res => {
     let sel = loadStore('lastAs', 'Tommy'); if (!G.charByName[sel] && sel !== 'Chip') sel = 'Tommy';
     const team = (n) => n === 'Chip' ? 'Just here for the buffet' : n === 'Martin' ? 'Quizmaster (or play him!)' : ''; // no team names here: just who they are
@@ -97,6 +112,9 @@ function characterStep() {
 
 // 4. choose the game mode, and default or random teams
 function modeStep() {
+  if (VR) { let sel = loadStore('mode', 'quick'); if (!MODES.some(m => m.id === sel)) sel = 'quick'; const random = !!loadStore('randomTeams', false);
+    return vrPick({ title: 'Choose a game mode', lead: 'Free Roam is always there afterwards.', toggles: [{ id: 'default', label: 'Default teams' }, { id: 'random', label: '🎲 Randomise teams' }], toggleSel: random ? 'random' : 'default', items: MODES.map(m => ({ id: m.id, label: m.name, icon: m.icon, sub: m.desc })), selected: sel, cols: 2 })
+      .then(r => { sfx('ding', null, 0.6); saveStore('randomTeams', r.toggle === 'random'); return { mode: r.sel, random: r.toggle === 'random' }; }); }
   return new Promise(res => {
     let sel = loadStore('mode', 'quick'); if (!MODES.some(m => m.id === sel)) sel = 'quick'; let random = !!loadStore('randomTeams', false);
     el.innerHTML = `<h2>Choose a game mode</h2><p class="lead">Free Roam is always there afterwards.</p><div class="tog"><button data-r="0" class="${random ? '' : 'sel'}">Default teams</button><button data-r="1" class="${random ? 'sel' : ''}">🎲 Randomise teams</button></div><div class="modes2">${MODES.map(m => { const b = loadStore('best.' + m.id, null); return `<button class="m2${m.id === sel ? ' sel' : ''}" data-m="${m.id}"><i>${m.icon}</i><b>${m.name}</b><small>${m.desc}</small><em>${m.tag}${b != null ? ` · best ${b}` : ''}</em></button>`; }).join('')}</div>
@@ -108,8 +126,32 @@ function modeStep() {
   });
 }
 
+// 4b. Mini Games: let the dice pick five, or choose exactly which ones
+function gamesStep() {
+  if (VR) { const saved = loadStore('gamesPick', { random: true, ids: GAMES.slice(0, 5).map(g => g.id) }); const short = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
+    return vrPick({ title: 'Which games?', lead: 'Let the dice pick five, or choose your own.', toggles: [{ id: 'random', label: '🎲 Random five' }, { id: 'pick', label: '✋ I\'ll choose' }], toggleSel: saved.random !== false ? 'random' : 'pick', multi: true, multiToggle: 'pick', selected: saved.ids || [], items: GAMES.map(g => ({ id: g.id, label: g.title.replace(/\b(\w)(\w*)/g, (m, a, b) => a + b.toLowerCase()), icon: g.icon, sub: short(g) })), cols: 3 })
+      .then(r => { const pick = { random: r.toggle !== 'pick', ids: r.sel }; saveStore('gamesPick', pick); G.minigames.playlist = gamePlaylist(pick); sfx('ding', null, 0.6); }); }
+  return new Promise(res => {
+    const saved = loadStore('gamesPick', { random: true, ids: GAMES.slice(0, 5).map(g => g.id) }); let random = saved.random !== false; const sel = new Set(saved.ids?.length ? saved.ids : GAMES.slice(0, 5).map(g => g.id));
+    const how = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
+    el.innerHTML = `<h2>Which games?</h2><p class="lead">Let the dice pick five, or choose your own.</p>
+      <div class="tog"><button data-r="1" class="${random ? 'sel' : ''}">🎲 Random five</button><button data-r="0" class="${random ? '' : 'sel'}">✋ I'll choose</button></div>
+      <div class="modes2 gpick${random ? ' rnd' : ''}">${GAMES.map(g => `<button class="m2${sel.has(g.id) ? ' sel' : ''}" data-g="${g.id}"><i>${g.icon}</i><b>${g.title.replace(/\b(\w)(\w*)/g, (m, a, b) => a + b.toLowerCase())}</b><small>${how(g)}</small><em class="tick">${sel.has(g.id) ? '✓ In' : '+ Add'}</em></button>`).join('')}</div>
+      <p class="lead" id="gCount" style="margin-top:12px"></p><button class="go" id="gGo">Next →</button>`;
+    el.scrollTop = 0;
+    const st = document.createElement('style'); st.textContent = '#flow .gpick.rnd .m2 { opacity:.55; pointer-events:none; } #flow .gpick.rnd .tick { display:none; } #flow .gpick .tick { float:right; margin-top:-2px; }'; el.appendChild(st);
+    const refresh = () => { el.querySelector('.gpick').classList.toggle('rnd', random); el.querySelectorAll('.gpick .m2').forEach(b => { const on = sel.has(b.dataset.g); b.classList.toggle('sel', on); b.querySelector('.tick').textContent = on ? '✓ In' : '+ Add'; });
+      el.querySelector('#gCount').textContent = random ? 'Five games, picked at random, in a random order.' : `${sel.size} game${sel.size === 1 ? '' : 's'} chosen`; el.querySelector('#gGo').disabled = !random && !sel.size; };
+    el.querySelectorAll('.tog button').forEach(b => b.onclick = () => { random = b.dataset.r === '1'; el.querySelectorAll('.tog button').forEach(x => x.classList.toggle('sel', x === b)); sfx('tap', null, 0.4); refresh(); });
+    el.querySelectorAll('.gpick .m2').forEach(b => b.onclick = () => { const id = b.dataset.g; sel.has(id) ? sel.delete(id) : sel.add(id); sfx('tap', null, 0.4); refresh(); });
+    refresh();
+    el.querySelector('#gGo').onclick = () => { const pick = { random, ids: [...sel] }; saveStore('gamesPick', pick); G.minigames.playlist = gamePlaylist(pick); sfx('ding', null, 0.6); res(); };
+  });
+}
+
 // 5. tonight's line-up, then go
 function summaryStep(who, mode) {
+  if (VR) { const m = modeById(mode); sfx('whistle', null, 0.6); return vrShow({ title: 'Tonight', lines: [`You're playing as ${who}`, `${m.icon} ${m.name}`, G.myTeam ? `Your team: ${TEAMS[G.myTeam].name}` : (who === 'Chip' ? 'Dog mode: paw-punch the family and steal sausage rolls.' : '')], secs: 3.2 }); }
   return new Promise(res => {
     const m = modeById(mode); const host = G.chars.find(c => c.team === 'host')?.name || 'Martin';
     const teams = TEAM_IDS.map(t => ({ t, ppl: G.chars.filter(c => c.team === t).map(c => c.name) }));

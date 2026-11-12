@@ -6,13 +6,13 @@ import { sfx } from '../engine/audio.js';
 import { tvFrame, wrapText } from './screens.js';
 import { loadStore, saveStore } from './settings.js';
 import { DRINK_ORDERS, TEAMS, TEAM_IDS } from '../chars/cast.js';
-import { GAMES } from './minigames.js';
+import { GAMES, gamePlaylist } from './minigames.js';
 import { card, board, timer } from './popup.js';
 import { canvasTex } from '../engine/textures.js';
 
 export const MODES = [
   { id: 'quick', icon: '⚡', name: 'Quick Quiz', desc: 'Into the living room: two quick rounds on the big question cards, marking, then the Mason Cup.', tag: '10 min' },
-  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Five games: sprout throwing and cracker pulls in the dining room, sumo in the garden ring, find the magic elves round the house, then pass the parcel.', tag: '5 games' },
+  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Nine games to choose from (or let the dice pick five): sprouts, crackers, sumo, magic elves, pass the parcel, chocolate box towers, catching leftovers, a snowball fight and waking Gary up.', tag: '9 games' },
   { id: 'fling', icon: '🚀', name: 'Fling the Relative', desc: 'Out in the garden. The family line up, you grab and launch them down the lawn. There\'s a measuring tape.', tag: '10 throws' },
   { id: 'beer', icon: '🍺', name: 'Drinks Run', desc: 'Everyone wants a drink and they\'re getting cross. The drinks are poured — find the right one and get it to them.', tag: '3:00 · orders' },
   { id: 'sandbox', icon: '🎄', name: 'Free Roam', desc: 'No quiz, no timer. Just the family, the house and loads to throw.', tag: 'Relax' },
@@ -22,13 +22,17 @@ export const FULL = { id: 'quiz', icon: '🏆', name: 'The Full Quiz', desc: 'Al
 export const modeById = (id) => MODES.find(m => m.id === id) || (id === 'roam' ? ROAM : id === 'quiz' ? FULL : MODES[0]);
 export function selectedMode() { const q = new URLSearchParams(location.search).get('mode'); if (q && (MODES.some(m => m.id === q) || q === 'roam' || q === 'quiz')) return q; /* 'quiz' = the full evening (hidden; used by tests) */ const s = loadStore('mode', 'quick'); return MODES.some(m => m.id === s) ? s : 'quick'; }
 
+// besides their usual, some people fancy a hot drink
+const ALSO = { Paul: ['coffee'], Martin: ['coffee'], Karen: ['coffee', 'wine'], Julie: ['coffee'], Gary: ['coffee'], Debbie: ['hotchoc'], Mason: ['hotchoc'], Hollie: ['hotchoc'], Sophie: ['wine'], Kirsty: ['hotchoc', 'prosecco'], Jodie: ['coffee'], Charli: ['hotchoc', 'wine'], Dan: ['coffee'], James: ['coffee'], Harry: ['hotchoc'], Bradley: ['coffee'], Tommy: ['coffee'] };
 const DRINK = {
-  lager: { label: 'lager', icon: '🍺', ids: ['lager', 'pint_full'], where: 'Kitchen fridge (or the garage fridge)' },
+  lager: { label: 'beer', icon: '🍺', ids: ['lager', 'pint_full'], where: 'Kitchen fridge (or the garage fridge), or a poured pint on the breakfast bar' },
   bitter: { label: 'bitter', icon: '🍺', ids: ['bitter', 'pint_full'], where: 'Garage fridge' },
-  pint: { label: 'pint', icon: '🍺', ids: ['pint_full', 'lager', 'bitter'], where: 'Poured pints on the breakfast bar' },
-  prosecco: { label: 'Prosecco', icon: '🥂', ids: ['prosecco', 'wine_full'], where: 'Kitchen fridge' },
-  wine: { label: 'glass of wine', icon: '🍷', ids: ['wine_full', 'white_wine', 'red_wine'], where: 'Poured glasses of wine on the breakfast bar' },
-  small: { label: 'small one', icon: '🍷', ids: ['wine_full', 'prosecco', 'white_wine'], where: 'Poured glasses of wine on the breakfast bar' },
+  pint: { label: 'pint of beer', icon: '🍺', ids: ['pint_full', 'lager', 'bitter'], where: 'Poured pints on the breakfast bar' },
+  prosecco: { label: 'Prosecco', icon: '🥂', ids: ['prosecco_full', 'prosecco'], where: 'The fizzy glasses on the breakfast bar (or the bottle in the kitchen fridge)' },
+  wine: { label: 'glass of red wine', icon: '🍷', ids: ['wine_full', 'red_wine'], where: 'The red wine glasses on the breakfast bar' },
+  coffee: { label: 'coffee', icon: '☕', ids: ['coffee_full'], where: 'The blue mugs on the breakfast bar' },
+  hotchoc: { label: 'hot chocolate', icon: '🍫', ids: ['hotchoc_full'], where: 'The red mugs with cream on the breakfast bar' },
+  small: { label: 'small one', icon: '🍷', ids: ['wine_full', 'prosecco_full', 'prosecco', 'white_wine'], where: 'Poured glasses of wine on the breakfast bar' },
   juice: { label: 'juice', icon: '🧃', ids: ['juice', 'squash'], where: 'Kitchen fridge' },
 };
 
@@ -112,7 +116,8 @@ export class Modes {
   // ---------------- Mini Games: dining room + conservatory ----------------
   async gamesSetup() {
     this.hudOff(); this.running = false; const mg = G.minigames; mg.total = {};
-    for (let i = 0; i < GAMES.length; i++) await mg.play(i);
+    const list = mg.playlist || gamePlaylist(loadStore('gamesPick', { random: true })); // chosen on the Mini Games screen
+    for (let k = 0; k < list.length; k++) await mg.play(list[k], k);
     mg.releaseAll();
     const rows = mg.overall(); const mine = rows.find(r => r.me); const top = rows.slice().sort((a, b) => b.score - a.score)[0];
     sfx(top.me ? 'cheer' : 'drum', null, 1);
@@ -175,12 +180,12 @@ export class Modes {
   restock() {
     const add = (id, x, y, z, n = 2) => { const have = (G.items.byType[id] || []).filter(i => { const t = i.body.translation(); return Math.hypot(t.x - x, t.z - z) < 0.45 && Math.abs(t.y - y) < 0.3; }).length; for (let k = have; k < n; k++) G.items.spawn(id, new THREE.Vector3(x + rand(-0.12, 0.12), y, z + rand(-0.05, 0.05)), null, { surface: true }); };
     add('lager', 5.6, 0.58, 0.1, 3); add('prosecco', 5.3, 0.13, 0.12); add('white_wine', 5.5, 0.13, 0.12, 1); add('juice', 5.35, 0.58, 0.15, 1);
-    add('wine_full', 3.3, 1.035, -0.05, 3); add('pint_full', 3.9, 1.035, -0.05, 3);
+    const B = G.house.spots.bar || { x0: 3.0, x1: 4.8 }; const span = B.x1 - B.x0; add('wine_full', B.x0 + span * 0.12, 1.035, -0.08, 2); add('prosecco_full', B.x0 + span * 0.32, 1.035, -0.08, 3); add('pint_full', B.x0 + span * 0.52, 1.035, -0.08, 3); add('coffee_full', B.x0 + span * 0.72, 1.04, -0.08, 2); add('hotchoc_full', B.x0 + span * 0.9, 1.04, -0.08, 2);
     add('bitter', -4.75, 1.03, 0.12, 2); add('lager', -4.78, 0.13, 0.1, 2);
   }
   newOrder() {
     const cands = G.chars.filter(c => !c.isPlayer && !c.protected && !c.isDown() && DRINK_ORDERS[c.name] && !this.orders.some(o => o.p === c) && c.brain); if (!cands.length) return;
-    const p = pick(cands); const d = DRINK[DRINK_ORDERS[p.name]] || DRINK.lager; const patience = Math.max(22, 55 - this.t * 0.18);
+    const p = pick(cands); const key = Math.random() < 0.38 && ALSO[p.name] ? pick(ALSO[p.name]) : DRINK_ORDERS[p.name]; const d = DRINK[key] || DRINK.lager; const patience = Math.max(22, 55 - this.t * 0.18);
     const o = { p, d, start: G.time, until: G.time + patience, patience }; this.orders.push(o);
     p.say(pick([`${G.me?.name || 'Tommy'}! ${d.label}, please!`, `Get us a ${d.label}, would you?`, `I'm parched. ${d.label}?`, `Any chance of a ${d.label}?`]), { prio: 1, order: true }); p.gesture = 'wave'; setTimeout(() => p.gesture === 'wave' && (p.gesture = null), 2500);
     o.marker = this.marker(d.icon); o.marker.userData.order = o; sfx('ding', null, 0.5);

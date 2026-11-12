@@ -9,22 +9,32 @@ import { TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { card, board, timer, tapButton, meters } from './popup.js';
 import { Prop } from '../engine/geo.js';
 import { staticBox, staticCyl } from '../engine/physics.js';
+import { installMoreGames } from './minigames2.js';
 
-const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
+const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN'];
 export const GAMES = [
   { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'A sprout appears in your hand. Hold THROW to build up power (watch the bar and the dotted line), let go to lob it into the red and white cups. Ten sprouts, 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
   { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Three relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker. They get stronger…', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 30 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 30 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
+  { id: 'stack', icon: '🍫', title: 'STACK THE CHOCOLATE BOXES', how: () => G.xr ? 'A chocolate box swings back and forth over the dining table. Pull the trigger to DROP it onto your tower. Tallest tower in 50 seconds wins. Mason will try to knock it over: wave him away!' : 'A chocolate box swings back and forth over the dining table. Hit DROP to land it on your tower. Tallest tower in 50 seconds wins. Mason will try to knock it over: hit SHOO!', unit: ' cm', other: () => Math.round(rand(18, 60)) },
+  { id: 'leftovers', icon: '🍗', title: 'CATCH THE LEFTOVERS', how: () => G.xr ? 'Julie is lobbing the leftovers across the garden. Hold your plate out (it\'s in your right hand) and catch them. Golden turkey leg = 3, sprouts = −1. Whatever you drop, Chip eats.' : 'Julie is lobbing the leftovers across the garden. Run under them with the joystick (follow the ring on the grass) to catch them on your plate. Golden turkey leg = 3, sprouts = −1. Whatever you drop, Chip eats.', unit: ' pts', other: () => Math.round(rand(4, 15)) },
+  { id: 'snowball', icon: '❄️', title: 'SNOWBALL FIGHT', how: () => G.xr ? 'Three against three in the snowy garden. Pull the trigger to throw where your right hand points. Duck behind the snow forts. Three hits and you\'re out.' : 'Three against three in the snowy garden. Hold THROW for power and let go to throw where you\'re looking. Duck behind the snow forts. Three hits and you\'re out.', unit: ' pts', other: () => Math.round(rand(1, 7)) },
+  { id: 'wakeGary', icon: '😴', title: 'WAKE GARY UP', how: () => G.xr ? 'Gary\'s fast asleep on the sofa. Wake him up as fast as you can: throw cushions at him, prod him, and pull the trigger for the telly, Chip, a party popper, an ice cube or a beer. He keeps drifting into a deep sleep!' : 'Gary\'s fast asleep on the sofa. Wake him up as fast as you can: throw cushions, prod him, turn the telly up, send Chip to lick him, party poppers, ice cubes… Do things quickly for a combo. He keeps drifting into a deep sleep!', unit: 's', lowerBetter: true, other: () => Math.round(rand(20, 45)) },
   { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it reaches you, hit PASS to send it on. When the music stops with it in your hands, hit TEAR!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
 ];
 // (spare games, used between quiz rounds if ever needed)
 export const SPARE = [
-  { id: 'stack', icon: '🍫', title: 'STACK THE CELEBRATIONS', how: 'Build the tallest tower of chocolates on the dining table. 30 seconds. Mason is watching.', unit: ' cm', other: () => Math.floor(rand(6, 26)) },
   { id: 'giftGrab', icon: '🎄', title: 'GIFT GRAB', how: 'In the conservatory: throw the presents into the gold square. 40 seconds.', unit: ' gifts', other: () => Math.floor(rand(0, 5)) },
 ];
 const TABLE = { x: 4.99, z: -3.9, x0: 4.52, x1: 5.47, z0: -4.75, z1: -3.05, y: 0.77 };
 
+// which games tonight: { random: true } = five picked at random, or { ids: [...] } = the ones you chose, in list order
+export function gamePlaylist(pick) {
+  const all = GAMES.map((g, i) => i);
+  if (pick && !pick.random && pick.ids?.length) { const out = all.filter(i => pick.ids.includes(GAMES[i].id)); if (out.length) return out; }
+  return shuffle(all).slice(0, 5);
+}
 export class MiniGames {
   constructor() { G.minigames = this; this.active = null; this.total = {}; G.updaters.push((dt) => this.update(dt)); on('next', () => { if (this.active && this.active.t > 1) this.active.skip = true; }); }
   // one game between quiz rounds (old API)
@@ -37,7 +47,9 @@ export class MiniGames {
   place(p, x, z, faceTo) { if (!p || p.isPlayer) return; if (p.isDown()) { p.state = 'anim'; } const yaw = Math.atan2(faceTo[0] - x, faceTo[1] - z); p.teleport(x, 0, z, yaw); p.base = 'stand'; p.gesture = null; p.lookTarget = null; if (p.brain) { p.brain.state = 'scripted'; p.brain.timer = 9999; p.brain.path = null; } }
   park(people, spots, faceTo) { people.forEach((p, i) => { const s = spots[i % spots.length]; this.place(p, s[0], s[1], faceTo); }); this.parked = people; }
   // everyone else becomes the audience: standing round the game, watching and cheering, not wandering about
-  crowd(spots, faceTo, except = []) { const ex = new Set([...except, ...(this.parked || [])]); const ppl = G.chars.filter(c => !c.isPlayer && !ex.has(c) && c.brain && !(c.brain.home?.carried)); this.audience = ppl;
+  crowd(spots, faceTo, except = [], max = 99) { const ex = new Set([...except, ...(this.parked || [])]); let ppl = G.chars.filter(c => !c.isPlayer && !ex.has(c) && c.brain && !(c.brain.home?.carried));
+    if (ppl.length > max) { ppl = shuffle(ppl); const rest = ppl.slice(max); ppl = ppl.slice(0, max); for (const c of rest) { if (c.isDown()) c.state = 'anim'; G.ai?.sitAtHome(c.brain, true); c.brain.state = 'scripted'; c.brain.timer = 9999; } } // only a handful watch; the rest stay in their seats
+    this.audience = ppl;
     ppl.forEach((p, i) => { const s = spots[i % spots.length]; const j = i >= spots.length ? 0.35 : 0; this.place(p, s[0] + rand(-j, j), s[1] + rand(-j, j), faceTo); }); }
   seatEveryone(except = []) { const ex = new Set(except); for (const c of G.chars) { if (c.isPlayer || ex.has(c) || !c.brain || c.brain.home?.carried) continue; if (c.isDown()) c.state = 'anim'; G.ai?.sitAtHome(c.brain, true); c.brain.state = 'scripted'; c.brain.timer = 9999; } this.audience = []; }
   cheer() { const a = this.audience; if (!a?.length) return; for (let k = 0; k < 3; k++) { const p = pick(a); if (p.state !== 'anim') continue; p.gesture = pick(['clap', 'cheer', 'laugh', 'point']); setTimeout(() => { if (['clap', 'cheer', 'laugh', 'point'].includes(p.gesture)) p.gesture = null; }, 1800); } }
@@ -45,14 +57,14 @@ export class MiniGames {
   release() { if (G.modes?.id === 'games') { this.parked = []; return; } /* mini games mode: they stay as the audience for the next game */ this.releaseAll(); }
   clearArea(x0, x1, z0, z1, keep = []) { for (const it of G.items.instances.slice()) { if (it.type.fixed || it.held || keep.includes(it.id)) continue; const t = it.body.translation(); if (t.x > x0 && t.x < x1 && t.z > z0 && t.z < z1) G.items.remove(it); } }
 
-  async play(i) {
+  async play(i, pos = i) {
     const def = GAMES[i]; const q = G.quiz; G.player.releaseAll(); G.modes?.hudOff?.();
-    sfx('whistle', null, 0.8); q?.mSay?.(`Game ${i + 1}: ${def.title.toLowerCase()}!`, 2);
+    sfx('whistle', null, 0.8); q?.mSay?.(`Game ${pos + 1}: ${def.title.toLowerCase()}!`, 2);
     const a = { id: def.id, def, i, t: 0, score: 0, limit: 0, live: false };
     this['setup_' + def.id](a);
     const how = typeof def.how === 'function' ? def.how() : def.how;
-    G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, `GAME ${ORDINAL[i]}: ${def.title}`, '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, how, 60, 170, 900, 42); });
-    await card({ kicker: `GAME ${ORDINAL[i]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
+    G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, `GAME ${ORDINAL[pos]}: ${def.title}`, '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, how, 60, 170, 900, 42); });
+    await card({ kicker: `GAME ${ORDINAL[pos]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
     sfx('whistle', null, 1); a.live = true; this.active = a; document.body.classList.add('mg', 'mg-' + def.id); this['begin_' + def.id]?.(a);
     await new Promise(res => { a.done = res; });
     this.active = null; timer(null); meters(null); stopMusic(); document.body.classList.remove('mg', 'mg-' + def.id); this['end_' + def.id]?.(a); if (a.beams) await new Promise(r => setTimeout(r, 6400));
@@ -63,7 +75,7 @@ export class MiniGames {
     if (def.lowerBetter) rows = rows.map(r => ({ ...r, raw: r.score, display: r.score == null ? 'DNF' : `${r.score}s`, score: r.score == null ? -9999 : -r.score }));
     const order = rows.slice().sort((x, y) => y.score - x.score); order.forEach((r, k) => { const pts = [3, 2, 1, 0][k]; this.total[r.team] = (this.total[r.team] || 0) + pts * 100; if (q) q.bonus[r.team] += pts; }); // standings in hundreds: 300 / 200 / 100
     sfx(order[0].me ? 'cheer' : 'drum', null, 0.9);
-    await board({ kicker: `GAME ${ORDINAL[i]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +300 points' : `${order[0].name} win this one.`, secs: 5.5 });
+    await board({ kicker: `GAME ${ORDINAL[pos]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +300 points' : `${order[0].name} win this one.`, secs: 5.5 });
     this.release(); this.tidy(a);
     return a.score;
   }
@@ -72,14 +84,14 @@ export class MiniGames {
     if (!mine) return Math.random() < 0.6 ? 0 : def.other(); return Math.max(0, Math.round(mine * skill + rand(-0.8, 0.8)));
   }
   overall() { const mine = this.me(); return TEAM_IDS.map(t => ({ name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: this.total[t] || 0 })); }
-  tidy(a) { setTimeout(() => { for (const it of G.items.instances.slice()) if (!it.held && ['sprout', 'celebration', 'present_s', 'present_m', 'paper_ball', 'cracker', 'paper_crown', 'satsuma'].includes(it.id) && it.mg) G.items.remove(it); }, 1500); }
+  tidy(a) { setTimeout(() => { for (const it of G.items.instances.slice()) if (!it.held && ['sprout', 'celebration', 'present_s', 'present_m', 'paper_ball', 'cracker', 'paper_crown', 'satsuma', 'cushion'].includes(it.id) && it.mg) G.items.remove(it); }, 1500); }
   spawn(id, pos, opts) { const it = G.items.spawn(id, pos, null, opts); if (it) it.mg = true; return it; }
   limitTick(a, dt) { if (!a.limit) return; const left = Math.max(0, a.limit - a.t); const L = Math.ceil(left); timer(L >= 60 ? `${Math.floor(L / 60)}:${String(L % 60).padStart(2, '0')}` : `${L}s`, a.label ? a.label() : `SCORE ${a.score}`, left < 6); if (left <= 0 || a.skip) { a.timeUp = left <= 0; this.stop(a); } }
   stop(a) { if (a.stopped) return; a.stopped = true; a.live = false; sfx('whistle', null, 1); a.done?.(); }
   update(dt) { const a = this.active; if (!a || !a.live) return; a.t += dt; this['tick_' + a.id]?.(a, dt); this.limitTick(a, dt); if (G.frame % 140 === 0) this.cheer(); }
 
   // the audience spots: round the dining room (away from the table and the cracker spot) and round the sumo ring
-  diningCrowd(except, faceTo = [TABLE.x, TABLE.z]) { this.crowd([[3.8, -1.9], [3.3, -1.8], [2.8, -1.9], [2.3, -2.1], [1.9, -2.5], [1.8, -4.3], [2.0, -4.9], [2.5, -5.3], [3.0, -5.4], [3.5, -5.4], [1.8, -3.7], [3.9, -5.0], [4.2, -1.75], [2.6, -2.6]], faceTo, except); }
+  diningCrowd(except, faceTo = [TABLE.x, TABLE.z], max = 99) { this.crowd([[3.8, -1.9], [3.3, -1.8], [2.8, -1.9], [2.3, -2.1], [1.9, -2.5], [1.8, -4.3], [2.0, -4.9], [2.5, -5.3], [3.0, -5.4], [3.5, -5.4], [1.8, -3.7], [3.9, -5.0], [4.2, -1.75], [2.6, -2.6]], faceTo, except, max); }
 
   // ---------- 1. Brussels sprout throwing ----------
   // six big red-and-white party cups, fixed to the far end of the table, and a pile of sprouts at your end
@@ -115,7 +127,7 @@ export class MiniGames {
     a.land = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.06, 24), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthTest: false })); a.land.rotation.x = -Math.PI / 2; a.land.renderOrder = 6; a.land.visible = false; G.scene.add(a.land);
     a.dots.frustumCulled = false; a.dots.visible = false; a.dots.renderOrder = 5; G.scene.add(a.dots);
     G.player.teleport(TABLE.x, TABLE.z1 + 0.65, 0); G.player.pitch = -0.3;
-    this.park(this.reps(2), [[4.15, -3.25], [4.15, -4.2]], [TABLE.x, TABLE.z]); this.diningCrowd([]);
+    this.park(this.reps(2), [[4.15, -3.25], [4.15, -4.2]], [TABLE.x, TABLE.z]); this.diningCrowd([], [TABLE.x, TABLE.z], 4); // just a few watching
   }
   // sprouts appear in your hand, one at a time
   handSprout(a) {
@@ -410,15 +422,6 @@ export class MiniGames {
   }
   end_parcel(a) { a.removeBtn?.(); a.passBtn?.(); if (a.pres) G.scene.remove(a.pres.root); for (const b of a.bits || []) G.scene.remove(b.m); a.bits = []; for (const p of a.people || []) if (p.gesture === 'reach' || p.gesture === 'pull') p.gesture = null; stopMusic(); }
 
-  // ---------- 4. Stack the Celebrations ----------
-  setup_stack(a) { a.limit = 30; this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);
-    for (const c of G.items.byType.pong_cup || []) c.body.setTranslation({ x: 1.25, y: 0.95, z: -3.6 - Math.random() * 0.4 }, true);
-    for (let k = 0; k < 18; k++) this.spawn('celebration', new THREE.Vector3(TABLE.x - 0.2 + (k % 6) * 0.07, TABLE.y + 0.02, TABLE.z1 - 0.15 - Math.floor(k / 6) * 0.06));
-    G.player.teleport(TABLE.x - 0.85, TABLE.z, -Math.PI / 2); G.player.pitch = -0.45;
-    this.park(this.reps(3), [[3.6, -2.7], [3.6, -5.0], [3.2, -3.9]], [TABLE.x, TABLE.z]); }
-  tick_stack(a) { if (G.frame % 10) return; let top = 0; for (const c of G.items.byType.celebration || []) { const p = c.body.translation(); if (p.x > TABLE.x0 && p.x < TABLE.x1 && p.z > TABLE.z0 && p.z < TABLE.z1 && !c.held) { const v = c.body.linvel(); if (Math.hypot(v.x, v.y, v.z) < 0.1) top = Math.max(top, p.y - TABLE.y); } } a.score = Math.round(top * 100); }
-  end_stack(a) { G.ai.say('Mason', 'CRASH!', 1); for (const c of G.items.byType.celebration || []) c.body.applyImpulse({ x: rand(-0.01, 0.01), y: 0.006, z: rand(-0.01, 0.01) }, true); }
-
   // ---------- 5. Gift grab (conservatory) ----------
   setup_giftGrab(a) { a.limit = 40; a.zone = { x: 4.35, z: -6.85 };
     for (const id of ['wicker_chair']) for (const it of G.items.byType[id] || []) G.items.remove(it);
@@ -468,3 +471,4 @@ function makePresent(layers) {
   root.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
   return { root, body, lid, papers, layer: 0, setPaper(k) { paper.map = papers[k]; paper.needsUpdate = true; } };
 }
+installMoreGames(MiniGames);
