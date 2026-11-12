@@ -12,9 +12,9 @@ import { staticBox, staticCyl } from '../engine/physics.js';
 
 const ORDINAL = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
 export const GAMES = [
-  { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'A sprout appears in your hand. Hold THROW to build up power (watch the bar and the dotted line), let go to lob it into the red and white cups. 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
-  { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Five relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker. They get stronger…', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
-  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 5 opponents, 25 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 5 opponents, 25 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
+  { id: 'sproutPong', icon: '🥬', title: 'BRUSSELS SPROUT THROWING', how: 'A sprout appears in your hand. Hold THROW to build up power (watch the bar and the dotted line), let go to lob it into the red and white cups. Ten sprouts, 75 seconds.', unit: ' cups', other: () => Math.floor(rand(0, 5)) },
+  { id: 'crackerDuel', icon: '🎉', title: 'CRACKER PULL', how: 'Three relatives, one at a time, right in front of you. Hammer PULL faster than they do to win the cracker. They get stronger…', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
+  { id: 'sumo', icon: '🤼', title: 'BOXING DAY SUMO', how: () => G.xr ? 'In the ring in the garden. Shove and punch your opponent to fill their wobble meter (it drops if you stop). When it\'s full, GRAB them and THROW them out of the ring! 3 opponents, 30 seconds each.' : 'In the ring in the garden. Keep hitting your opponent: every hit fills their wobble meter, and it drops if you stop. Fill it and they fly out of the ring! 3 opponents, 30 seconds each.', unit: ' wins', other: () => Math.floor(rand(0, 3.2)) },
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
   { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it reaches you, hit PASS to send it on. When the music stops with it in your hands, hit TEAR!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
 ];
@@ -85,7 +85,7 @@ export class MiniGames {
   // ---------- 1. Brussels sprout throwing ----------
   // six big red-and-white party cups, fixed to the far end of the table, and a pile of sprouts at your end
   setup_sproutPong(a) {
-    a.limit = 75; a.counted = new Set();
+    a.limit = 75; a.counted = new Set(); a.given = 0; a.label = () => G.xr ? `SCORE ${a.score}` : `SPROUT ${Math.min(10, a.given)}/10 · SCORE ${a.score}`;
     this.clearArea(TABLE.x0 - 0.1, TABLE.x1 + 0.1, TABLE.z0 - 0.1, TABLE.z1 + 0.1);
     for (const c of G.items.byType.pong_cup || []) { c.body.setTranslation({ x: 1.25, y: 0.95, z: -3.5 - Math.random() * 0.5 }, true); c.dirty = true; } // the little cups go on the sideboard
     // six big red-and-white party cups, tilted a little towards you, fixed to the far end of the table
@@ -120,10 +120,15 @@ export class MiniGames {
   }
   // sprouts appear in your hand, one at a time
   handSprout(a) {
-    const key = G.xr ? 'R' : 'D'; if (G.player.holders[key]) { a.nextHand = null; return; }
+    // in the headset it's just normal throwing: a pile of sprouts at your end of the table that keeps topping up
+    if (G.xr) { if (G.frame % 30) return; const near = (G.items.byType.sprout || []).filter(s => { const t = s.body.translation(); return !s.held && t.y > TABLE.y - 0.02 && t.z > TABLE.z1 - 0.35 && t.x > TABLE.x0 && t.x < TABLE.x1; }).length;
+      if (near < 3) for (let k = 0; k < 6; k++) this.spawn('sprout', new THREE.Vector3(TABLE.x - 0.2 + (k % 3) * 0.08, TABLE.y + 0.04 + Math.floor(k / 3) * 0.06, TABLE.z1 - 0.15)); return; }
+    // on a phone: ten sprouts, one at a time, in your hand
+    const key = 'D'; if (G.player.holders[key]) { a.nextHand = null; return; }
+    if (a.given >= 10) { if (!a.lastT) a.lastT = G.time; if (G.time - a.lastT > 2.5) this.stop(a); return; } // all ten thrown: give the last one time to land
     if (a.nextHand == null) { a.nextHand = G.time + 0.45; return; } if (G.time < a.nextHand) return; a.nextHand = null;
     const hp = G.xr ? (G.player.xrIn.hands.R?.palm || G.player.headPos(new THREE.Vector3())) : G.player.headPos(new THREE.Vector3()).add(G.player.forward(new THREE.Vector3()).multiplyScalar(0.4));
-    const s = this.spawn('sprout', hp.clone()); if (s) G.player.tryGrab(key, { kind: 'item', ref: s, point: hp.clone(), dist: 0.5 });
+    const s = this.spawn('sprout', hp.clone()); if (s) { a.given = (a.given || 0) + 1; G.player.tryGrab(key, { kind: 'item', ref: s, point: hp.clone(), dist: 0.5 }); }
   }
   // the launch the THROW button will give (power from how long it's held): used for the throw and the dotted line
   sproutLaunch(out) { const pl = G.player; const dir = pl.forward(new THREE.Vector3()); dir.y += 0.35; dir.normalize(); return out.copy(dir).multiplyScalar(2.6 + pl.charge * 4.4); }
@@ -164,7 +169,7 @@ export class MiniGames {
   // you stand on one spot in the dining room; each opponent appears straight in front of you, the camera locks on them
   // and you can't walk off until the cracker goes bang; then the next one steps up
   setup_crackerDuel(a) {
-    a.round = 0; a.opps = this.reps(5); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.3, 0.34), rand(0.35, 0.39), rand(0.4, 0.44), rand(0.45, 0.5), rand(0.52, 0.58)]); // five opponents, weakest to strongest, in a random order
+    a.round = 0; a.opps = this.reps(3); a.wins = 0; a.spot = [2.4, -3.2]; a.oppSpot = [3.2, -3.2]; a.skills = shuffle([rand(0.34, 0.39), rand(0.42, 0.47), rand(0.5, 0.56)]); // three opponents, all decent, one strong, in a random order
     G.player.teleport(a.spot[0], a.spot[1], -Math.PI / 2); G.player.pitch = -0.08;
     this.park(a.opps, [[3.9, -4.7], [3.5, -5.1], [3.1, -5.3], [2.7, -5.4], [2.3, -5.3]], a.spot);
     this.diningCrowd(a.opps, a.spot);
@@ -203,7 +208,7 @@ export class MiniGames {
   // a little sumo stage on the lawn. Every hit fills the opponent's wobble meter (and it drains if you stop); full
   // meter on a phone = they fly out of the ring; in the headset = grab them and throw them out. They shove back.
   setup_sumo(a) {
-    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(5); a.limitEach = 25;
+    const R = { x: -1.4, z: -12.4, r: 1.5 }; a.ring = R; a.round = 0; a.opps = this.reps(3); a.limitEach = 30;
     const P = new Prop(); P.cyl(R.r + 0.28, R.r + 0.34, 0.07, '#b89a6a', 0, 0.035, 0, 0, 0, 0, 40).cyl(R.r, R.r, 0.006, '#e6d3a2', 0, 0.075, 0, 0, 0, 0, 40); // raised clay platform + sand
     for (let k = 0; k < 90; k++) { const ang = k / 90 * Math.PI * 2; P.sph(0.055, k % 2 ? '#c8a960' : '#b8964c', Math.cos(ang) * R.r, 0.09, Math.sin(ang) * R.r, 1.6, 0.9, 1.6, 8); } // the straw-bale rope round the edge
     for (const s of [-1, 1]) P.box(0.04, 0.006, 0.42, '#ffffff', s * 0.45, 0.08, 0); // the two start lines
@@ -221,7 +226,7 @@ export class MiniGames {
   begin_sumo(a) { this.nextBout(a); }
   nextBout(a) {
     const R = a.ring; if (a.round >= a.opps.length) return this.stop(a);
-    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(1.4, 2.4); a.str = (a.strs ||= shuffle([rand(0.85, 0.95), rand(0.95, 1.05), rand(1.05, 1.15), rand(1.15, 1.25), rand(1.25, 1.4)]))[a.round]; // each opponent has their own strength
+    const opp = a.opps[a.round]; a.opp = opp; a.meter = 0; a.boutOn = false; a.lunge = rand(0.6, 1.0); a.windup = false; a.str = (a.strs ||= shuffle([rand(0.95, 1.05), rand(1.1, 1.2), rand(1.25, 1.4)]))[a.round]; // each opponent has their own strength
     G.player.teleport(R.x - 0.75, R.z, -Math.PI / 2);
     this.place(opp, R.x + 0.75, R.z, [R.x - 0.75, R.z]); opp.gesture = 'sumo'; opp.sumoReady = false;
     opp.sumo = (imp, grab) => { if (!a.boutOn) return; a.meter = Math.min(1.05, a.meter + (grab ? 0.07 : 0.1) / (a.str || 1)); // about 10-15 quick hits sfx('boff', opp.chestPos(new THREE.Vector3()), 0.7); opp.setMood?.('shock', 0.4);
@@ -236,15 +241,17 @@ export class MiniGames {
     if (opp.state === 'anim' && opp.sumo) {
       const pp = G.player.pos; const d = new THREE.Vector3(pp.x - opp.pos.x, 0, pp.z - opp.pos.z); const dist = d.length(); d.normalize();
       opp.yaw = Math.atan2(d.x, d.z); a.lunge -= dt;
-      if (a.lunge < 0) { a.lunge = rand(0.6, 1.1) / a.str; // they come at you often
-        if (dist > 1.6) opp.pos.addScaledVector(d, Math.min(0.45, dist - 1.0)); // too far: charge in
-        else { // close enough: lunge in and shove you back (a little at a time: it takes several to put you out)
-          if (dist > 0.75) opp.pos.addScaledVector(d, Math.min(0.3, dist - 0.7));
-          opp.gesture = 'shove'; opp.gestureT = 0; setTimeout(() => { if (opp.gesture === 'shove') opp.gesture = 'sumo'; }, 450);
-          const push = (0.1 + Math.random() * 0.1) * a.str * (1 - a.meter * 0.5); const np = pp.clone().addScaledVector(d, push); G.player.teleport(np.x, np.z, G.player.yaw);
-          sfx('boff', pp, 0.9); sfx('oof', pp, 0.6); if (G.fx) G.fx.shake = Math.max(G.fx.shake, 0.02); G.player.fp?.punch?.('L');
-          try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(0.8, 120); } catch (e) { /* no haptics */ }
-          G.ui?.toast(pick(['SHOVED!', 'OOF!', 'They hit back!', 'WHACK!']), 0.8, { game: true }); } }
+      // they keep pressing forward at you…
+      if (dist > 0.8) { opp.pos.addScaledVector(d, Math.min(dist - 0.75, dt * (0.9 + 0.5 * a.str))); }
+      // …and every second or so they wind up and hit you: a big two-handed shove that sends you sliding back
+      if (a.lunge < 0 && dist < 1.25 && !a.windup) { a.windup = true; opp.gesture = 'argue'; opp.gestureT = 0; opp.say(pick(['Hah!', 'Take that!', 'Hup!', 'HAKKEYOI!', 'Come here!']), { prio: 1 });
+        setTimeout(() => { a.windup = false; if (!a.boutOn || opp.state !== 'anim') return; a.lunge = rand(0.8, 1.4) / a.str;
+          const p2 = G.player.pos; const dd = new THREE.Vector3(p2.x - opp.pos.x, 0, p2.z - opp.pos.z); const dl = dd.length(); dd.normalize();
+          if (dl > 1.4) return; // you got out of reach in time
+          opp.gesture = 'shove'; opp.gestureT = 0; setTimeout(() => { if (opp.gesture === 'shove') opp.gesture = 'sumo'; }, 450); opp.pos.addScaledVector(dd, Math.min(0.25, Math.max(0, dl - 0.6)));
+          const push = (0.22 + Math.random() * 0.12) * a.str * (1 - a.meter * 0.4); G.player.shove(dd.multiplyScalar(push));
+          sfx('boff', p2, 1); sfx('oof', p2, 0.8); if (G.fx) G.fx.shake = Math.max(G.fx.shake, 0.035); G.popup?.flash?.('#ff2a2a'); G.popup?.splash?.(pick(['WHACK!', 'OOF!', 'SHOVED!', 'BOSH!']), '');
+          try { if (G.xr) for (const h of Object.values(G.player.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 160); } catch (e) { /* no haptics */ } }, 280); }
       const pr = Math.hypot(G.player.pos.x - R.x, G.player.pos.z - R.z); if (pr > R.r + 0.1) return this.boutOver(a, false, "You're out of the ring!");
       // keep them on the sand until they're beaten
       const or = Math.hypot(opp.pos.x - R.x, opp.pos.z - R.z); if (or > R.r - 0.15) { opp.pos.x = R.x + (opp.pos.x - R.x) * (R.r - 0.15) / or; opp.pos.z = R.z + (opp.pos.z - R.z) * (R.r - 0.15) / or; }

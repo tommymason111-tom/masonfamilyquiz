@@ -118,6 +118,7 @@ export function banner({ kicker = '', title = '', sub = '', icon = '', secs = 2.
   const rec = { kicker, title, sub, icon, secs, c1: c1 || '#e01020', c2: c2 || '#5a0006', rows: null, unit: '', footer: '', t0: performance.now() }; S.cards.push(rec); bump();
   return new Promise(res => setTimeout(() => { el.classList.replace('in', 'out'); setTimeout(() => { el.remove(); S.cards = S.cards.filter(c => c !== rec); bump(); res(); }, 300); }, secs * 1000));
 }
+export function flash(color = '#ff2a2a') { ensure(); const el = document.createElement('div'); el.style.cssText = `position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle, transparent 35%, ${color} 130%);opacity:.85;transition:opacity .45s ease-out`; root.appendChild(el); requestAnimationFrame(() => requestAnimationFrame(() => { el.style.opacity = '0'; })); setTimeout(() => el.remove(), 500); }
 // a big animated card; resolves when it has gone
 export function card({ kicker = '', title = '', sub = '', icon = '', secs = 3.5, c1, c2, _rows = null, _unit = '', _footer = '' } = {}) {
   ensure(); const rec = { kicker, title, sub: _rows ? '' : plain(sub), icon, secs, c1: c1 || '#b3122a', c2: c2 || '#4a0a14', rows: _rows, unit: _unit, footer: plain(_footer), t0: performance.now() }; S.cards.push(rec); bump(); const el = document.createElement('div'); el.className = 'card'; if (c1) el.style.setProperty('--c1', c1); if (c2) el.style.setProperty('--c2', c2);
@@ -155,4 +156,4 @@ export function questionCard(q, n, total, onPick, selected) {
 }
 export function questionTime(frac) { if (S.q) S.q.frac = frac; if (qEl) { const i = qEl.querySelector('.qt i'); if (i) i.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%'; } }
 export function clearAll() { if (!root) return; timer(null); meters(null); questionCard(null); root.querySelectorAll('.tap,.card').forEach(e => e.remove()); S.cards = []; S.tap = null; bump(); }
-G.popup = { havoc, splash, banner, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };
+G.popup = { havoc, splash, banner, flash, card, board, timer, tapButton, meters, questionCard, questionTime, clearAll, S };
