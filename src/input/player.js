@@ -39,11 +39,11 @@ export class Player {
   knockDown(from) {
     const d = new THREE.Vector3(this.pos.x - from.x, 0, this.pos.z - from.z); if (d.lengthSq() < 1e-4) d.set(0, 0, 1); d.normalize();
     this.releaseAll?.(); sfx('bigthud', this.pos, 1); sfx('oof', this.pos, 0.9);
-    if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8, this.yaw); G.ui?.toast('KNOCKED FLAT!', 2, { game: true }); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
+    if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8); /* keep facing the way you are */ G.ui?.toast('KNOCKED FLAT!', 2, { game: true }); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
     this.downT = 4.2; this.downPush = d.multiplyScalar(0.9); G.fx?.shake && (G.fx.shake = 0.03);
   }
   // a push that slides you back over a moment (sumo); in VR the rig just moves
-  shove(v) { if (G.xr) { this.teleport(this.pos.x + v.x, this.pos.z + v.z, this.yaw); return; } this.shoveV = new THREE.Vector3(v.x, 0, v.z).multiplyScalar(5); }
+  shove(v) { if (G.xr) { this.teleport(this.pos.x + v.x, this.pos.z + v.z); return; } this.shoveV = new THREE.Vector3(v.x, 0, v.z).multiplyScalar(5); }
   forward(out = new THREE.Vector3()) { return G.camera.getWorldDirection(out); }
 
   // ---------------- per-frame ----------------
@@ -124,7 +124,8 @@ export class Player {
     this.pos.set(np.x, np.y - 0.8, np.z);
     if (this.pos.y < -0.05 && this.grounded) this.pos.y = 0;
   }
-  teleport(x, z, yaw) { this.body.setTranslation({ x, y: 0.82, z }, true); this.pos.set(x, 0, z); if (yaw !== undefined) this.yaw = yaw; if (G.xr) this.rig.position.set(x, 0, z); }
+  teleport(x, z, yaw) { this.body.setTranslation({ x, y: 0.82, z }, true); this.pos.set(x, 0, z); if (yaw !== undefined) this.yaw = yaw; if (G.xr) { // in the headset: turn you to face the way the game wants, and put your HEAD (not the play-space centre) on the spot
+      if (yaw !== undefined) this.rig.rotation.set(0, yaw, 0); this.rig.position.set(x, 0, z); this.rig.updateMatrixWorld(true); const h = this.headPos(new THREE.Vector3()); if (Number.isFinite(h.x)) { this.rig.position.x += x - h.x; this.rig.position.z += z - h.z; } } }
 
   // ---------------- what's under the crosshair ----------------
   updateFocus() {

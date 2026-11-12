@@ -61,6 +61,8 @@ export class MiniGames {
     sfx('whistle', null, 0.8); q?.mSay?.(`Game ${pos + 1}: ${def.title.toLowerCase()}!`, 2);
     const a = { id: def.id, def, i, t: 0, score: 0, limit: 0, live: false };
     this['setup_' + def.id](a);
+    // nobody left standing (or sitting) where you've just been put: step them out of the way, facing you
+    { const me = G.player.pos; let k = 0; for (const c of G.chars) { if (c.isPlayer || !c.brain || c.isDown() || c.brain.home?.carried) continue; const d = Math.hypot(c.pos.x - me.x, c.pos.z - me.z); if (d < 0.75) { const ang = Math.atan2(c.pos.x - me.x, c.pos.z - me.z) + (k++) * 0.6; this.place(c, me.x + Math.sin(ang) * 1.3, me.z + Math.cos(ang) * 1.3, [me.x, me.z]); } } }
     const how = typeof def.how === 'function' ? def.how() : def.how;
     G.screens?.setTV((g, W, H) => { tvFrame(g, W, H, `GAME ${ORDINAL[pos]}: ${def.title}`, '#2d6a4f'); g.fillStyle = '#fff'; g.font = '30px sans-serif'; wrapText(g, how, 60, 170, 900, 42); });
     await card({ kicker: `GAME ${ORDINAL[pos]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
