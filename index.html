@@ -50,6 +50,7 @@
   .homewrap { position:relative; height:100%; overflow:auto; display:flex; flex-direction:column; align-items:center; padding:64px 16px 18px; gap:10px; }
   .edition { font: 600 13px/1 Georgia, serif; letter-spacing:.25em; color:#ffe7a8; text-transform:uppercase; text-shadow:0 0 12px rgba(255,200,80,.7); }
   .title { margin:0; text-align:center; line-height:.95; font-family: Georgia, "Times New Roman", serif; filter: drop-shadow(0 4px 0 #3a0a0a) drop-shadow(0 10px 18px rgba(0,0,0,.6)); }
+  @media (max-width: 820px) { .hang .bauble:not(:nth-child(1)):not(:nth-child(6)) { display:none; } } /* phones: only the two outer baubles, so the title is clear */
   .title em { display:block; margin-top:8px; font:900 clamp(18px,3.6vw,38px) Georgia,serif; font-style:normal; letter-spacing:.28em; color:#fff3d6; text-shadow:0 0 18px rgba(255,215,0,.55); }
   .title span { display:block; font-size:clamp(22px,4.2vw,44px); font-style:italic; color:#fff3d6; }
   .title b { display:block; font-size:clamp(36px,8.5vw,96px); background: linear-gradient(100deg,#8a5a12 0%,#ffe08a 18%,#fff8e0 26%,#d9a12e 40%,#ffe9a0 55%,#a8701a 70%,#ffe08a 85%,#fff 100%); background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation: foil 6s linear infinite; }
