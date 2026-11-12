@@ -75,7 +75,8 @@ export class Items {
   }
   syncOne(inst) {
     const t = inst.body.translation(), r = inst.body.rotation();
-    _m.compose(_p.set(t.x, t.y, t.z), _q.set(r.x, r.y, r.z, r.w), _s.set(1, 1, 1));
+    const k = inst.held && !G.xr && G.ui?.touchMode ? 0.65 : 1; // phones: things in your hand are drawn a bit smaller so they don't fill the screen
+    _m.compose(_p.set(t.x, t.y, t.z), _q.set(r.x, r.y, r.z, r.w), _s.set(k, k, k));
     inst.type.mesh.setMatrixAt(inst.index, _m); inst.type.mesh.instanceMatrix.needsUpdate = true;
   }
   update(dt) {

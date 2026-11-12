@@ -6,12 +6,13 @@ import { sfx } from '../engine/audio.js';
 import { tvFrame, wrapText } from './screens.js';
 import { loadStore, saveStore } from './settings.js';
 import { DRINK_ORDERS, TEAMS, TEAM_IDS } from '../chars/cast.js';
+import { GAMES } from './minigames.js';
 import { card, board, timer } from './popup.js';
 import { canvasTex } from '../engine/textures.js';
 
 export const MODES = [
   { id: 'quick', icon: '⚡', name: 'Quick Quiz', desc: 'Into the living room: two quick rounds on the big question cards, marking, then the Mason Cup.', tag: '10 min' },
-  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Five games in the dining room and conservatory: sprout throwing, cracker pulls, pass the parcel, Celebrations stacking, gift grab.', tag: '5 games' },
+  { id: 'games', icon: '🎲', name: 'Mini Games', desc: 'Five games: sprout throwing and cracker pulls in the dining room, sumo in the garden ring, find the magic elves round the house, then pass the parcel.', tag: '5 games' },
   { id: 'fling', icon: '🚀', name: 'Fling the Relative', desc: 'Out in the garden. The family line up, you grab and launch them down the lawn. There\'s a measuring tape.', tag: '10 throws' },
   { id: 'beer', icon: '🍺', name: 'Drinks Run', desc: 'Everyone wants a drink and they\'re getting cross. The drinks are poured — find the right one and get it to them.', tag: '3:00 · orders' },
   { id: 'sandbox', icon: '🎄', name: 'Free Roam', desc: 'No quiz, no timer. Just the family, the house and loads to throw.', tag: 'Relax' },
@@ -64,7 +65,8 @@ export class Modes {
   // ---------------- Mini Games: dining room + conservatory ----------------
   async gamesSetup() {
     this.hudOff(); this.running = false; const mg = G.minigames; mg.total = {};
-    for (let i = 0; i < 5; i++) await mg.play(i);
+    for (let i = 0; i < GAMES.length; i++) await mg.play(i);
+    mg.releaseAll();
     const rows = mg.overall(); const mine = rows.find(r => r.me); const top = rows.slice().sort((a, b) => b.score - a.score)[0];
     sfx(top.me ? 'cheer' : 'drum', null, 1);
     await board({ kicker: 'MINI GAMES — FINAL STANDINGS', title: top.me ? 'YOU WIN!' : `${top.name.toUpperCase()} WIN`, rows, unit: ' pts', footer: '3 points for a win, 2 for second, 1 for third.', secs: 7 });

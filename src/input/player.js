@@ -9,7 +9,7 @@ import { XRInput } from './xr.js';
 import { FPHands } from './fphands.js';
 import { halfHeight } from '../world/items.js';
 
-const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _f = new THREE.Vector3();
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _q = new THREE.Quaternion(), _f = new THREE.Vector3();
 const RAY_GROUPS = groups(GR.SENSOR, ALL & ~GR.PLAYER);
 
 export class Player {
@@ -67,6 +67,8 @@ export class Player {
     const c = this.controls;
     if (G.ui?.modalOpen) { c.look.x = c.look.y = 0; }
     this.yaw -= c.look.x; this.pitch = clamp(this.pitch - c.look.y, -1.45, 1.45);
+    // locked on someone (cracker pull): can't walk, the camera stays on them
+    if (this.lockAt) { const t = typeof this.lockAt === 'function' ? this.lockAt() : this.lockAt; if (t) { const h = this.headPos(_v); const dx = t.x - h.x, dz = t.z - h.z; this.yaw = Math.atan2(-dx, -dz); this.pitch = clamp(Math.atan2(t.y - h.y, Math.hypot(dx, dz)), -0.8, 0.6); } c.move.x = c.move.z = 0; c.btn('jump').pressed = false; }
     // movement via character controller
     const speed = (c.move.run ? 4.2 : 2.3) * (this.crouch > 0.5 ? 0.5 : 1) * (this.foodComa > 0 ? 0.75 : 1) * (G.ui?.modalOpen ? 0 : 1);
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw); const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
@@ -179,7 +181,7 @@ export class Player {
     let body;
     if (f.kind === 'item') { body = f.ref.body; if (f.ref.inMouth && G.dog) { G.dog.mouth = null; f.ref.inMouth = false; G.dog.wag = 3; } if (f.ref.attached) { f.ref.attached = null; f.ref.onTree = false; G.tree && (G.tree.baubles = G.tree.baubles.filter(b => b !== f.ref)); } if (f.ref.stuck) f.ref.stuck = false; body.setBodyType(G.R.RigidBodyType.Dynamic, true); f.ref.held = true; f.ref.dirty = true; holder.mass = f.ref.type.mass; holder.maxF = Math.max(200, f.ref.type.mass * 60 + 80); holder.totalMass = f.ref.type.mass; if (f.ref.type.mass < 5) { holder.attach = true; holder.radius = itemRadius(f.ref.type.shape); body.setBodyType(G.R.RigidBodyType.KinematicPositionBased, true); } sfx(f.ref.type.sound === 'cushion' ? 'cushion' : 'tap', f.point, 0.5); }
     else if (f.kind === 'char') {
-      const p = f.ref; if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
+      const p = f.ref; if (p.sumo && !p.sumoReady) { p.sumo(null, true); return false; } // sumo: they plant their feet until they're off balance if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
       p.knock(null, f.part ?? 1, { muscle: 0.12 }); body = p.bodies[f.part ?? 1]; p.heldBy.add(holder);
       holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; holder.part = f.part ?? 1; holder.person = p;
       sfx('oof', f.point, 0.8); p.setMood('shock', 2);
@@ -231,6 +233,7 @@ export class Player {
       if (key === 'D') {
         const o = this.headPos(_v); const d = this.forward(_f);
         target = _v2.copy(o).addScaledVector(d, this.holdDist);
+        if (G.ui?.touchMode && h.kind === 'item') { target.y -= 0.16; target.addScaledVector(_v3.set(-d.z, 0, d.x).normalize(), 0.14); } // phones: held low and to the right, like in your hand
         if (h.kind === 'char') target.y -= 0.15;
         if (h.kind === 'item' && h.ref.type.mass > 10) target.y = Math.max(target.y, 0.3);
       } else { const hand = this.xrIn.hands[key]; if (!hand) continue; target = hand.palm; tvel = hand.vel; tq = hand.q; }

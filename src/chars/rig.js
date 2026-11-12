@@ -122,6 +122,7 @@ export class Person {
   // Knock into ragdoll. impulse applied to part (or chest)
   knock(impulse, part = 1, opts = {}) {
     if (this.protected || this.isPlayer) return false;
+    if (this.sumo && !opts.force && !this.sumoReady) { this.sumo(impulse); return false; } // sumo: they soak up hits (the game decides when they go flying)
     if (this.state !== 'ragdoll') this.toRagdoll(opts);
     if (impulse) this.bodies[part].applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z }, true);
     this.ragdollT = 0;
@@ -371,6 +372,7 @@ export class Person {
         case 'pull': { const tug = Math.sin(t * 7) * 0.08; E(3, -1.35, 0, 0.05); E(5, -1.35, 0, -0.05); E(4, -0.25 + tug); E(6, -0.25 + tug); E(1, -0.22 - tug); E(7, -0.15); E(9, 0.1); break; }
         case 'toast': E(5, -2.4, 0, -0.2); E(6, -0.6); E(2, -0.15); break;
         case 'selfie': E(5, -2.0, 0.6, -0.5); E(6, -0.4); E(2, -0.1, 0.25); break;
+        case 'sumo': { const sw = Math.sin(t * 2.4) * 0.06; E(7, -0.75, 0, 0.42); E(9, -0.75, 0, -0.42); E(8, 1.05); E(10, 1.05); E(1, 0.32 + sw, 0, sw); E(2, -0.25); E(3, -1.25 + sw, 0, 0.35); E(5, -1.25 - sw, 0, -0.35); E(4, -0.45); E(6, -0.45); rootY -= 0.13 * H; break; } // low wide sumo stance, arms out
         case 'hips': E(3, -0.2, 0, 0.55); E(5, -0.2, 0, -0.55); E(4, -1.5, 0.9); E(6, -1.5, -0.9); break;
       }
     } else if (talking && b !== 'sleep') {

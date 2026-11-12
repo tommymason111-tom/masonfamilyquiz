@@ -86,7 +86,7 @@ Local test: `python3 -m http.server 8000` in this folder, then open `http://loca
 | Mode | What it is |
 |---|---|
 | ⚡ Quick Quiz | In the living room: two rounds of five on big tap-to-answer question cards, then the Mason Cup |
-| 🎲 Mini Games | Dining room and conservatory: sprout throwing, cracker pulls (3 opponents), pass the parcel, Celebrations stacking, gift grab — each with a title card, timer and a leaderboard against the other teams |
+| 🎲 Mini Games | 1. Brussels sprout throwing into big red-and-white cups fixed to the dining table · 2. Cracker pull, three relatives one at a time (camera locked on them) · 3. Boxing Day sumo in a ring in the garden: hit them to fill their wobble meter (in VR, then grab and throw them out) · 4. Find the five glowing magic elves around the house in 1:30 (times or DNF) · 5. Pass the parcel. Everyone else stands round and watches; no chat over the games |
 | 🚀 Fling the Relative | Garden only: the family queue on the patio, you grab and launch them down the lawn; a measuring tape on the grass marks the distance. Only GRAB / JUMP / THROW buttons |
 | 🍺 Drinks Run | Pop-ups say who wants what and where it is; the drinks are already poured; each person has an anger meter and it gets busier as time goes on |
 | 🎄 Free Roam | No quiz, no timer |

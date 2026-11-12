@@ -79,7 +79,7 @@ function draw(now) {
     text(c.title, w / 2, y + 30, fit(c.title, w - 60, 62)); y += 80;
     if (c.rows) { rows.forEach((r, i) => { const ry = y + i * 56; g.globalAlpha = Math.min(1, Math.max(0, (age - 0.15 - i * 0.12) / 0.3)); if (r.me) { rr(24, ry - 4, w - 48, 50, 10); g.fillStyle = 'rgba(255,215,0,0.15)'; g.fill(); }
         text(['🥇', '🥈', '🥉', '4th', '5th'][i] || String(i + 1), 60, ry + 21, 28, '#fff', 'center', 'system-ui', '700'); rr(104, ry + 12, 18, 18, 4); g.fillStyle = r.color || '#888'; g.fill();
-        text(`${r.name}${r.me ? ' (you)' : ''}`, 136, ry + 21, fit(`${r.name} (you)`, w - 330, 28, 'system-ui', '800'), r.me ? '#ffd700' : '#fff', 'left', 'system-ui', '800'); text(`${r.score}${c.unit || ''}`, w - 48, ry + 21, 30, r.me ? '#ffd700' : '#fff', 'right', 'system-ui', '900'); });
+        text(`${r.name}${r.me ? ' (you)' : ''}`, 136, ry + 21, fit(`${r.name} (you)`, w - 330, 28, 'system-ui', '800'), r.me ? '#ffd700' : '#fff', 'left', 'system-ui', '800'); text(r.display ?? `${r.score}${c.unit || ''}`, w - 48, ry + 21, 30, r.me ? '#ffd700' : '#fff', 'right', 'system-ui', '900'); });
       g.globalAlpha = 1; if (c.footer) wrap(c.footer, w / 2, y + rows.length * 56 + 18, w - 80, 22, 26, 2); }
     else if (c.sub) wrap(c.sub, w / 2, y + 6, w - 80, 26, 32, 4, 'rgba(255,255,255,0.95)');
     const left = Math.max(0, 1 - age / c.secs); rr(40, h - 26, w - 80, 8, 4); g.fillStyle = 'rgba(255,255,255,0.2)'; g.fill(); rr(40, h - 26, (w - 80) * left, 8, 4); g.fillStyle = '#ffd700'; g.fill();
