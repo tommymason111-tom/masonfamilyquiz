@@ -270,19 +270,37 @@ export class Person {
       return;
     }
     const b = this.base;
+    // per-person noise seed and slow idle state (weight shifts, glances); all motion is layered on top of the base pose
+    const sd = this._seed ?? (this._seed = (this.H * 977 + this.O[2].y * 131) % 50);
+    const nz = (f, o) => (noise3(t * f, sd + o * 3.1, o * 0.37) - 0.5) * 2; // smooth noise in -1..1
+    let rootYawOff = 0, rootSide = 0;
+    // turning on the spot: little stepping feet, chest and head lead the turn
+    let yr = this.yaw - (this._prevYaw ?? this.yaw); yr = Math.atan2(Math.sin(yr), Math.cos(yr)); this._prevYaw = this.yaw;
+    this._turnRate = (this._turnRate || 0) + ((yr / Math.max(dt, 1e-3)) - (this._turnRate || 0)) * Math.min(1, dt * 8);
     if (b === 'walk' || b === 'run') {
-      const amp = clamp(this.speed / (b === 'run' ? 3 : 1.4), 0, 1.3) * (b === 'run' ? 1.3 : 1);
-      this.walkPhase += dt * (b === 'run' ? 10 : 6.5) * Math.max(0.4, Math.min(1.4, this.speed / 1.2));
-      const ph = this.walkPhase; const s = Math.sin(ph), c = Math.cos(ph);
-      E(7, -s * 0.5 * amp); E(9, s * 0.5 * amp);
-      E(8, Math.max(0, Math.sin(ph + 1.9)) * 1.0 * amp + 0.05); E(10, Math.max(0, Math.sin(ph + 1.9 + Math.PI)) * 1.0 * amp + 0.05);
-      E(3, s * 0.4 * amp, 0, 0.08); E(5, -s * 0.4 * amp, 0, -0.08); E(4, -0.35 - amp * 0.3); E(6, -0.35 - amp * 0.3);
-      E(1, 0.05 * amp + breathe, c * 0.08 * amp); E(2, -0.03 * amp, -c * 0.06 * amp);
-      rootY += -Math.abs(c) * 0.025 * amp + 0.01;
+      // a proper gait: thighs swing through stance/swing, knees flex in swing and soak up each heel strike, the pelvis
+      // twists and drops with each step and shifts over the standing leg, the chest counter-rotates, arms swing opposite
+      // their leg with elbows bending on the forward swing, the body bobs twice per stride and the head stays level
+      const run = b === 'run'; const amp = clamp(this.speed / (run ? 3 : 1.4), 0, 1.3) * (run ? 1.2 : 1);
+      this.walkPhase += dt * (run ? 9.5 : 6.3) * Math.max(0.45, Math.min(1.45, this.speed / 1.2));
+      const ph = this.walkPhase;
+      const leg = (th, sh, p, side) => { const sw = Math.sin(p);
+        const thigh = -sw * (run ? 0.6 : 0.42) * amp - (run ? 0.18 : 0.04) * amp;
+        const knee = amp * ((run ? 1.75 : 1.05) * Math.pow(Math.max(0, Math.cos(p + 0.3)), 2) + 0.16 * Math.max(0, -Math.sin(2 * p))) + 0.04;
+        E(th, thigh, 0, side * (0.02 + 0.015 * amp)); E(sh, knee); };
+      leg(7, 8, ph, 1); leg(9, 10, ph + Math.PI, -1);
+      const lean = (run ? 0.2 : 0.05) * amp + Math.min(0.08, Math.abs(this._turnRate) * 0.01);
+      rootYawOff = 0.08 * amp * Math.sin(ph); rootRoll = 0.035 * amp * Math.cos(ph) + clamp(-this._turnRate * 0.03, -0.08, 0.08); rootSide = 0.018 * amp * Math.cos(ph);
+      rootY += (run ? 0.04 * Math.abs(Math.sin(ph)) - 0.035 : 0.022 * Math.cos(2 * ph) - 0.012) * amp;
+      E(1, lean + breathe, -rootYawOff * 1.6, -rootRoll * 0.6); E(2, -lean * 0.6 + 0.02 * amp * Math.cos(2 * ph), rootYawOff * 0.7 + clamp(this._turnRate * 0.08, -0.3, 0.3), rootRoll * 0.4);
+      const arm = (u, l, p, side) => { const sw = Math.sin(p) * (run ? 0.6 : 0.38) * amp; E(u, sw + (run ? -0.1 : 0.03), 0, side * (0.07 + 0.04 * amp)); E(l, run ? -1.45 + 0.15 * Math.sin(p) : -0.22 - Math.max(0, -sw) * 0.9 - 0.08 * amp); };
+      arm(3, 4, ph, 1); arm(5, 6, ph + Math.PI, -1);
       if (this.base === 'walk' && Math.floor(ph / Math.PI) !== this._step) { this._step = Math.floor(ph / Math.PI); if (G.audio && Math.random() < 0.5) sfx('footstep', this.pos, 0.4); }
     } else if (b === 'sit' || b === 'sleep') {
       E(7, -1.45, 0, 0.06); E(9, -1.45, 0, -0.06); E(8, 1.35); E(10, 1.35);
-      E(1, -0.12 + breathe); E(3, -0.3, 0, 0.1); E(5, -0.3, 0, -0.1); E(4, -0.9); E(6, -0.9);
+      E(1, -0.12 + breathe * 1.4 + nz(0.12, 12) * 0.05, nz(0.08, 13) * 0.08, nz(0.1, 14) * 0.03); E(3, -0.3 + nz(0.2, 15) * 0.06, 0, 0.1); E(5, -0.3 + nz(0.2, 16) * 0.06, 0, -0.1); E(4, -0.9 + nz(0.22, 17) * 0.1); E(6, -0.9 + nz(0.22, 18) * 0.1);
+      E(7, -1.45 + nz(0.07, 19) * 0.05, 0, 0.06 + nz(0.06, 20) * 0.06); E(9, -1.45 + nz(0.07, 21) * 0.05, 0, -0.06 - nz(0.06, 22) * 0.06);
+      if (!this.lookTarget && b !== 'sleep') E(2, nz(0.15, 23) * 0.1, nz(0.08, 24) * 0.5, 0);
       rootY = this.seatY + this.dims.legR * 0.85 + (this.O[0].y - this.O[7].y);
       if (b === 'sleep') { E(2, 0.55, 0, 0.25); E(1, -0.3 + breathe * 3); }
     } else if (b === 'sitFloor') {
@@ -294,10 +312,21 @@ export class Person {
     } else if (b === 'carried') {
       E(1, 0.2); E(3, 0.2, 0, 0.9); E(5, 0.2, 0, -0.9);
     } else { // stand
-      E(1, breathe + (this.mood === 'dazed' ? Math.sin(t * 3) * 0.08 : 0), 0, this.mood === 'dazed' ? Math.cos(t * 3) * 0.08 : 0);
-      E(3, 0.02, 0, 0.07); E(5, 0.02, 0, -0.07); E(4, -0.12); E(6, -0.12);
-      E(7, 0, 0, 0.02 + Math.sin(t * 0.5) * 0.015); E(9, 0, 0, -0.02 + Math.sin(t * 0.5) * 0.015);
-      rootRoll = Math.sin(t * 0.5) * 0.02;
+      // alive standing: breathing lifts the chest and shoulders, weight shifts from foot to foot every few seconds (hip
+      // drops, the free knee softens), slow postural sway, arms hang with a soft elbow, idle glances when not looking at anyone
+      this._wsT = this._wsT ?? 0; this._wsNext = this._wsNext ?? (t + rand(2, 6)); if (t > this._wsNext) { this._wsT = Math.random() < 0.25 ? 0 : (Math.random() < 0.5 ? -1 : 1) * rand(0.5, 1); this._wsNext = t + rand(3, 9); }
+      this._ws = (this._ws ?? 0) + (this._wsT - (this._ws ?? 0)) * Math.min(1, dt * 1.6); const ws = this._ws;
+      const dz = this.mood === 'dazed' ? 1 : 0; const sx = nz(0.23, 1) * 0.025 + Math.sin(t * 3) * 0.08 * dz, sz = nz(0.19, 2) * 0.02 + Math.cos(t * 3) * 0.08 * dz;
+      E(1, breathe * 1.2 + sx, nz(0.11, 3) * 0.05, -ws * 0.035 + sz);
+      E(3, 0.02 + nz(0.3, 4) * 0.04, 0, 0.07 + breathe * 0.6 + ws * 0.02); E(5, 0.02 + nz(0.3, 5) * 0.04, 0, -0.07 - breathe * 0.6 + ws * 0.02);
+      E(4, -0.14 + nz(0.25, 6) * 0.05); E(6, -0.14 + nz(0.25, 7) * 0.05);
+      const relaxL = Math.max(0, -ws), relaxR = Math.max(0, ws); // which leg is resting
+      E(7, -0.06 * relaxL, 0, 0.025 + 0.03 * relaxL); E(8, 0.2 * relaxL); E(9, -0.06 * relaxR, 0, -0.025 - 0.03 * relaxR); E(10, 0.2 * relaxR);
+      rootRoll = ws * 0.03 + nz(0.15, 8) * 0.01; rootSide = -ws * 0.025; rootY -= (relaxL + relaxR) * 0.006 * H;
+      if (!this.lookTarget) E(2, nz(0.17, 9) * 0.1, nz(0.09, 10) * 0.45, nz(0.13, 11) * 0.05); // idle glances
+      // turning on the spot: step the feet round
+      const tr = Math.abs(this._turnRate); if (tr > 0.5) { this._turnPh = (this._turnPh || 0) + dt * 9; const k = Math.min(1, (tr - 0.5) / 1.5); const a = Math.max(0, Math.sin(this._turnPh)), c = Math.max(0, -Math.sin(this._turnPh));
+        E(7, -0.3 * a * k, 0, 0.03); E(8, 0.6 * a * k); E(9, -0.3 * c * k, 0, -0.03); E(10, 0.6 * c * k); E(1, breathe, clamp(this._turnRate * 0.06, -0.25, 0.25)); }
       if (this.spec.build === 'toddler') { E(3, 0.1, 0, 0.25); E(5, 0.1, 0, -0.25); }
     }
     // talking hands
@@ -345,8 +374,11 @@ export class Person {
         case 'hips': E(3, -0.2, 0, 0.55); E(5, -0.2, 0, -0.55); E(4, -1.5, 0.9); E(6, -1.5, -0.9); break;
       }
     } else if (talking && b !== 'sleep') {
-      const osc = Math.sin(t * 4.5);
-      E(5, -0.35 + osc * 0.15, 0, -0.1); E(6, -0.9 - osc * 0.2);
+      // talking: both hands gesture with the rhythm of speech, the head nods and tilts, shoulders lift on emphasis
+      const n1 = nz(1.7, 25), n2 = nz(1.3, 26), n3 = nz(2.1, 27), emph = Math.max(0, nz(0.9, 28));
+      E(5, -0.42 + n1 * 0.25 - emph * 0.15, n3 * 0.15, -0.12 - n2 * 0.12); E(6, -1.0 - n2 * 0.35, -0.2 + n1 * 0.2);
+      if (b !== 'sit' || Math.abs(n2) > 0.3) { E(3, -0.25 + n2 * 0.18, 0, 0.12 + n1 * 0.08); E(4, -0.7 - n3 * 0.3, 0.2); }
+      _q.setFromEuler(_e.set(n3 * 0.07 + emph * 0.05, n1 * 0.12, n2 * 0.06, 'XYZ')); T[2].multiply(_q);
     }
     // head look-at (yaw/pitch relative to chest), clamped
     if (this.lookTarget && b !== 'sleep') {
@@ -359,13 +391,13 @@ export class Person {
       this._eyeYaw = clamp(yawRel - clamp(yawRel, -1.1, 1.1), -0.35, 0.35); this._eyePitch = clamp(pitch * 0.3, -0.3, 0.3);
     } else { this._eyeYaw = 0; this._eyePitch = 0; }
     // root
-    this.rootPos.set(this.pos.x, this.pos.y + rootY, this.pos.z);
-    this.rootQ.setFromEuler(_e.set(rootTiltX, this.yaw, rootRoll, 'YXZ'));
+    this.rootPos.set(this.pos.x + Math.cos(this.yaw) * rootSide, this.pos.y + rootY, this.pos.z - Math.sin(this.yaw) * rootSide);
+    this.rootQ.setFromEuler(_e.set(rootTiltX, this.yaw + rootYawOff, rootRoll, 'YXZ'));
   }
   // smooth local rotations toward target and run FK
   fk() {
-    const k = 1 - Math.exp(-G.dt * 12);
-    for (let i = 0; i < PART_COUNT; i++) this.local[i].slerp(this.target[i], k);
+    const walking = this.base === 'walk' || this.base === 'run'; const kL = 1 - Math.exp(-G.dt * (walking ? 22 : 12)), kA = 1 - Math.exp(-G.dt * 10), kS = 1 - Math.exp(-G.dt * 7);
+    for (let i = 0; i < PART_COUNT; i++) this.local[i].slerp(this.target[i], i >= 7 ? kL : i >= 3 ? kA : kS); // legs crisp, arms follow, spine and head ease
     if (this._rootSmooth) { this._rootSmooth.lerp(this.rootPos, 1 - Math.exp(-G.dt * 15)); }
     this.fkFrom();
   }

@@ -175,8 +175,24 @@ export class Dog {
     }
     if (gait === 'gallop') { const g = Math.sin(this.phase * Math.PI * 2); pitch = g * 0.12 * amp; rootY = Math.abs(Math.cos(this.phase * Math.PI * 2)) * 0.035 * amp; E(DB.chest, -g * 0.15 * amp); }
     else rootY = -Math.abs(Math.sin(this.phase * Math.PI * (gait === 'trot' ? 4 : 4))) * 0.012 * amp;
+    // trot/walk: the spine flexes side to side with the stride and the hips roll, like a real dog's back
+    if (sp > 0.1 && gait !== 'gallop') { const fl = Math.sin(this.phase * Math.PI * 2); E(DB.chest, 0, fl * 0.08 * amp); E(DB.pelvis, 0, -fl * 0.05 * amp, fl * 0.04 * amp); }
+    // breathing (fast panting after running)
+    const pant = this.panting > 0 || sp > 3; E(DB.chest, Math.sin(t * (pant ? 11 : 2.1)) * (pant ? 0.012 : 0.02));
+    // little idle habits when standing about: look round, ear twitch, yawn, scratch an ear with a back leg, play bow, shake off
+    const still = sp < 0.08 && (st === 'idle' || st === 'carry' || st === 'run' || this.playerControlled && st !== 'sleep' && st !== 'lie' && st !== 'sit');
+    if (!still) this.idleAct = null; else if (!this.idleAct && t > (this.idleNext ?? 0)) { this.idleAct = { id: pick(['look', 'look', 'twitch', 'yawn', 'scratch', 'bow', 'shake', 'look']), t: 0 }; this.idleNext = t + rand(4, 10); }
+    let iaNeck = 0, iaHead = 0, iaHeadY = 0, iaPitch = 0, iaRoot = 0, iaJaw = null;
+    if (this.idleAct) { const a = this.idleAct; a.t += dt; const k = a.t;
+      if (a.id === 'look') { iaHeadY = Math.sin(k * 1.6) * 0.8; iaHead = -0.15 * Math.sin(k * 0.8); if (k > 4) this.idleAct = null; }
+      else if (a.id === 'twitch') { this.ears[k < 0.3 ? 0 : 1].v += (Math.random() - 0.5) * 30 * dt * 10; if (k > 0.7) this.idleAct = null; }
+      else if (a.id === 'yawn') { const o = Math.sin(Math.min(1, k / 1.8) * Math.PI); iaJaw = 0.95 * o; iaNeck = -0.4 * o; iaHead = -0.35 * o; if (k > 1.9) this.idleAct = null; }
+      else if (a.id === 'scratch') { const o = Math.min(1, k / 0.3) * Math.min(1, Math.max(0, (2.4 - k) / 0.3)); E(DB.BRu, -1.3 * o + Math.sin(k * 30) * 0.25 * o); E(DB.BRl, 1.3 * o); iaHeadY = -0.6 * o; iaHead = 0.25 * o; iaRoot = -0.05 * o; iaNeck = 0.25 * o; if (k > 2.4) this.idleAct = null; }
+      else if (a.id === 'bow') { const o = Math.sin(Math.min(1, k / 2.2) * Math.PI); iaPitch = 0.38 * o; iaRoot = -0.07 * o; [DB.FLu, DB.FRu].forEach(i => E(i, -1.0 * o)); [DB.FLl, DB.FRl].forEach(i => E(i, -0.4 * o)); this.wag = Math.max(this.wag, 2.5); iaNeck = -0.3 * o; if (k > 2.2) this.idleAct = null; }
+      else if (a.id === 'shake') { if (k < 0.05 && !(this.shake > 0)) this.shake = 0.9; roll += Math.sin(t * 38) * 0.18 * Math.max(0, 0.9 - k); if (k > 1) this.idleAct = null; } }
+    pitch += iaPitch; rootY += iaRoot;
     // chest leads into turns, tail follows
-    E(DB.chest, 0, clamp(this.turn * 0.12, -0.35, 0.35)); roll = clamp(-this.turn * 0.04 * amp, -0.15, 0.15);
+    E(DB.chest, 0, clamp(this.turn * 0.12, -0.35, 0.35)); roll += clamp(-this.turn * 0.04 * amp, -0.15, 0.15);
     // head & neck: counter-bob, sniff, carry, look
     let neckX = -0.1 + Math.sin(this.phase * Math.PI * 4) * 0.04 * amp, headX = 0, headY = 0, headZ = 0;
     const sniffing = (st === 'sniffAround' || (st === 'walkBed' && Math.sin(t * 0.7) > 0.3)) && !this.mouth;
@@ -203,6 +219,7 @@ export class Dog {
     if (this.barkT > t) this.jawT = 0.8;
     this.panting = Math.max(0, this.panting - dt);
     this.headDown = this.headDownT ?? 0; neckX += this.headDown * 0.9; headX += this.headDown * 0.5; rootY -= this.headDown * 0.03; pitch += this.headDown * 0.12;
+    neckX += iaNeck; headX += iaHead; headY += iaHeadY; if (iaJaw != null) this.jawT = Math.max(this.jawT || 0, iaJaw);
     E(DB.neck, neckX, headY * 0.4); E(DB.head, headX, headY * 0.6, headZ);
     this.jaw += ((this.jawT ?? 0) - this.jaw) * Math.min(1, dt * 14); E(DB.jaw, this.jaw * 0.6);
     // tail: wag speed/width by mood; up when trotting, level at a gallop, down when sniffing
