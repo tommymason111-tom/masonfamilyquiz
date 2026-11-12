@@ -176,7 +176,8 @@ export class Systems {
     g.say(pick([`Oi! ${G.me?.name || 'You'}!`, 'RIGHT. That\'s it.', 'Did you just…?!', 'Come here, you!']), { prio: 2 }); g.setMood?.('angry', 8);
     // first the warning (they stop and glare at you), and only once it's gone do they come for you
     const b = g.brain; b.state = 'scripted'; b.timer = 99; b.path = null; g.base = 'stand'; g.gesture = 'point'; g.lookTarget = G.player.headPos(new THREE.Vector3());
-    const warned = G.popup?.banner({ kicker: '⚠️ WARNING ⚠️', title: map.title, sub: `${g.name} is coming to get you…`, icon: map.icon, secs: 2.8 }) || Promise.resolve();
+    const kid = who.isDog || who === G.dog ? 'CHIP' : who.name.toUpperCase();
+    const warned = G.popup?.banner({ kicker: '⚠️ WARNING ⚠️', title: `${g.name.toUpperCase()} SAID DON'T HIT ${kid}!`, sub: `${g.name} is coming to get you…`, icon: map.icon, secs: 2.8 }) || Promise.resolve();
     const why = who.isDog || who === G.dog ? 'That\'s what you get for hitting the dog.' : who.name === 'Mason' ? 'Nobody touches Mason on Harry\'s watch.' : 'Bradley does not mess about where Harrison\'s concerned.';
     let t0 = 0, lastPath = -9;
     const chase = (dt) => {
