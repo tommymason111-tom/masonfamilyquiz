@@ -56,7 +56,7 @@ function drawFlow(now) {
       text(it.label, x + cw / 2, yy + ch - 22, fit(it.label, cw - 12, 22, 'system-ui', '800'), on ? '#ffd700' : '#fff', 'center', 'system-ui', '800'); }
     else { if (it.icon) text(it.icon, x + 34, yy + ch / 2, 40, '#fff', 'center', 'system-ui', '400'); const tx = x + (it.icon ? 66 : 16); g.textAlign = 'left';
       text(it.label, tx, yy + (it.sub ? 26 : ch / 2), fit(it.label, cw - (tx - x) - 12, 24, 'Georgia, serif', '900'), on ? '#ffd700' : '#fff', 'left'); if (it.sub) { g.font = '600 16px system-ui'; g.fillStyle = 'rgba(255,255,255,0.8)'; const words = it.sub.split(' '); let line = '', n = 0; for (const w2 of words) { const t2 = line ? line + ' ' + w2 : w2; if (g.measureText(t2).width > cw - (tx - x) - 12 && line) { g.fillText(line, tx, yy + 52 + n * 19); line = w2; if (++n >= Math.floor((ch - 50) / 19)) { line = ''; break; } } else line = t2; } if (line) g.fillText(line, tx, yy + 52 + n * 19); } }
-    if (sp.multi && !dim) text(on ? '✓' : '+', x + cw - 22, yy + 20, 24, on ? '#ffd700' : 'rgba(255,255,255,0.6)', 'center', 'system-ui', '900');
+    if (sp.multi && !dim) text(on ? `${[...f.sel].indexOf(it.id) + 1}` : '+', x + cw - 22, yy + 20, 26, on ? '#ffd700' : 'rgba(255,255,255,0.6)', 'center', 'system-ui', '900');
     g.globalAlpha = 1; });
   const ok = !(sp.multi && f.toggle === sp.multiToggle && !f.sel.size); const bw = 300, bx = W / 2 - bw / 2, by = H - 80; const idx = f.rects.length; f.rects.push({ kind: 'done', x: bx, y: by, w: bw, h: 62 });
   g.globalAlpha = ok ? 1 : 0.4; rr(bx, by, bw, 62, 31); g.fillStyle = f.hover === idx ? '#ff3a52' : '#c0172e'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#ffd700'; g.stroke(); text(sp.done || 'Next →', W / 2, by + 31, 28); g.globalAlpha = 1;

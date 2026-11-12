@@ -152,13 +152,16 @@
   body.mg-snowball #charge { display:block !important; width:min(60vw,240px); height:16px; margin-left:calc(min(60vw,240px) / -2); top:auto; bottom:max(150px,22vh); border:2px solid #fff; border-radius:9px; background:rgba(0,0,0,.55); overflow:visible; }
   body.mg-snowball #charge::before { content:'POWER'; position:absolute; left:0; right:0; top:-20px; text-align:center; font:900 13px system-ui; letter-spacing:.2em; color:#ffd700; text-shadow:0 1px 2px #000; }
   body.mg-snowball #charge i { border-radius:7px; background:linear-gradient(90deg,#3bd16f,#ffd700,#ff4d4d) !important; }
+  .platecount { position:fixed; right:12px; top:max(128px, calc(env(safe-area-inset-top) + 118px)); z-index:24; min-width:96px; padding:8px 12px 6px; border-radius:18px; border:3px solid #ffd700; background:rgba(20,12,18,.85); color:#fff; font:900 44px Georgia,serif; text-align:center; line-height:1; box-shadow:0 6px 18px rgba(0,0,0,.45); pointer-events:none; }
+  .platecount small { display:block; font:800 10px system-ui; letter-spacing:.12em; color:#ffd700; margin-bottom:3px; }
+  .platecount.pop { animation:platepop .35s ease-out; } @keyframes platepop { 0% { transform:scale(1.35); } 100% { transform:scale(1); } }
   /* a row of action buttons for a mini game (Wake Gary Up, shoo Mason) */
   .mgact { position:fixed; left:50%; transform:translateX(-50%); bottom:max(16px, env(safe-area-inset-bottom)); display:flex; gap:8px; flex-wrap:wrap; justify-content:center; width:min(96vw,620px); z-index:25; pointer-events:auto; }
-  .mgact button { position:relative; overflow:hidden; flex:1 1 100px; max-width:140px; min-height:64px; border-radius:16px; border:3px solid #ffd700; background:linear-gradient(#e2283f,#9c0f22); color:#fff; font:900 13px system-ui; letter-spacing:.04em; box-shadow:0 6px 16px rgba(0,0,0,.45); touch-action:none; }
-  .mgact button span { display:block; font-size:24px; line-height:1.1; }
+  .mgact button { position:relative; overflow:hidden; flex:0 0 auto; width:76px; min-height:50px; padding:4px 2px; border-radius:12px; border:2px solid #ffd700; background:linear-gradient(rgba(226,40,63,.92),rgba(156,15,34,.92)); color:#fff; font:900 9.5px system-ui; letter-spacing:.03em; box-shadow:0 4px 10px rgba(0,0,0,.4); touch-action:none; }
+  .mgact button span { display:block; font-size:19px; line-height:1.15; }
   .mgact button i { position:absolute; left:0; bottom:0; height:100%; width:0; background:rgba(0,0,0,.55); pointer-events:none; }
   .mgact button.cool { border-color:#888; filter:saturate(.4); }
-  body.mg-wakeGary .mgact { bottom:auto; top:max(30%, 205px); }
+  body.mg-wakeGary .mgact { bottom:auto; top:max(26%, 180px); left:8px; transform:none; width:auto; flex-direction:column; gap:6px; }
   /* sprout throwing: a big POWER bar while you hold a sprout */
   body.mg-sproutPong #charge { display:block !important; width:min(60vw,240px); height:16px; margin-left:calc(min(60vw,240px) / -2); top:auto; bottom:max(150px,22vh); border:2px solid #fff; border-radius:9px; background:rgba(0,0,0,.55); overflow:visible; }
   body.mg-sproutPong #charge::before { content:'POWER'; position:absolute; left:0; right:0; top:-20px; text-align:center; font:900 13px system-ui; letter-spacing:.2em; color:#ffd700; text-shadow:0 1px 2px #000; }

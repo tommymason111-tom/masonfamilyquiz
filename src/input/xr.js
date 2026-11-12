@@ -190,6 +190,7 @@ export class XRInput {
   onPinch(rec, head) {
     const p = this.player;
     if (G.vrHud?.menuOpen()) return; // the trigger is choosing a menu item
+    if (G.minigames?.vrPinch?.(rec)) return; // a mini game wants the trigger (e.g. pulling a snowball to your hand)
     if (G.popup?.S?.tap) { G.popup.S.tap.onTap(); return; } // PULL! / TEAR! in the headset: pull the trigger
     // pinch an item held in the other hand = use it (pull cracker, open can, click pen)
     const held = p.heldItem(rec.key) || p.heldItem(rec.key === 'L' ? 'R' : 'L');
@@ -202,7 +203,7 @@ export class XRInput {
     // otherwise: start pinch-drag locomotion (left) or turning (right)
     rec.dragStart = rec.palm.clone().sub(p.rig.position); rec.dragging = true;
   }
-  onPinchEnd(rec) { rec.dragging = false; rec.turnAcc = 0; }
+  onPinchEnd(rec) { rec.dragging = false; rec.turnAcc = 0; G.minigames?.vrPinchEnd?.(rec); }
   pinchDrag(rec, dt) {
     if (!rec.dragging) return; const p = this.player;
     const cur = rec.palm.clone().sub(p.rig.position); const d = cur.clone().sub(rec.dragStart);

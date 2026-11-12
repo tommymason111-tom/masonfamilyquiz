@@ -118,7 +118,7 @@ export function installMoreGames(MiniGames) {
   // CATCH THE LEFTOVERS
   // =====================================================================================================
   P.setup_leftovers = function (a) {
-    a.limit = 50; a.caught = 0; a.chip = 0; a.flying = []; a.ground = []; a.thrown = 0; a.label = () => `ON YOUR PLATE ${a.score} · CHIP ${a.chip}`;
+    a.limit = 50; a.caught = 0; a.chip = 0; a.flying = []; a.ground = []; a.thrown = 0; a.label = () => G.xr ? `🍽️ ${a.score} ON YOUR PLATE · 🐶 CHIP ${a.chip}` : `🐶 CHIP HAS EATEN ${a.chip}`;
     const J = G.charByName.Julie && !G.charByName.Julie.isPlayer ? G.charByName.Julie : G.charByName.Karen; a.thrower = J;
     a.from = V(-1.4, 0, -13.9); this.place(J, a.from.x, a.from.z, [-1.4, -10]); J.gesture = null; // Julie at the bottom of the garden, throwing back up the lawn
     G.player.teleport(-1.4, -10.4, faceYaw([-1.4, -10.4], [a.from.x, a.from.z])); G.player.pitch = 0.05;
@@ -130,6 +130,10 @@ export function installMoreGames(MiniGames) {
     const Pl = new Prop(); Pl.cyl(0.2, 0.17, 0.018, '#ffffff', 0, 0, 0, 0, 0, 0, 28).cyl(0.15, 0.15, 0.004, '#f2f2f2', 0, 0.01, 0, 0, 0, 0, 28).torus(0.185, 0.006, '#c41e1e', 0, 0.01, 0, Math.PI / 2);
     for (let k = 0; k < 6; k++) { const ang = k / 6 * Math.PI * 2; Pl.sph(0.014, '#1f6a2f', Math.cos(ang) * 0.18, 0.012, Math.sin(ang) * 0.18, 1.6, 0.3, 0.8, 6).sph(0.006, '#c41e1e', Math.cos(ang + 0.15) * 0.18, 0.016, Math.sin(ang + 0.15) * 0.18); }
     a.plate = new THREE.Group(); a.plate.add(new THREE.Mesh(Pl.build(), vc())); a.pile = new THREE.Group(); a.plate.add(a.pile); G.scene.add(a.plate);
+    // the score, big: a counter floating over your plate (seen on the phone and in the headset) and a badge in the corner
+    a.cc = document.createElement('canvas'); a.cc.width = 256; a.cc.height = 128; a.ctex = new THREE.CanvasTexture(a.cc); a.ctex.colorSpace = THREE.SRGBColorSpace;
+    a.counter = new THREE.Sprite(new THREE.SpriteMaterial({ map: a.ctex, transparent: true, depthTest: false })); a.counter.scale.set(0.3, 0.15, 1); a.counter.renderOrder = 50; G.scene.add(a.counter);
+    a.badge = document.createElement('div'); a.badge.className = 'platecount'; document.body.appendChild(a.badge); a.shown = -1;
     a.foodGeo = Object.fromEntries(FOODS.map(f => [f.id, f.geo()])); a.foodMat = vc(); a.goldMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, emissive: '#7a5200', emissiveIntensity: 0.8 });
     // a ring on the lawn showing where the next one will land
     a.shadow = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 24), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.7, depthWrite: false })); a.shadow.rotation.x = -Math.PI / 2; a.shadow.visible = false; G.scene.add(a.shadow);
@@ -144,15 +148,18 @@ export function installMoreGames(MiniGames) {
   P.tick_leftovers = function (a, dt) {
     stepFx(a, dt); stepWords(a, dt);
     const pp = this.platePos(new THREE.Vector3()); a.plate.position.copy(pp); a.plate.rotation.y = G.player.yaw ?? 0;
+    if (a.shown !== a.score) { a.shown = a.score; const g = a.cc.getContext('2d'); g.clearRect(0, 0, 256, 128); g.fillStyle = 'rgba(20,12,18,0.82)'; g.beginPath(); g.roundRect(8, 8, 240, 112, 30); g.fill(); g.lineWidth = 6; g.strokeStyle = '#ffd700'; g.stroke(); g.font = '900 72px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(`🍽️ ${a.score}`, 128, 68); a.ctex.needsUpdate = true;
+      a.badge.innerHTML = `<small>ON YOUR PLATE</small>${a.score}`; a.badge.classList.remove('pop'); void a.badge.offsetWidth; a.badge.classList.add('pop'); }
+    a.counter.position.copy(pp).add(V(0, G.xr ? 0.25 : 0.32, 0)); a.counter.visible = !!G.xr; // the phone has the corner badge instead
     // Julie throws: more often, and sometimes two at once, as the clock runs down
     a.nextT -= dt; const J = a.thrower;
-    if (a.nextT <= 0 && J.state === 'anim') { const busy = Math.min(1, a.t / 40); a.nextT = rand(1.5, 2.3) - busy * 0.8; const n = Math.random() < busy * 0.45 ? 2 : 1;
+    if (a.nextT <= 0 && J.state === 'anim') { const busy = Math.min(1, a.t / 45); a.nextT = rand(1.8, 2.5) - busy * 0.6; const n = Math.random() < busy * 0.3 ? 2 : 1;
       J.gesture = 'throwOver'; J.gestureT = 0; setTimeout(() => { if (J.gesture === 'throwOver') J.gesture = null; }, 600);
       for (let k = 0; k < n; k++) setTimeout(() => this.throwFood(a), 250 + k * 280); }
     // flying food
     for (const f of a.flying) { f.v.y -= 9.8 * dt; f.m.position.addScaledVector(f.v, dt); f.m.rotation.x += f.w.x * dt; f.m.rotation.z += f.w.z * dt;
       const d = Math.hypot(f.m.position.x - pp.x, f.m.position.z - pp.z), dy = f.m.position.y - pp.y;
-      if (f.v.y < 0 && d < (G.xr ? 0.24 : 0.3) && dy < 0.09 && dy > -0.1) { this.caughtFood(a, f); f.done = true; continue; }
+      if (f.v.y < 0 && d < (G.xr ? 0.3 : 0.38) && dy < 0.12 && dy > -0.14) { this.caughtFood(a, f); f.done = true; continue; }
       if (f.m.position.y < 0.03) { f.done = true; this.droppedFood(a, f); } }
     a.flying = a.flying.filter(f => !f.done);
     const next = a.flying.slice().sort((x, y) => x.land.distanceTo(pp) - y.land.distanceTo(pp))[0]; a.shadow.visible = !!next; if (next) { a.shadow.position.set(next.land.x, 0.02, next.land.z); a.shadow.material.color.set(next.food.bad ? '#6aa83a' : next.food.gold ? '#ffd700' : '#ffffff'); }
@@ -163,9 +170,9 @@ export function installMoreGames(MiniGames) {
     if (!a.live) return; const r = Math.random(); const food = r < 0.12 ? FOODS[5] : r < 0.3 ? FOODS[6] : pick(FOODS.slice(0, 5));
     const from = a.thrower.handPos('R', new THREE.Vector3()); from.y = Math.max(from.y, 1.5);
     // aim near you, but you'll usually have to move: further out the longer the game goes
-    const me = G.player.pos; const spread = 0.6 + Math.min(1.3, a.t / 25); const land = V(clamp(me.x + rand(-spread, spread), -4.8, 1.8), 0.95, clamp(me.z + rand(-spread, spread), -12.6, -9.2));
+    const me = G.player.pos; const spread = 0.5 + Math.min(1.0, a.t / 30); const land = V(clamp(me.x + rand(-spread, spread), -4.8, 1.8), 0.95, clamp(me.z + rand(-spread, spread), -12.6, -9.2));
     const m = new THREE.Mesh(a.foodGeo[food.id], food.gold ? a.goldMat : a.foodMat); m.position.copy(from); m.scale.setScalar(1.6); G.scene.add(m);
-    a.flying.push({ m, food, v: lob(from, land, rand(3.4, 4.4)), w: V(rand(-8, 8), 0, rand(-8, 8)), land }); a.thrown++; sfx('whoosh', from, 0.4);
+    a.flying.push({ m, food, v: lob(from, land, rand(2.9, 3.7)), w: V(rand(-8, 8), 0, rand(-8, 8)), land }); a.thrown++; sfx('whoosh', from, 0.4);
     if (food.gold) a.thrower.say('Ooh, the turkey leg! Don\'t drop it!', { prio: 1 }); else if (food.bad && Math.random() < 0.6) a.thrower.say(pick(['Sprout!', 'Eat your sprouts!', 'Have a sprout!']), { prio: 1 });
   };
   P.caughtFood = function (a, f) {
@@ -180,7 +187,7 @@ export function installMoreGames(MiniGames) {
   P.droppedFood = function (a, f) { f.m.position.y = 0.03; sfx('splat', f.m.position, 0.4); if (!f.food.bad) { a.ground.push(f); if (Math.random() < 0.4) a.thrower.say(pick(['Butterfingers!', 'Five second rule!', 'Chip, NO!', 'That was the last one!']), { prio: 0 }); } else G.scene.remove(f.m); };
   P.end_leftovers = function (a) {
     for (const f of a.flying) G.scene.remove(f.m); for (const g of a.ground) G.scene.remove(g.m); a.flying = []; a.ground = [];
-    for (const k of ['trolley', 'plate', 'shadow']) if (a[k]) G.scene.remove(a[k]); clearFx(a); clearWords(a);
+    for (const k of ['trolley', 'plate', 'shadow', 'counter']) if (a[k]) G.scene.remove(a[k]); a.badge?.remove(); clearFx(a); clearWords(a);
     if (G.dog && !G.dog.playerControlled) { G.dog.timer = 2; G.dog.state = 'sit'; }
     if (a.chip > a.score) setTimeout(() => G.ui?.toast(`Chip ate ${a.chip}. Chip wins, really.`, 3, { game: true }), 400);
   };
@@ -237,7 +244,40 @@ export function installMoreGames(MiniGames) {
     // show the teams first
     a.paused = true; const us = ['You', ...a.us.filter(Boolean).map(p => p.name)].join(' · '), them = a.them.map(p => p.name).join(' · ');
     card({ kicker: 'SNOWBALL FIGHT · 3 v 3', title: 'THE TEAMS', sub: `<b style="color:${TEAMS[G.myTeam]?.color || '#ffd700'}">YOUR TEAM</b><br>${us}<br><br>⚔️<br><br><b style="color:${a.themColor}">${a.themName.toUpperCase()}</b><br>${them}<br><br><small>Three hits and you're out.</small>`, icon: '❄️', secs: 4.8, c1: '#3a6ea5', c2: '#0f2440' })
-      .then(() => { a.paused = false; a.t = 0; if (G.xr) a.btn = tapButton('THROW ❄️', () => this.playerThrow(a, 1)); G.popup?.splash?.('FIGHT!', ''); sfx('whistle', null, 1); });
+      .then(() => { a.paused = false; a.t = 0; if (G.xr) this.vrSnowSetup(a); G.popup?.splash?.('FIGHT!', ''); sfx('whistle', null, 1); });
+  };
+  // ---- in the headset: snowballs lie on the snow by your fort. Point at one (it glows, with a ring under it and a
+  // line from your hand), pull the trigger and it flies to your hand; throw it for real and let go of the trigger.
+  P.vrSnowSetup = function (a) {
+    a.pick = []; a.pickMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.85, emissive: '#000000' });
+    a.aimRing = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 8, 24), new THREE.MeshBasicMaterial({ color: '#ffd700' })); a.aimRing.rotation.x = Math.PI / 2; a.aimRing.visible = false; a.snow.add(a.aimRing);
+    a.aimLines = {}; for (const k of ['L', 'R']) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(0, 0, 0), V(0, 0, 1)]), new THREE.LineBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.8 })); l.visible = false; l.frustumCulled = false; a.snow.add(l); a.aimLines[k] = l; }
+    this.restockSnow(a);
+  };
+  P.restockSnow = function (a) {
+    const me = G.player.pos; while (a.pick.filter(b => !b.taken).length < 7) { const m = new THREE.Mesh(a.ballGeo, a.pickMat.clone()); m.scale.setScalar(1.25);
+      m.position.set(clamp(me.x + rand(-1.4, 1.4), a.Z.x0 + 0.2, a.Z.x1 - 0.2), 0.07, clamp(me.z + rand(-0.9, 0.9), a.Z.mine - 0.4, a.Z.mine + 0.9)); a.snow.add(m); a.pick.push({ m }); }
+  };
+  P.vrSnowTick = function (a, dt) {
+    if (!a.pick) return; const H = G.player.xrIn?.hands || {}; let aimed = null;
+    for (const k of ['L', 'R']) { const rec = H[k]; const line = a.aimLines[k]; line.visible = false; if (!rec?.palm) continue;
+      if (rec.ball) { const b = rec.ball; b.k = Math.min(1, (b.k || 0) + dt / 0.18); b.m.position.lerpVectors(b.from, rec.palm, b.k * b.k * (3 - 2 * b.k)); continue; } // flying in / held in your hand
+      if (a.myHp <= 0) continue;
+      const o = rec.palm, d = V(0, 0, -1).applyQuaternion(rec.q); let best = null, bs = 1e9;
+      for (const b of a.pick) { if (b.taken) continue; const to = b.m.position.clone().sub(o); const along = to.dot(d); if (along < 0.1 || along > 7) continue; const perp = to.clone().addScaledVector(d, -along).length(); const lim = 0.18 + along * 0.06; if (perp < lim && perp / lim + along * 0.02 < bs) { bs = perp / lim + along * 0.02; best = b; } }
+      rec.aimBall = best; if (best) { aimed = best; const pa = line.geometry.attributes.position; pa.setXYZ(0, o.x, o.y, o.z); pa.setXYZ(1, best.m.position.x, best.m.position.y, best.m.position.z); pa.needsUpdate = true; line.visible = true; } }
+    for (const b of a.pick) if (!b.taken) b.m.material.emissive.set(b === aimed ? '#ffcc33' : '#000000');
+    a.aimRing.visible = !!aimed; if (aimed) { a.aimRing.position.set(aimed.m.position.x, 0.03, aimed.m.position.z); a.aimRing.scale.setScalar(1 + Math.sin(G.time * 8) * 0.12); }
+  };
+  P.vrPinch_snowball = function (a, rec) {
+    if (a.paused || a.myHp <= 0 || !a.pick || rec.ball) return !!rec.ball; const b = rec.aimBall; if (!b || b.taken) return false;
+    b.taken = true; b.from = b.m.position.clone(); b.k = 0; rec.ball = b; rec.aimBall = null; sfx('whoosh', b.from, 0.4); try { rec.source?.gamepad?.hapticActuators?.[0]?.pulse(0.5, 40); } catch (e) { /* no haptics */ }
+    setTimeout(() => this.restockSnow(a), 600); return true;
+  };
+  P.vrPinchEnd_snowball = function (a, rec) {
+    const b = rec.ball; if (!b) return false; rec.ball = null; a.snow.remove(b.m);
+    let v = rec.vel.clone().multiplyScalar(1.5); if (v.length() < 2.5) v = V(0, 0, -1).applyQuaternion(rec.q).multiplyScalar(6).add(V(0, 1.2, 0)); if (v.length() > 18) v.setLength(18); // a proper throw keeps your arm's speed; a limp let-go just lobs it forward
+    if (a.myHp > 0 && !a.paused) this.throwBall(a, rec.palm.clone(), v, 0, null); return true;
   };
   P.throwBall = function (a, from, vel, side, owner) { const m = new THREE.Mesh(a.ballGeo, a.ballMat); m.position.copy(from); G.scene.add(m); a.balls.push({ m, v: vel, side, owner, t: 0 }); sfx('whoosh', from, 0.35); };
   P.playerThrow = function (a, power) {
@@ -251,6 +291,7 @@ export function installMoreGames(MiniGames) {
     stepFx(a, dt); stepWords(a, dt);
     const fp = a.flakes.geometry.attributes.position; for (let k = 0; k < fp.count; k++) { let y = fp.getY(k) - dt * 0.6; if (y < 0) y = 4; fp.setY(k, y); fp.setX(k, fp.getX(k) + Math.sin(G.time + k) * dt * 0.05); } fp.needsUpdate = true;
     if (a.paused) { a.t = 0; return; }
+    if (G.xr) this.vrSnowTick(a, dt);
     a.cd -= dt; a.charge = 0;
     // you: hold THROW for power, let go to throw (phone); trigger in the headset
     const c = G.player.controls; if (!G.xr && a.myHp > 0) { if (c.btn('throw').down) { a.hold = Math.min(1, (a.hold || 0) + dt * 1.5); a.charge = a.hold; } if (c.btn('throw').released) { this.playerThrow(a, a.hold || 0.3); a.hold = 0; } }
@@ -294,7 +335,7 @@ export function installMoreGames(MiniGames) {
   };
   P.end_snowball = function (a) {
     if (!a.over) { const us = a.fighters.filter(f => f.side === 0).reduce((s, f) => s + Math.max(0, f.hp), 0) + Math.max(0, a.myHp), them = a.fighters.filter(f => f.side === 1).reduce((s, f) => s + Math.max(0, f.hp), 0); a.won = us > them; a.score = a.hits + (a.won ? 3 : 0); }
-    a.btn?.(); for (const s of a.balls) G.scene.remove(s.m); a.balls = []; if (a.snow) G.scene.remove(a.snow); clearFx(a); clearWords(a); a.charge = 0;
+    a.btn?.(); for (const s of a.balls) G.scene.remove(s.m); a.balls = []; if (a.snow) G.scene.remove(a.snow); for (const h of Object.values(G.player.xrIn?.hands || {})) if (h) { h.ball = null; h.aimBall = null; } clearFx(a); clearWords(a); a.charge = 0;
     for (const f of a.fighters) f.p.gesture = null;
   };
 
@@ -303,7 +344,7 @@ export function installMoreGames(MiniGames) {
   // =====================================================================================================
   P.setup_wakeGary = function (a) {
     a.limit = 60; a.wake = 0; a.score = null; a.combo = 0; a.lastAct = -9;
-    const g = G.charByName.Gary && !G.charByName.Gary.isPlayer ? G.charByName.Gary : G.charByName.Paul; a.g = g; a.gName = g.name;
+    const cands = G.chars.filter(c => !c.isPlayer && !c.protected && c.brain && c.H > 1.3 && !c.isDown()); const g = pick(cands) || G.charByName.Paul; a.g = g; a.gName = g.name; // whoever has nodded off this time
     const seat = G.house.spots.sofaR[1]; this.place(g, seat.pos.x, seat.pos.z, [seat.pos.x + Math.sin(seat.yaw), seat.pos.z + Math.cos(seat.yaw)]); g.yaw = seat.yaw; g.seatY = seat.seatY; g.base = 'sleep'; g.gesture = null;
     const front = [seat.pos.x + Math.sin(seat.yaw) * 1.5, seat.pos.z + Math.cos(seat.yaw) * 1.5]; a.front = front; G.player.teleport(front[0], front[1], faceYaw(front, [seat.pos.x, seat.pos.z])); G.player.pitch = -0.2;
     // a blanket over him and a paper crown slipping off
@@ -311,9 +352,11 @@ export function installMoreGames(MiniGames) {
     // things to throw within reach
     a.ammo = (G.items.byType.cushion || []).filter(c => !c.held).sort((x, y) => { const tx = x.body.translation(), ty = y.body.translation(); return Math.hypot(tx.x - front[0], tx.z - front[1]) - Math.hypot(ty.x - front[0], ty.z - front[1]); }).slice(0, 3);
     a.ammo.forEach((c, k) => { c.body.setTranslation({ x: front[0] - 0.5 + k * 0.5, y: 0.2, z: front[1] + 0.55 }, true); c.body.setLinvel({ x: 0, y: 0, z: 0 }, true); }); // the sofa cushions, on the floor in front of you
-    const ring = []; for (let k = 0; k < 6; k++) ring.push([seat.pos.x - 2.2 + k * 0.1, seat.pos.z - 1.6 + k * 0.65]); this.crowd(ring, [seat.pos.x, seat.pos.z], [g], 5);
+    const ring = []; for (let k = 0; k < 8; k++) ring.push([seat.pos.x - 2.3 + (k % 2) * 0.45, seat.pos.z - 1.8 + k * 0.5]); this.crowd(ring, [seat.pos.x, seat.pos.z], [g], 5);
+    // nobody else on that sofa: anyone sitting there gets up and stands with the others
+    let n = 0; for (const c of G.chars) { if (c === g || c.isPlayer || !c.brain || c.isDown()) continue; if (G.house.spots.sofaR.some(sp => Math.hypot(c.pos.x - sp.pos.x, c.pos.z - sp.pos.z) < 0.7) || Math.hypot(c.pos.x - seat.pos.x, c.pos.z - seat.pos.z) < 1.2) { const r = ring[(5 + n++) % ring.length]; this.place(c, r[0] - 0.3, r[1], [seat.pos.x, seat.pos.z]); (this.audience ||= []).push(c); } }
     if (G.dog && !G.dog.playerControlled) { G.dog.path = null; G.dog.pos.set(front[0] - 0.8, 0, front[1] + 0.6); G.dog.state = 'sit'; G.dog.timer = 999; }
-    a.label = () => `WAKE ${a.gName.toUpperCase()} UP`;
+    a.label = () => `WAKEY WAKEY, ${a.gName.toUpperCase()}!`;
     // punching / grabbing him counts as a prod rather than knocking him over
     g.sumo = (imp, grab) => this.prod(a, grab ? 0.06 : 0.08, grab ? 'shake' : 'prod');
   };
@@ -332,7 +375,7 @@ export function installMoreGames(MiniGames) {
   P.prod = function (a, amt, kind) {
     if (a.woke) return; const now = a.t; a.combo = now - a.lastAct < 3 ? Math.min(4, a.combo + 1) : 0; a.lastAct = now; const mult = 1 + a.combo * 0.25;
     a.wake = Math.min(1, a.wake + amt * mult * (a.deep ? 0.7 : 1)); const g = a.g;
-    g.say(pick(['Mmmf… five more minutes…', 'Not now, Debbie…', 'Fair enough… zzz', 'Is it the quiz?…', 'Snrrrk… whuh?', 'I\'m resting my eyes…', '…bitter, please…']), { prio: 1 });
+    g.say(pick(['Mmmf… five more minutes…', 'Not now…', 'Zzz… is it my round?…', 'Is it the quiz?…', 'Snrrrk… whuh?', 'I\'m resting my eyes…', '…one more sausage roll…', 'Mmm… turkey…']), { prio: 1 });
     g.gesture = 'facepalm'; g.gestureT = 0; setTimeout(() => { if (g.gesture === 'facepalm') g.gesture = null; }, 900); sfx('snore', g.headPos(new THREE.Vector3()), 0.5);
     floatWord(a, a.combo ? `x${(1 + a.combo * 0.25).toFixed(2).replace(/0$/, '')} COMBO` : kind === 'throw' ? 'BONK!' : 'WAKEY!', g.headPos(new THREE.Vector3()).add(V(0, 0.35, 0)), '#ffd700', 0.16);
     if (a.wake >= 1) this.garyWakes(a);
@@ -342,7 +385,7 @@ export function installMoreGames(MiniGames) {
     if (id === 'tv') { sfx('cheer', null, 1); sfx('drum', null, 0.8); G.screens?.setTV?.((gg, W, H) => { gg.fillStyle = '#c41e1e'; gg.fillRect(0, 0, W, H); gg.fillStyle = '#fff'; gg.font = 'bold 120px sans-serif'; gg.textAlign = 'center'; gg.fillText('🔊 VOLUME 100', W / 2, H / 2); }); G.charByName.Martin?.say('Who\'s touched the volume?!', { prio: 1 }); this.prod(a, x.amt, 'tv'); }
     if (id === 'popper') { sfx('pop', hp, 1); burst(a, hp.clone().add(V(0, 0.2, 0)), pick(['#ff006e', '#ffd700', '#3bd16f', '#3a86ff']), 26, 2.4, 0.012); this.prod(a, x.amt, 'popper'); }
     if (id === 'ice') { sfx('clink', hp, 1); g.setMood?.('shock', 1); g.say('BRRRR!', { prio: 2 }); this.prod(a, x.amt, 'ice'); }
-    if (id === 'beer') { sfx('pop', hp, 0.6); sfx('fizz', hp, 1); g.say('…is that a bitter?…', { prio: 2 }); this.prod(a, x.amt, 'beer'); }
+    if (id === 'beer') { sfx('pop', hp, 0.6); sfx('fizz', hp, 1); g.say('…did someone open a drink?…', { prio: 2 }); this.prod(a, x.amt, 'beer'); }
     if (id === 'chip') { const d = G.dog; if (!d || d.playerControlled) return this.prod(a, x.amt * 0.6, 'chip'); d.wag = 3; sfx('bark', d.pos, 0.8);
       d.goTo(V(g.pos.x + Math.sin(g.yaw) * 0.45, 0, g.pos.z + Math.cos(g.yaw) * 0.45), 3.4, () => { d.state = 'beg'; d.timer = 999; d.yaw = Math.atan2(g.pos.x - d.pos.x, g.pos.z - d.pos.z); sfx('yap', d.pos, 1); floatWord(a, 'LICK LICK', hp.clone().add(V(0, 0.2, 0)), '#ffb020', 0.16); this.prod(a, x.amt, 'chip');
         setTimeout(() => { if (!d.playerControlled) { d.state = 'sit'; d.goTo(V(a.front[0] - 0.8, 0, a.front[1] + 0.6), 2.2, () => { d.state = 'sit'; d.timer = 999; }); } }, 1500); }); }
@@ -352,7 +395,7 @@ export function installMoreGames(MiniGames) {
     const seat = G.house.spots.sofaR[1]; if (a.blanket) { a.blanket.position.set(g.pos.x + Math.sin(g.yaw) * 0.3, g.seatY + 0.08, g.pos.z + Math.cos(g.yaw) * 0.3); a.blanket.rotation.set(0, g.yaw, 0); a.blanket.visible = !a.woke; }
     if (a.woke) return;
     // he keeps sinking back into a deep sleep (the meter drains faster then)
-    a.deepT = (a.deepT ?? rand(8, 14)) - dt; if (a.deepT < 0) { a.deep = !a.deep; a.deepT = a.deep ? rand(4, 6) : rand(8, 14); if (a.deep) { G.ui?.toast(`${a.gName} is in a DEEP sleep! Hit him with everything!`, 2, { game: true }); sfx('snore', g.headPos(new THREE.Vector3()), 1); } }
+    a.deepT = (a.deepT ?? rand(8, 14)) - dt; if (a.deepT < 0) { a.deep = !a.deep; a.deepT = a.deep ? rand(4, 6) : rand(8, 14); if (a.deep) { G.ui?.toast(`${a.gName} is in a DEEP sleep! Throw everything at them!`, 2, { game: true }); sfx('snore', g.headPos(new THREE.Vector3()), 1); } }
     a.wake = Math.max(0, a.wake - dt * (a.deep ? 0.06 : 0.025));
     if (g.state === 'anim') { g.base = 'sleep'; g.pos.set(seat.pos.x, 0, seat.pos.z); g.yaw = seat.yaw; }
     // Zzz drifting up, and a snore now and then
@@ -369,7 +412,7 @@ export function installMoreGames(MiniGames) {
     a.woke = true; const g = a.g; a.score = Math.max(1, Math.round(a.t)); meters(null); g.sumo = null;
     g.base = 'stand'; g.pos.addScaledVector(V(Math.sin(g.yaw), 0, Math.cos(g.yaw)), 0.5); g.setMood?.('shock', 2); g.gesture = 'shrug'; g.gestureT = 0;
     g.say(pick(['WHAT?! I wasn\'t asleep! I was resting my eyes!', 'I\'m awake! The answer\'s Spain!', 'Fair enough. Is it my round?']), { prio: 2 });
-    sfx('cheer', null, 1); burst(a, g.headPos(new THREE.Vector3()), '#ffd700', 30, 2.6, 0.012); G.popup?.splash?.('HE\'S AWAKE!', `${a.score}s`); this.cheer();
+    sfx('cheer', null, 1); burst(a, g.headPos(new THREE.Vector3()), '#ffd700', 30, 2.6, 0.012); G.popup?.splash?.(`${a.gName.toUpperCase()}'S AWAKE!`, `${a.score}s`); this.cheer();
     setTimeout(() => this.stop(a), 2400);
   };
   P.end_wakeGary = function (a) {

@@ -19,8 +19,8 @@ export const GAMES = [
   { id: 'elfHunt', icon: '🧝', title: 'FIND THE MAGIC ELVES', how: 'Five glowing magic elves are hidden around the house. Find all five in 1 minute 30 — walk right up to an elf to catch it. Fastest team wins!', unit: 's', lowerBetter: true, other: () => Math.random() < 0.35 ? null : Math.round(rand(46, 89)) },
   { id: 'stack', icon: '🍫', title: 'STACK THE CHOCOLATE BOXES', how: () => G.xr ? 'A chocolate box swings back and forth over the dining table. Pull the trigger to DROP it onto your tower. Tallest tower in 50 seconds wins. Mason will try to knock it over: wave him away!' : 'A chocolate box swings back and forth over the dining table. Hit DROP to land it on your tower. Tallest tower in 50 seconds wins. Mason will try to knock it over: hit SHOO!', unit: ' cm', other: () => Math.round(rand(18, 60)) },
   { id: 'leftovers', icon: '🍗', title: 'CATCH THE LEFTOVERS', how: () => G.xr ? 'Julie is lobbing the leftovers across the garden. Hold your plate out (it\'s in your right hand) and catch them. Golden turkey leg = 3, sprouts = −1. Whatever you drop, Chip eats.' : 'Julie is lobbing the leftovers across the garden. Run under them with the joystick (follow the ring on the grass) to catch them on your plate. Golden turkey leg = 3, sprouts = −1. Whatever you drop, Chip eats.', unit: ' pts', other: () => Math.round(rand(4, 15)) },
-  { id: 'snowball', icon: '❄️', title: 'SNOWBALL FIGHT', how: () => G.xr ? 'Three against three in the snowy garden. Pull the trigger to throw where your right hand points. Duck behind the snow forts. Three hits and you\'re out.' : 'Three against three in the snowy garden. Hold THROW for power and let go to throw where you\'re looking. Duck behind the snow forts. Three hits and you\'re out.', unit: ' pts', other: () => Math.round(rand(1, 7)) },
-  { id: 'wakeGary', icon: '😴', title: 'WAKE GARY UP', how: () => G.xr ? 'Gary\'s fast asleep on the sofa. Wake him up as fast as you can: throw cushions at him, prod him, and pull the trigger for the telly, Chip, a party popper, an ice cube or a beer. He keeps drifting into a deep sleep!' : 'Gary\'s fast asleep on the sofa. Wake him up as fast as you can: throw cushions, prod him, turn the telly up, send Chip to lick him, party poppers, ice cubes… Do things quickly for a combo. He keeps drifting into a deep sleep!', unit: 's', lowerBetter: true, other: () => Math.round(rand(20, 45)) },
+  { id: 'snowball', icon: '❄️', title: 'SNOWBALL FIGHT', how: () => G.xr ? 'Three against three in the snowy garden. Point at a snowball on the ground (it lights up) and pull the trigger: it flies into your hand. Then throw it for real and let go of the trigger. Duck behind the snow forts. Three hits and you\'re out.' : 'Three against three in the snowy garden. Hold THROW for power and let go to throw where you\'re looking. Duck behind the snow forts. Three hits and you\'re out.', unit: ' pts', other: () => Math.round(rand(1, 7)) },
+  { id: 'wakeGary', icon: '😴', title: 'WAKEY WAKEY', how: () => G.xr ? 'Someone has nodded off on the sofa. Wake them up as fast as you can: throw cushions, prod them, and pull the trigger for the telly, Chip, a party popper, an ice cube or a beer. They keep drifting into a deep sleep!' : 'Someone has nodded off on the sofa. Wake them up as fast as you can: throw cushions, prod them, turn the telly up, send Chip to lick them, party poppers, ice cubes… Do things quickly for a combo. They keep drifting into a deep sleep!', unit: 's', lowerBetter: true, other: () => Math.round(rand(20, 45)) },
   { id: 'parcel', icon: '🎁', title: 'PASS THE PARCEL', how: 'The parcel goes round while the music plays. When it reaches you, hit PASS to send it on. When the music stops with it in your hands, hit TEAR!', unit: ' layers', other: () => Math.floor(rand(0, 3)) },
 ];
 // (spare games, used between quiz rounds if ever needed)
@@ -32,7 +32,7 @@ const TABLE = { x: 4.99, z: -3.9, x0: 4.52, x1: 5.47, z0: -4.75, z1: -3.05, y: 0
 // which games tonight: { random: true } = five picked at random, or { ids: [...] } = the ones you chose, in list order
 export function gamePlaylist(pick) {
   const all = GAMES.map((g, i) => i);
-  if (pick && !pick.random && pick.ids?.length) { const out = all.filter(i => pick.ids.includes(GAMES[i].id)); if (out.length) return out; }
+  if (pick && !pick.random && pick.ids?.length) { const out = pick.ids.map(id => GAMES.findIndex(g => g.id === id)).filter(i => i >= 0); if (out.length) return out; } // in the order you picked them
   return shuffle(all).slice(0, 5);
 }
 export class MiniGames {
@@ -88,6 +88,8 @@ export class MiniGames {
   spawn(id, pos, opts) { const it = G.items.spawn(id, pos, null, opts); if (it) it.mg = true; return it; }
   limitTick(a, dt) { if (!a.limit) return; const left = Math.max(0, a.limit - a.t); const L = Math.ceil(left); timer(L >= 60 ? `${Math.floor(L / 60)}:${String(L % 60).padStart(2, '0')}` : `${L}s`, a.label ? a.label() : `SCORE ${a.score}`, left < 6); if (left <= 0 || a.skip) { a.timeUp = left <= 0; this.stop(a); } }
   stop(a) { if (a.stopped) return; a.stopped = true; a.live = false; sfx('whistle', null, 1); a.done?.(); }
+  vrPinch(rec) { const a = this.active; return !!(a?.live && this['vrPinch_' + a.id]?.(a, rec)); }
+  vrPinchEnd(rec) { const a = this.active; return !!(a?.live && this['vrPinchEnd_' + a.id]?.(a, rec)); }
   update(dt) { const a = this.active; if (!a || !a.live) return; a.t += dt; this['tick_' + a.id]?.(a, dt); this.limitTick(a, dt); if (G.frame % 140 === 0) this.cheer(); }
 
   // the audience spots: round the dining room (away from the table and the cracker spot) and round the sumo ring
