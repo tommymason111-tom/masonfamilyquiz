@@ -256,7 +256,7 @@ export class Player {
       } else { const hand = this.xrIn.hands[key]; if (!hand) continue; target = hand.palm; tvel = hand.vel; tq = hand.q; }
       if (h.attach) { // small things sit in your hand
         const tp = new THREE.Vector3(), tqq = new THREE.Quaternion();
-        if (key === 'D') this.fp.gripWorld(tp, tqq, h.radius); else { tp.copy(target).addScaledVector(this.xrIn.hands[key].normal, h.radius * 0.7); tqq.copy(tq); if (!h.relQ0) { const r = h.body.rotation(); h.relQ0 = tq.clone().invert().multiply(new THREE.Quaternion(r.x, r.y, r.z, r.w)); } tqq.multiply(h.relQ0); }
+        if (key === 'D') this.fp.gripWorld(tp, tqq, h.radius); else { tp.copy(target).addScaledVector(this.xrIn.hands[key].normal, h.radius < 0.05 ? h.radius + 0.045 : h.radius * 0.7); /* little things (sprouts, sweets) sit out in your fingers where you can see them, not buried in your fist */ tqq.copy(tq); if (!h.relQ0) { const r = h.body.rotation(); h.relQ0 = tq.clone().invert().multiply(new THREE.Quaternion(r.x, r.y, r.z, r.w)); } tqq.multiply(h.relQ0); }
         if (key === 'D') { if (!h.relQ0) { const r = h.body.rotation(); h.relQ0 = tqq.clone().invert().multiply(new THREE.Quaternion(r.x, r.y, r.z, r.w)); h.relQ0.slerp(new THREE.Quaternion(), 0.85); } tqq.multiply(h.relQ0); }
         const prev = h.body.translation(); h.lastVel = { x: (tp.x - prev.x) / dt, y: (tp.y - prev.y) / dt, z: (tp.z - prev.z) / dt };
         h.body.setNextKinematicTranslation(tp); h.body.setNextKinematicRotation(tqq); h.ref.dirty = true; continue;
