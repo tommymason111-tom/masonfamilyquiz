@@ -8,7 +8,7 @@ import { saveStore } from './settings.js';
 
 const W = 1024, H = 768, PW = 1.0, PH = PW * H / W, DIST = 1.25;
 let canvas, g, tex, mesh, lastV = -1, lastDraw = 0, placed = false;
-const _p = new THREE.Vector3(), _f = new THREE.Vector3(), _t = new THREE.Vector3(), _q = new THREE.Quaternion();
+const _p = new THREE.Vector3(), _f = new THREE.Vector3(), _t = new THREE.Vector3(), _q = new THREE.Vector3();
 
 function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 function panel(x, y, w, h, fill = 'rgba(14,12,22,0.86)', stroke = '#ffd700', r = 22) { rr(x, y, w, h, r); g.fillStyle = fill; g.fill(); g.lineWidth = 4; g.strokeStyle = stroke; g.stroke(); }
@@ -24,6 +24,9 @@ function wrap(s, x, y, maxW, size, lh, max = 3, color = '#fff', font = 'system-u
 // or use the thumbstick and trigger. vrPick() shows a grid of choices; vrShow() shows a message (or a custom drawing).
 let flow = null; const imgs = {};
 const img = (src) => { if (!src) return null; if (!imgs[src]) { const im = new Image(); im.src = src; imgs[src] = im; } return imgs[src].complete ? imgs[src] : null; };
+window.__vrFlowKind = () => flow ? flow.spec.title : 'none'; // test hook
+window.__vrRays = () => (lasers || []).map(L => `${L.px?.toFixed(0)},${L.py?.toFixed(0)} hover=${L.hover} laser=${L.l.visible}`).join(' | ');
+window.__vrHover = () => flow ? (flow.rects[flow.hover]?.id ?? flow.rects[flow.hover]?.kind ?? 'none') : 'noflow';
 window.__vrClick = (kind, id) => { if (!flow) return 'noflow'; const i = flow.rects.findIndex(r => r.kind === kind && (id == null || r.id === id)); if (i < 0) return 'norect'; flowClick(i); return 'ok'; }; // test hook
 export function vrPick(spec) { return new Promise(res => { flow = { kind: 'pick', spec, res, rects: [], hover: -1, sel: spec.multi ? new Set(spec.selected || []) : spec.selected, toggle: spec.toggleSel, placed: false, t0: performance.now() }; S.v++; }); }
 export function vrShow(spec) { return new Promise(res => { flow = { kind: 'show', spec, res, rects: [], hover: -1, placed: false, t0: performance.now() }; S.v++; if (spec.secs) setTimeout(() => { if (flow?.spec === spec) { flow = null; S.v++; res(); } }, spec.secs * 1000); }); }
@@ -71,7 +74,7 @@ function flowRays(dt) {
   for (const L of lasers) { L.ctrl.updateMatrixWorld(true); _o.setFromMatrixPosition(L.ctrl.matrixWorld); _d.set(0, 0, -1).transformDirection(L.ctrl.matrixWorld); L.hover = -1; L.l.visible = !!flow;
     const den = _d.dot(_n); if (Math.abs(den) < 1e-4) continue; const t = _hit.copy(mesh.position).sub(_o).dot(_n) / den; if (t <= 0 || t > 6) { L.l.scale.z = 3; continue; }
     _hit.copy(_o).addScaledVector(_d, t); L.l.scale.z = t; const loc = mesh.worldToLocal(_hit.clone()); const sc = mesh.scale.x; const px = (loc.x / (PW) + 0.5) * W, py = (0.5 - loc.y / (PH)) * H; void sc;
-    flow.rects.forEach((r, i) => { if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) L.hover = i; }); if (L.hover >= 0) any = L.hover; }
+    L.px = px; L.py = py; flow.rects.forEach((r, i) => { if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) L.hover = i; }); if (L.hover >= 0) any = L.hover; }
   if (any >= 0 && any !== flow.hover) { flow.hover = any; S.v++; try { G.renderer.xr.getSession()?.inputSources.forEach(s => s.gamepad?.hapticActuators?.[0]?.pulse(0.15, 15)); } catch (e) { /* no haptics */ } }
   // thumbstick fallback: move the highlight through the choices
   const s = xr.getSession(); if (!s) return; let ax = 0, ay = 0; for (const src of s.inputSources) { const gp = src.gamepad; if (!gp) continue; const x = gp.axes[2] ?? gp.axes[0] ?? 0, y = gp.axes[3] ?? gp.axes[1] ?? 0; if (Math.abs(x) > Math.abs(ax)) ax = x; if (Math.abs(y) > Math.abs(ay)) ay = y; }
@@ -163,12 +166,15 @@ export function initVRHud() {
     if (lasers && !flow) lasers.forEach(L => L.l.visible = false);
     if (!G.xr || !active()) { mesh.visible = false; placed = false; mesh.scale.setScalar(1); return; }
     // the start-up screens: a big panel that stays put in front of you while you point at it
-    if (flow) { const cam = G.renderer.xr.getCamera(); cam.getWorldPosition(_p); cam.getWorldDirection(_f); _f.y = 0; _f.normalize();
-      if (!flow.placed) { flow.placed = true; mesh.position.copy(_p).addScaledVector(_f, 1.5); mesh.position.y = _p.y - 0.12; mesh.lookAt(_p.x, mesh.position.y, _p.z); mesh.scale.setScalar(1.55); }
+    if (flow) { const cam = G.camera; cam.getWorldPosition(_p); /* the game camera sits in the player rig; three's XR camera has no parent, so its world position ignores the rig */  cam.getWorldDirection(_f); _f.y = 0; if (_f.lengthSq() < 1e-4) _f.set(0, 0, -1); _f.normalize();
+      // put it 1.5 m in front of you; and if it's ended up somewhere silly (the first headset frame can report a stale
+      // head position, or you've walked off) snap it back in front of you
+      _t.copy(_p).addScaledVector(_f, 1.5); _t.y = _p.y - 0.12; const off = mesh.position.distanceTo(_t), seen = _q.copy(mesh.position).sub(_p).normalize().dot(_f);
+      if (!flow.placed || off > 1.2 || seen < 0.2 || (flow.settle = (flow.settle || 0) + 1) < 8) { flow.placed = true; mesh.position.copy(_t); mesh.lookAt(_p.x, _t.y, _p.z); mesh.scale.setScalar(1.55); }
       mesh.visible = true; flowRays(dt); const now = performance.now(); if (S.v !== lastV || now - lastDraw > 60) { lastV = S.v; lastDraw = now; drawFlow(now); } return; }
     mesh.scale.setScalar(1);
     // follow the head lazily: stays put while you glance around, catches up when you turn away
-    const cam = G.renderer.xr.getCamera(); cam.getWorldPosition(_p); cam.getWorldDirection(_f); _f.y = Math.max(-0.35, Math.min(0.2, _f.y)); _f.normalize();
+    const cam = G.camera; cam.getWorldPosition(_p); /* the game camera sits in the player rig; three's XR camera has no parent, so its world position ignores the rig */  cam.getWorldDirection(_f); _f.y = Math.max(-0.35, Math.min(0.2, _f.y)); _f.normalize();
     _t.copy(_p).addScaledVector(_f, DIST); _t.y -= 0.08;
     if (!placed) { mesh.position.copy(_t); placed = true; } else { const d = mesh.position.distanceTo(_t); mesh.position.lerp(_t, Math.min(1, dt * (d > 0.45 ? 4 : 1.2))); }
     mesh.lookAt(_p); mesh.visible = true;
