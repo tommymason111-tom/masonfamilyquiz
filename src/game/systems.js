@@ -73,6 +73,7 @@ export class Systems {
     on('protectedTouch', (c) => { if (c?.name === 'Mason') { c.say(pick(['No!', 'Hehehe!', 'Again!'])); G.ui?.toast('You can\'t grab Mason. He giggles and runs off.', 2); } else if (c?.name === 'Harrison') { this.harrisonLaugh(); } });
     on('masonGiven', (inst) => { const m = G.charByName.Mason; m.brain.calmUntil = G.time + 30; m.say('Thank you!'); if (inst.id === 'remote') { this.cbeebiesEvent(); } if (inst.id === 'celeb_tin' || inst.id === 'quality_tin') { this.havoc = Math.max(this.havoc, 60); G.ui?.toast('You gave Mason the sweets. Havoc Meter: WILD.', 4); G.ai.say('Julie', 'Who gave him the Celebrations?!', 1); } else G.ui?.toast('Mason is happy. He stops throwing for 30 seconds.', 3); this.havoc = Math.max(0, this.havoc - 10); });
     on('harrisonGiven', (inst) => { this.harrisonLaugh(); });
+    on('protectedHit', (who) => this.protectorComes(who));
     on('dogFed', () => { this.havoc = Math.max(0, this.havoc - 8); });
     on('remote', (inst) => this.useRemote(inst));
     on('tvTouched', () => this.useRemote(null));
@@ -160,6 +161,34 @@ export class Systems {
     this.stats.laughFits++; this.banter(-8);
     const order = ['Hollie', 'Kirsty', 'Jodie', 'Debbie', 'Charli', 'Karen', 'Sophie'];
     order.forEach((n, i) => { const o = G.charByName[n]; if (!o || o.isDown() || (src && o.pos.distanceTo(src.pos) > 8)) return; setTimeout(() => { o.gesture = n === 'Kirsty' || n === 'Jodie' ? 'laughDouble' : 'laugh'; o.gestureT = 0; if (i < 2) o.bark('laugh', { prio: 0 }); setTimeout(() => { if (o.gesture?.startsWith('laugh')) o.gesture = null; }, 3500); }, 400 + i * 350); });
+  }
+  // Hit Chip, Mason or Harrison and their grown-up comes for you: a big red warning, they run over and flatten you.
+  protectorComes(who) {
+    if (!who || G.time < (this.protectT || 0)) return; const me = G.me;
+    const map = who.isDog || who === G.dog ? { title: 'DON\'T HIT THE DOG!', guard: ['Martin', 'Julie'], icon: '🐶' } : who.name === 'Mason' ? { title: 'DON\'T HIT MASON!', guard: ['Harry', 'Jodie'], icon: '🦖' } : who.name === 'Harrison' ? { title: 'DON\'T HIT HARRISON!', guard: ['Bradley', 'Hollie'], icon: '🧝' } : null;
+    if (!map) return;
+    const g = map.guard.map(n => G.charByName[n]).find(c => c && !c.isPlayer && c !== me && c.state === 'anim'); if (!g || !g.brain) return;
+    this.protectT = G.time + 12;
+    if (who.isDog || who === G.dog) { who.state = 'sit'; who.timer = 3; sfx('whine', who.pos, 0.8); } else { who.say?.('WAAAH!', { prio: 2 }); who.setMood?.('shock', 2); }
+    sfx('drum', null, 0.8);
+    G.popup?.card({ kicker: '⚠️ WARNING ⚠️', title: map.title, sub: `${g.name} is coming to get you…`, icon: map.icon, secs: 2.8, c1: '#e01020', c2: '#3a0006' });
+    g.say(pick([`Oi! ${G.me?.name || 'You'}!`, 'RIGHT. That\'s it.', 'Did you just…?!', 'Come here, you!']), { prio: 2 }); g.setMood?.('angry', 6);
+    const b = g.brain; b.state = 'chase'; b.path = null; g.gesture = null; g.lookTarget = null;
+    const t0 = G.time; let lastPath = -9;
+    const chase = (dt) => {
+      if (b.state !== 'chase' && b.state !== 'walk' && b.state !== 'idle') return true; // knocked down or busy: give up
+      if (g.state !== 'anim' || G.time - t0 > 14) { b.state = 'idle'; G.ai?.goHome(b); return true; }
+      const pp = G.player.pos; const d = Math.hypot(pp.x - g.pos.x, pp.z - g.pos.z);
+      if (d < 0.95) { // shove
+        g.yaw = Math.atan2(pp.x - g.pos.x, pp.z - g.pos.z); g.base = 'stand'; g.gesture = 'argue'; g.gestureT = 0; b.state = 'scripted'; b.timer = 3; b.path = null;
+        setTimeout(() => { g.gesture = 'point'; }, 350); G.player.knockDown(g.pos); G.fx?.hit?.(G.player.headPos(new THREE.Vector3()), 'punch', 1.2);
+        g.say(pick(['And STAY down.', who.isDog || who === G.dog ? 'Nobody touches the dog.' : 'Leave him alone!', 'Let that be a lesson.']), { prio: 2 });
+        setTimeout(() => { g.gesture = null; if (b.state === 'scripted') { b.state = 'idle'; G.ai?.goHome(b); } }, 3200); return true; }
+      if (G.time - lastPath > 0.8) { lastPath = G.time; G.ai?.goTo(b, new THREE.Vector3(pp.x, 0, pp.z), null, 3.6); b.state = 'walk'; }
+      return false;
+    };
+    const up = (dt) => { if (chase(dt)) { const k = G.updaters.indexOf(up); if (k >= 0) G.updaters.splice(k, 1); } };
+    setTimeout(() => G.updaters.push(up), 600);
   }
   harrisonLaugh() {
     const h = G.charByName.Harrison; if (!h) return; h.setMood('laugh', 3); h.say('Hehehehe!', { prio: 0 });

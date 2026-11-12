@@ -35,6 +35,13 @@ export class Player {
   }
   headObject() { return G.camera; }
   headPos(out = new THREE.Vector3()) { return G.camera.getWorldPosition(out); }
+  // a relative shoves you over (hit Chip, Mason or Harrison and see what happens)
+  knockDown(from) {
+    const d = new THREE.Vector3(this.pos.x - from.x, 0, this.pos.z - from.z); if (d.lengthSq() < 1e-4) d.set(0, 0, 1); d.normalize();
+    this.releaseAll?.(); sfx('bigthud', this.pos, 1); sfx('oof', this.pos, 0.9);
+    if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8, this.yaw); G.ui?.toast('KNOCKED FLAT!', 2); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
+    this.downT = 2.8; this.downPush = d.multiplyScalar(0.9); G.fx?.shake && (G.fx.shake = 0.03);
+  }
   forward(out = new THREE.Vector3()) { return G.camera.getWorldDirection(out); }
 
   // ---------------- per-frame ----------------
@@ -67,6 +74,9 @@ export class Player {
     const c = this.controls;
     if (G.ui?.modalOpen) { c.look.x = c.look.y = 0; }
     this.yaw -= c.look.x; this.pitch = clamp(this.pitch - c.look.y, -1.45, 1.45);
+    // knocked flat by an angry relative: thrown back, the view drops to the floor and rolls, then you get back up
+    if (this.downT > 0) { this.downT -= dt; const tt = 2.8 - this.downT; if (tt < 0.35 && this.downPush) { this.moveBy(this.downPush.x * dt / 0.35, 0, this.downPush.z * dt / 0.35); } c.move.x = c.move.z = 0; c.look.x = c.look.y = 0; c.btn('jump').pressed = false;
+      this.downK = tt < 0.35 ? tt / 0.35 : this.downT < 0.8 ? Math.max(0, this.downT / 0.8) : 1; } else this.downK = 0;
     // locked on someone (cracker pull): can't walk, the camera stays on them
     if (this.lockAt) { const t = typeof this.lockAt === 'function' ? this.lockAt() : this.lockAt; if (t) { const h = this.headPos(_v); const dx = t.x - h.x, dz = t.z - h.z; this.yaw = Math.atan2(-dx, -dz); this.pitch = clamp(Math.atan2(t.y - h.y, Math.hypot(dx, dz)), -0.8, 0.6); } c.move.x = c.move.z = 0; c.btn('jump').pressed = false; }
     // movement via character controller
@@ -81,7 +91,7 @@ export class Player {
     this.speedXZ = Math.hypot(mx, mz);
     if (c.btn('crouch').pressed) this.crouchToggle = !this.crouchToggle;
     this.crouch += ((this.crouchToggle ? 1 : 0) - this.crouch) * Math.min(1, dt * 10);
-    const eye = this.seated ? this.seated.seatY + 0.72 : this.eyeH - this.crouch * 0.6;
+    const eye = (this.seated ? this.seated.seatY + 0.72 : this.eyeH - this.crouch * 0.6) * (1 - (this.downK || 0) * 0.82);
     if (c.btn('view').pressed) { this.thirdPerson = !this.thirdPerson; }
     this.rig.position.copy(this.pos); this.rig.rotation.set(0, this.yaw, 0);
     if (this.thirdPerson) {
@@ -94,6 +104,7 @@ export class Player {
       G.camera.position.set(0, eye, 0).add(back.normalize().multiplyScalar(d));
       G.camera.rotation.set(this.pitch, 0, 0);
     } else { G.camera.position.set(0, eye, 0); G.camera.rotation.set(this.pitch, 0, 0); }
+    if (this.downK) { G.camera.rotation.z = this.downK * 1.25; G.camera.rotation.x = this.pitch * (1 - this.downK) + this.downK * 0.35; }
     G.camera.updateMatrixWorld(true);
     this.updateFocus();
     this.desktopActions(dt);
@@ -265,7 +276,7 @@ export class Player {
     }
     sfx('whoosh', origin, 0.25);
     if (!tgt) return;
-    if (tgt.kind === 'dog' || tgt.ref?.protected) { emit('protectedTouch', tgt.ref); return; }
+    if (tgt.kind === 'dog' || tgt.ref?.protected) { emit('protectedHit', tgt.kind === 'dog' ? G.dog : tgt.ref); return; }
     const imp = dir.clone().setY(Math.max(0.25, dir.y)).normalize();
     if (tgt.kind === 'char') {
       const p = tgt.ref; const m = p.mass; p.playerHitT = G.time;
@@ -287,9 +298,9 @@ export class Player {
     let e = hit?.entry;
     if (!e || (e.kind !== 'char' && e.kind !== 'item')) { const p = this.personInView(o, d, 4.5, true, 0.5); if (p) e = { kind: p.isDog ? 'dog' : 'char', ref: p, part: 1 }; }
     if (!e) { if (hit?.entry?.kind === 'static' && hit.entry.tag === 'tv') emit('tvTouched'); return; }
-    if (e.kind === 'dog') { emit('pet', e.ref); return; }
+    if (e.kind === 'dog') { this.fp.punch?.('R'); emit('protectedHit', G.dog); return; } // tapping Chip = trying to hit the dog
     if (e.kind === 'char') {
-      const p = e.ref; if (p.protected) { emit('protectedTouch', p); return; }
+      const p = e.ref; if (p.protected) { this.fp.punch?.('R'); emit('protectedHit', p); return; }
       if (G.modes?.id === 'fling') { this.tryGrab('D', { kind: 'char', ref: p, part: e.part ?? 1, point: hit ? hit.point : p.chestPos(new THREE.Vector3()), dist: 1 }); return; }
       p.playerHitT = G.time; this.fp.punch('R'); this.stats.punches++;
       const imp = d.clone().setY(Math.max(0.3, d.y)).normalize();

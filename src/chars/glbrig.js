@@ -184,6 +184,31 @@ export function buildFromModel(spec, model) {
     if (limbSeam) { const w1 = 0.5 * (1 - gap / 0.12); si[i * 4 + 1] = b1; sw[i * 4] = 1 - w1; sw[i * 4 + 1] = w1; }
   }
   geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  // hands resting on thighs in the scans: patches of fingers end up on the leg (and bits of trouser on the hand), which
+  // stretch into long strips once the arms swing. Tidy by neighbourhood vote, then cut the hand free of the leg/hips.
+  if (geo.index) { const I = geo.index.array; const nb = Array.from({ length: n }, () => new Set());
+    for (let t = 0; t < I.length; t += 3) { const a = I[t], b2 = I[t + 1], c = I[t + 2]; nb[a].add(b2).add(c); nb[b2].add(a).add(c); nb[c].add(a).add(b2); }
+    const LEG = (b) => b === 0 || b >= 7, HAND = (b) => b === 4 || b === 6;
+    for (let it = 0; it < 4; it++) for (let i = 0; i < n; i++) { const b = si[i * 4]; if (!LEG(b) && !HAND(b)) continue; let arm = 0, armB = 0, leg = 0, legB = 0, tot = 0;
+      for (const j of nb[i]) { const bj = si[j * 4]; tot++; if (HAND(bj)) { arm++; armB = bj; } else if (LEG(bj)) { leg++; legB = bj; } }
+      if (LEG(b) && arm > tot * 0.5) { si[i * 4] = armB; sw[i * 4] = 1; si[i * 4 + 1] = 0; sw[i * 4 + 1] = 0; }
+      else if (HAND(b) && leg > tot * 0.6) { si[i * 4] = legB; sw[i * 4] = 1; si[i * 4 + 1] = 0; sw[i * 4 + 1] = 0; } }
+    // collar/shoulder bits that ended up on the head (below the chin, surrounded by body): back to the chest
+    for (let it = 0; it < 3; it++) for (let i = 0; i < n; i++) { if (si[i * 4] !== 2 || pos.getY(i) > neck.y + 0.01 * H) continue; let body = 0, tot = 0; for (const j of nb[i]) { tot++; const bj = si[j * 4]; if (bj === 1 || bj === 3 || bj === 5) body++; } if (body > tot * 0.5) { si[i * 4] = 1; sw[i * 4] = 1; si[i * 4 + 1] = 0; sw[i * 4 + 1] = 0; } }
+    // cut joins that can only ever stretch: hand/forearm to leg or hips, forearm to the body, head to the arms
+    const ARM = (b) => b >= 3 && b <= 6;
+    const keep = []; for (let t = 0; t < I.length; t += 3) { const bs = [si[I[t] * 4], si[I[t + 1] * 4], si[I[t + 2] * 4]];
+      const has = (f) => bs.some(f); if (has(HAND) && has(LEG)) continue; if (has(HAND) && has(b => b === 1)) continue; if (has(b => b === 2) && has(ARM)) continue; keep.push(I[t], I[t + 1], I[t + 2]); }
+    geo.setIndex(keep); }
+  const smooth = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  // the neck: a soft blend between the chest and the head over a short band, so turning the head twists the neck
+  // instead of shearing it (the face above stays rigid with the head)
+  { const y0 = neck.y - 0.04 * H, y1 = neck.y + 0.022 * H;
+    for (let i = 0; i < n; i++) { const b = si[i * 4]; if (b !== 1 && b !== 2) continue; const p = P(i); if (p.y < y0 || p.y > y1) continue;
+      const chin = Math.abs(p.x - hc.x) < 0.05 * H && p.z > hc.z && p.y > neck.y - 0.012 * H; if (chin) continue; // the chin and jaw stay with the head
+      if (b === 1 && Math.abs(p.x - neck.x) > headHalfE * 1.3) continue; // (collar points that were on the head get blended down too)
+      const w = smooth((p.y - y0) / (y1 - y0)); si[i * 4] = 2; sw[i * 4] = w; si[i * 4 + 1] = 1; sw[i * 4 + 1] = 1 - w; } }
+  geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4)); // (the attributes are copies: write the tidied weights back)
   // legs are separate: drop the triangles that join the left leg to the right leg (dresses and skirts in the scans
   // bridge the legs, which stretched into a jelly web whenever the legs moved apart)
   if (geo.index) { const I = geo.index.array, keep = []; const L = (b) => b === 7 || b === 8, R = (b) => b === 9 || b === 10;

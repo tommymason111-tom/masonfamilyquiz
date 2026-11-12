@@ -237,12 +237,23 @@ export class Person {
       this.computePose(t, dt, false);
       this.fk();
       if (this.state === 'recover') {
-        this.recoverT += dt / 1.1;
-        const k = smooth(clamp(this.recoverT, 0, 1));
-        // blend root and locals from crumpled pose
-        for (let i = 0; i < PART_COUNT; i++) this.local[i].copy(this.recoverFromQ[i]).slerp(this.target[i], k);
-        this.rootPos.lerpVectors(this.recoverFromPos, this.rootPos, k);
-        this.rootQ.copy(this.recoverFromQ[0]).slerp(this.rootQ, k);
+        // a real get-up instead of floating upright: crumpled -> onto hands and knees -> one knee up, hands on the
+        // thigh -> push up to standing. The pelvis stays low until the legs are under it.
+        this.recoverT += dt / 1.7;
+        const k = clamp(this.recoverT, 0, 1), O = this.O, thighL = Math.max(0.15, O[0].y - O[8].y);
+        const Q = (x, y = 0, z = 0) => new THREE.Quaternion().setFromEuler(_e.set(x, y, z, 'XYZ'));
+        const pose = (m) => { const out = []; for (let i = 0; i < PART_COUNT; i++) out.push(m[i] ? Q(...m[i]) : new THREE.Quaternion()); return out; };
+        const KNEEL = pose({ 1: [0.45], 2: [-0.55], 3: [-1.35, 0, 0.12], 5: [-1.35, 0, -0.12], 4: [-0.1], 6: [-0.1], 7: [-0.85, 0, 0.08], 9: [-0.85, 0, -0.08], 8: [1.62], 10: [1.62] });
+        const LUNGE = pose({ 1: [0.42], 2: [-0.3], 3: [-0.95, 0, 0.15], 5: [-0.6, 0, -0.15], 4: [-0.7], 6: [-0.5], 7: [-1.55, 0, 0.1], 8: [1.55], 9: [-0.3, 0, -0.06], 10: [1.65] });
+        const upQ = (pitch) => new THREE.Quaternion().setFromEuler(_e.set(pitch, this.yaw, 0, 'YXZ'));
+        const p0 = this.recoverFromPos, ground = this.pos.y; const stand = this.rootPos.clone(), standQ = this.rootQ.clone();
+        const kneelP = new THREE.Vector3(this.pos.x, ground + thighL * 0.95, this.pos.z), lungeP = new THREE.Vector3(this.pos.x, ground + thighL * 1.05, this.pos.z);
+        let A, Bq, a, PA, PB, RA, RB;
+        if (k < 0.4) { a = smooth(k / 0.4); A = this.recoverFromQ; Bq = KNEEL; PA = p0; PB = kneelP; RA = this.recoverFromQ[0]; RB = upQ(0.85); }
+        else if (k < 0.68) { a = smooth((k - 0.4) / 0.28); A = KNEEL; Bq = LUNGE; PA = kneelP; PB = lungeP; RA = upQ(0.85); RB = upQ(0.32); }
+        else { a = smooth((k - 0.68) / 0.32); A = LUNGE; Bq = this.target; PA = lungeP; PB = stand; RA = upQ(0.32); RB = standQ; }
+        for (let i = 1; i < PART_COUNT; i++) this.local[i].copy(A[i]).slerp(Bq[i], a);
+        this.rootPos.lerpVectors(PA, PB, a); this.rootQ.copy(RA).slerp(RB, a);
         // recoverFromQ[0] is a world rotation: local[0] identity in that case
         this.local[0].identity();
         this.fkFrom();
@@ -324,7 +335,7 @@ export class Person {
       const relaxL = Math.max(0, -ws), relaxR = Math.max(0, ws); // which leg is resting
       E(7, -0.06 * relaxL, 0, 0.025 + 0.03 * relaxL); E(8, 0.2 * relaxL); E(9, -0.06 * relaxR, 0, -0.025 - 0.03 * relaxR); E(10, 0.2 * relaxR);
       rootRoll = ws * 0.03 + nz(0.15, 8) * 0.01; rootSide = -ws * 0.025; rootY -= (relaxL + relaxR) * 0.006 * H;
-      if (!this.lookTarget) E(2, nz(0.17, 9) * 0.1, nz(0.09, 10) * 0.45, nz(0.13, 11) * 0.05); // idle glances
+      if (!this.lookTarget) E(2, nz(0.17, 9) * 0.08, nz(0.09, 10) * 0.3, nz(0.13, 11) * 0.04); // idle glances
       // turning on the spot: step the feet round
       const tr = Math.abs(this._turnRate); if (tr > 0.5) { this._turnPh = (this._turnPh || 0) + dt * 9; const k = Math.min(1, (tr - 0.5) / 1.5); const a = Math.max(0, Math.sin(this._turnPh)), c = Math.max(0, -Math.sin(this._turnPh));
         E(7, -0.3 * a * k, 0, 0.03); E(8, 0.6 * a * k); E(9, -0.3 * c * k, 0, -0.03); E(10, 0.6 * c * k); E(1, breathe, clamp(this._turnRate * 0.06, -0.25, 0.25)); }
@@ -388,9 +399,9 @@ export class Person {
       const dx = this.lookTarget.x - hp.x, dz = this.lookTarget.z - hp.z, dy = this.lookTarget.y - (b === 'sit' ? hp.y - 0.45 : hp.y);
       let yawRel = Math.atan2(dx, dz) - this.yaw; yawRel = Math.atan2(Math.sin(yawRel), Math.cos(yawRel));
       const pitch = -Math.atan2(dy, Math.hypot(dx, dz));
-      _q.setFromEuler(_e.set(clamp(pitch, -0.5, 0.5), clamp(yawRel, -1.1, 1.1), 0, 'YXZ'));
+      _q.setFromEuler(_e.set(clamp(pitch, -0.4, 0.4), clamp(yawRel, -0.8, 0.8), 0, 'YXZ'));
       T[2].premultiply(_q);
-      this._eyeYaw = clamp(yawRel - clamp(yawRel, -1.1, 1.1), -0.35, 0.35); this._eyePitch = clamp(pitch * 0.3, -0.3, 0.3);
+      this._eyeYaw = clamp(yawRel - clamp(yawRel, -0.8, 0.8), -0.35, 0.35); this._eyePitch = clamp(pitch * 0.3, -0.3, 0.3);
     } else { this._eyeYaw = 0; this._eyePitch = 0; }
     // root
     this.rootPos.set(this.pos.x + Math.cos(this.yaw) * rootSide, this.pos.y + rootY, this.pos.z - Math.sin(this.yaw) * rootSide);
