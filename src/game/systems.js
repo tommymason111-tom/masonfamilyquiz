@@ -252,6 +252,7 @@ export class Systems {
   }
   onRoundEnd(r) { this.deadPens = false; if (r === 1) this.refillBuffet(); }
   chaos(e) {
+    if (G.modes?.quiet?.()) return;
     if (G.quiz?.phase === 'ceremony' || G.quiz?.phase === 'end') return;
     const T = (t, s = 4) => G.ui?.toast(t, s);
     switch (e) {
@@ -307,6 +308,7 @@ export class Systems {
   // ---------------- per frame ----------------
   update(dt) {
     const t = G.time;
+    if (G.modes?.quiet?.()) { this.banterV = Math.max(0, this.banterV - dt * 0.15); this.tvGlitchOn = this.tvGlitch > t; return; } // the game modes: no roasts, chaos, kid throws, random orders or coaster nagging
     // Banter: Paul roasts every 60-90 s; Dan's jokes calm things
     if (t > this.nextRoast && G.quiz?.phase !== 'arrival') { this.nextRoast = t + rand(60, 90); this.roast(false); }
     if (t > this.nextJoke) { this.nextJoke = t + rand(80, 140); const d = G.charByName.Dan; if (d && !d.isDown() && !d.brain?.quiet) { d.say(pick(d.lines.joke), { prio: 1 }); this.stats.jokes++; setTimeout(() => this.laughWave(d), 2200); } }

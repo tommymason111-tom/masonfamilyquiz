@@ -103,6 +103,8 @@ export const CATALOG = {
   juice: { name: 'Juice carton', geo: () => P().box(0.07, 0.18, 0.07, '#ffd60a').box(0.072, 0.07, 0.072, '#f77f00', 0, -0.02, 0).box(0.07, 0.02, 0.05, '#ffffff', 0, 0.1, 0, 0.6).build(), shape: ['box', 0.035, 0.1, 0.035], mass: 0.6, drink: 'juice', use: 'drink', uses: 6 },
   milk: { name: 'Milk', geo: () => P().rbox(0.1, 0.22, 0.1, 0.02, '#f4f8f8').cyl(0.018, 0.018, 0.03, '#1d6a2f', 0.02, 0.12, 0).box(0.02, 0.06, 0.06, '#f4f8f8', -0.06, 0.03, 0).build(), shape: ['box', 0.05, 0.11, 0.05], mass: 1.1, drink: 'milk', use: 'drink', uses: 6 },
   cream_can: { name: 'Squirty cream', geo: () => P().cyl(0.03, 0.03, 0.17, '#ffffff', 0, 0, 0).cone(0.012, 0.04, '#e8e8e8', 0, 0.105, 0).build(), shape: ['cyl', 0.1, 0.03], mass: 0.3 },
+  pint_full: { name: 'Pint of beer', geo: () => P().lathe([[0, -0.08], [0.036, -0.08], [0.044, 0.06], [0, 0.06]], '#c8861a', 0, 0, 0, 18).lathe([[0, 0.058], [0.044, 0.058], [0.045, 0.08], [0.04, 0.084], [0, 0.084]], '#f6efd8', 0, 0, 0, 18).torus(0.045, 0.002, '#dfe8ec', 0, 0.08, 0, Math.PI / 2).build(), shape: ['cyl', 0.08, 0.045], mass: 0.6, drink: 'lager', use: 'drink', uses: 5, fragile: 6, sound: 'clink', kind: 'glass' },
+  wine_full: { name: 'Glass of wine', geo: () => P().lathe([[0, -0.1], [0.035, -0.1], [0.035, -0.095], [0.005, -0.09], [0.005, -0.02], [0.03, 0.0], [0.04, 0.05], [0, 0.05]], '#dfe8ec', 0, 0, 0, 18).lathe([[0, 0.002], [0.029, 0.004], [0.039, 0.045], [0, 0.045]], '#7a1028', 0, 0, 0, 18).lathe([[0.039, 0.05], [0.038, 0.1], [0.036, 0.1], [0.037, 0.05]], '#dfe8ec', 0, 0, 0, 18).build(), shape: ['cyl', 0.1, 0.038], mass: 0.25, drink: 'wine', use: 'drink', uses: 4, fragile: 5, sound: 'clink', kind: 'glass' },
   pint_glass: { name: 'Pint glass', geo: () => P().lathe([[0, -0.08], [0.036, -0.08], [0.045, 0.08], [0.043, 0.08], [0.034, -0.075], [0, -0.075]], '#e8f0f4', 0, 0, 0, 18).build(), mat: glassMat, shape: ['cyl', 0.08, 0.045], mass: 0.4, fragile: 6, sound: 'clink', kind: 'glass' },
   tumbler: { name: 'Tumbler', geo: () => P().lathe([[0, -0.045], [0.04, -0.045], [0.042, 0.045], [0.039, 0.045], [0.037, -0.04], [0, -0.04]], '#e8f0f4', 0, 0, 0, 16).build(), mat: glassMat, shape: ['cyl', 0.045, 0.042], mass: 0.25, fragile: 6, sound: 'clink', kind: 'glass' },
   mug: { name: 'Mug', geo: () => P().cyl(0.042, 0.04, 0.1, '#ffffff', 0, 0, 0, 0, 0, 0, 16).torus(0.03, 0.008, '#ffffff', 0.05, 0, 0, 0, 0, 0).build(), shape: ['cyl', 0.05, 0.045], mass: 0.3, tints: ['#ffffff', '#c1121f', '#1d3557', '#2d6a4f', '#ffd60a'], fragile: 7, sound: 'clink' },
@@ -300,6 +302,9 @@ export function buildHinged() {
         if (this.closeSpring && !this.closed && !this.held) { const s = axis.y ? { x: 0, y: 1, z: 0 } : axis.x ? { x: 1, y: 0, z: 0 } : { x: 0, y: 0, z: 1 }; const sign = (limits[0] + limits[1]) > 0 ? -1 : 1; body.applyTorqueImpulse({ x: s.x * sign * closeSpring * dt, y: s.y * sign * closeSpring * dt, z: s.z * sign * closeSpring * dt }, true); }
       },
       lock(on) { this.locked = on; body.setBodyType(on ? R.RigidBodyType.Fixed : R.RigidBodyType.Dynamic, true); },
+      // swing it open to an angle and hold it there (Drinks Run: the fridges start open)
+      open(angle) { const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(axis.x, axis.y, axis.z), angle); const c = this.center0.clone().sub(this.hingePos).applyQuaternion(q).add(this.hingePos);
+        body.setBodyType(R.RigidBodyType.Fixed, true); body.setTranslation(c, true); body.setRotation(q, true); this.held = true; this.update(0); },
     };
     G.colliderMap.set(col.handle, { kind: 'hinged', ref: h });
     h.update(0); out.push(h); return h;
@@ -324,10 +329,10 @@ export function buildHinged() {
     staticBox(cx - w / 2 + 0.02, h / 2, cz, 0.02, h / 2, d / 2); staticBox(cx + w / 2 - 0.02, h / 2, cz, 0.02, h / 2, d / 2); staticBox(cx, h / 2, backZ + s * 0.02, w / 2, h / 2, 0.02);
     for (const y of shelves) staticBox(cx, y, cz + s * 0.03, w / 2 - 0.04, 0.006, d / 2 - 0.05);
     const light = new THREE.PointLight('#e8f4ff', 0, 1.6, 2); light.position.set(cx, h * 0.8, cz + s * 0.05); G.scene.add(light);
-    const dg = new Prop().rbox(w, h, 0.06, 0.02, color).box(0.03, h * 0.5, 0.04, '#999', w / 2 - 0.08, 0.1, s * 0.05);
+    const dg = new Prop().rbox(w, h, 0.06, 0.02, color).box(0.03, h * 0.5, 0.04, '#999', -(w / 2 - 0.08), 0.1, s * 0.05); // handle on the left (opening) edge
     for (let i = 0; i < 3; i++) dg.box(w - 0.12, 0.02, 0.1, '#e8eef2', 0, -h * 0.3 + i * h * 0.3, -s * 0.08).box(w - 0.12, 0.08, 0.01, '#e8eef2', 0, -h * 0.27 + i * h * 0.3, -s * 0.13);
-    const hingeX = cx - w / 2;
-    const door = hinge({ name, size: [w, h, 0.06], center: V(cx, h / 2, frontZ + s * 0.035), hinge: V(hingeX, h / 2, frontZ + s * 0.035), axis: { x: 0, y: 1, z: 0 }, limits: s > 0 ? [-2.0, 0.02] : [-0.02, 2.0], mass: 8, geo: dg.build(), kind: 'fridge' });
+    const hingeX = cx + w / 2; // hinged on the right, so it swings open left-to-right, clear of the cupboard beside it
+    const door = hinge({ name, size: [w, h, 0.06], center: V(cx, h / 2, frontZ + s * 0.035), hinge: V(hingeX, h / 2, frontZ + s * 0.035), axis: { x: 0, y: 1, z: 0 }, limits: s > 0 ? [-0.02, 1.6] : [-1.6, 0.02], mass: 8, geo: dg.build(), kind: 'fridge' });
     door.light = light; door.isFridge = true;
     const up = door.update.bind(door); door.update = (dt) => { up(dt); light.intensity = door.closed ? 0 : 2.5; };
     return door;

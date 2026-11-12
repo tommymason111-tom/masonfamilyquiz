@@ -100,7 +100,7 @@ export class MiniGames {
   }
   tick_sproutPong(a) {
     if (G.frame % 4) return;
-    for (const s of G.items.byType.sprout || []) { if (a.counted.has(s)) continue; const p = s.body.translation(); for (const c of a.cups) { if (Math.hypot(p.x - c.x, p.z - c.z) < 0.062 && p.y > c.y && p.y < c.y + 0.15) { a.counted.add(s); a.score++; sfx('ding', p, 0.7); G.ui?.toast(`IN THE CUP! (${a.score})`, 1.2); c.mesh.scale.setScalar(1.12); setTimeout(() => c.mesh.scale.setScalar(1), 160); this.cheer(); break; } } }
+    for (const s of G.items.byType.sprout || []) { if (a.counted.has(s)) continue; const p = s.body.translation(); for (const c of a.cups) { if (Math.hypot(p.x - c.x, p.z - c.z) < 0.062 && p.y > c.y && p.y < c.y + 0.15) { a.counted.add(s); a.score++; sfx('ding', p, 0.7); G.ui?.toast(`IN THE CUP! (${a.score})`, 1.2, { game: true }); c.mesh.scale.setScalar(1.12); setTimeout(() => c.mesh.scale.setScalar(1), 160); this.cheer(); break; } } }
     // sprouts run out? put a few more out
     if ((G.items.byType.sprout || []).length < 60 && (G.items.byType.sprout || []).filter(s => !a.counted.has(s) && s.body.translation().y > 0.5).length < 3) for (let k = 0; k < 6; k++) this.spawn('sprout', new THREE.Vector3(TABLE.x - 0.2 + k * 0.08, TABLE.y + 0.03, TABLE.z1 - 0.12));
   }
@@ -181,14 +181,14 @@ export class MiniGames {
     if (opp.state === 'anim' && opp.sumo) {
       const pp = G.player.pos; const d = new THREE.Vector3(pp.x - opp.pos.x, 0, pp.z - opp.pos.z); const dist = d.length(); d.normalize();
       opp.yaw = Math.atan2(d.x, d.z); a.lunge -= dt;
-      if (a.lunge < 0) { a.lunge = rand(1.2, 2.2) * (1 + a.meter); if (dist > 0.7) opp.pos.addScaledVector(d, Math.min(0.3, dist - 0.65)); else if (a.meter < 0.5) { const np = pp.clone().addScaledVector(d, 0.35); G.player.teleport(np.x, np.z, G.player.yaw); sfx('thud', pp, 0.8); G.ui?.toast('SHOVED!', 0.8); } }
+      if (a.lunge < 0) { a.lunge = rand(1.2, 2.2) * (1 + a.meter); if (dist > 0.7) opp.pos.addScaledVector(d, Math.min(0.3, dist - 0.65)); else if (a.meter < 0.5) { const np = pp.clone().addScaledVector(d, 0.35); G.player.teleport(np.x, np.z, G.player.yaw); sfx('thud', pp, 0.8); G.ui?.toast('SHOVED!', 0.8, { game: true }); } }
       const pr = Math.hypot(G.player.pos.x - R.x, G.player.pos.z - R.z); if (pr > R.r + 0.1) return this.boutOver(a, false, "You're out of the ring!");
       // keep them on the sand until they're beaten
       const or = Math.hypot(opp.pos.x - R.x, opp.pos.z - R.z); if (or > R.r - 0.15) { opp.pos.x = R.x + (opp.pos.x - R.x) * (R.r - 0.15) / or; opp.pos.z = R.z + (opp.pos.z - R.z) * (R.r - 0.15) / or; }
     }
     meters([{ label: `${opp.name} · WOBBLE`, value: a.meter, color: a.meter > 0.8 ? '#ff4d4d' : '#ffd700' }]);
     if (a.meter >= 1 && !opp.sumoReady) {
-      if (G.xr) { opp.sumoReady = true; G.ui?.toast('OFF BALANCE! GRAB THEM AND THROW THEM OUT!', 2.5); sfx('whistle', null, 0.6); }
+      if (G.xr) { opp.sumoReady = true; G.ui?.toast('OFF BALANCE! GRAB THEM AND THROW THEM OUT!', 2.5, { game: true }); sfx('whistle', null, 0.6); }
       else { opp.sumoReady = true; const d = new THREE.Vector3(opp.pos.x - G.player.pos.x, 0, opp.pos.z - G.player.pos.z).normalize(); opp.sumo = null; opp.knock(d.multiplyScalar(opp.mass * 7).setY(opp.mass * 3.2), 1, { force: true }); sfx('bigthud', opp.pos, 1); }
     }
     if (opp.sumoReady && a.meter < 0.55 && opp.state === 'anim' && opp.sumo) opp.sumoReady = false; // they got their balance back
@@ -238,7 +238,7 @@ export class MiniGames {
       if (Math.hypot(hp.x - e.x, hp.z - e.z) < 1.0 && Math.abs(hp.y - e.y) < 1.7) {
         e.found = true; a.found++; sfx('ding', new THREE.Vector3(e.x, e.y, e.z), 1); sfx('cheer', null, 0.4);
         let k = 0; const pop = () => { k++; e.grp.scale.setScalar(1 + k * 0.25); e.grp.position.y += 0.03; e.sp.material.opacity = 1 - k / 8; if (k < 8) setTimeout(pop, 30); else G.scene.remove(e.grp); }; pop();
-        G.ui?.toast(`🧝 MAGIC ELF FOUND! ${a.found}/5`, 1.8);
+        G.ui?.toast(`🧝 MAGIC ELF FOUND! ${a.found}/5`, 1.8, { game: true });
         if (a.found >= 5) { a.score = Math.max(1, Math.round(a.t)); this.stop(a); }
       }
     }
@@ -263,13 +263,13 @@ export class MiniGames {
       if (a.t > a.stopAt) { a.playing = false; stopMusic(); sfx('click', null, 1);
         if (a.holder === 0) { timer('IT\'S YOU!', 'TEAR IT!', true); a.tearing = true; const until = a.t + 2.2; a.tearUntil = until; a.removeBtn = tapButton('TEAR!', () => { if (!a.tearing) return; a.tearing = false; a.removeBtn?.(); this.tore(a, true); }); }
         else { const p = a.people[a.holder - 1]; timer(`${p.name}!`, 'MUSIC STOPPED'); setTimeout(() => this.tore(a, false, p), 1100); } } }
-    if (a.tearing && a.t > a.tearUntil) { a.tearing = false; a.removeBtn?.(); G.ui?.toast('Too slow! It goes round again.', 2); G.ai.say('Paul', 'Tear it, then!', 1); setTimeout(() => this.parcelMusic(a), 1200); }
-    if (a.playing && (G.player.controls.btn('use').pressed)) { a.score = Math.max(0, a.score - 1); G.ui?.toast('You tore it while the music was playing! -1', 2); }
+    if (a.tearing && a.t > a.tearUntil) { a.tearing = false; a.removeBtn?.(); G.ui?.toast('Too slow! It goes round again.', 2, { game: true }); G.ai.say('Paul', 'Tear it, then!', 1); setTimeout(() => this.parcelMusic(a), 1200); }
+    if (a.playing && (G.player.controls.btn('use').pressed)) { a.score = Math.max(0, a.score - 1); G.ui?.toast('You tore it while the music was playing! -1', 2, { game: true }); }
   }
   tore(a, mine, p) {
     if (!a.live) return; a.layers--; sfx('rip', a.parcel?.body.translation(), 1);
     const b = this.spawn('paper_ball', new THREE.Vector3().copy(a.parcel.body.translation()).add(new THREE.Vector3(0, 0.25, 0))); b?.body.setLinvel({ x: rand(-1, 1), y: 2, z: rand(-1, 1) }, true);
-    if (mine) { a.score++; G.ui?.toast(`You tear a layer! (${a.score})`, 1.5); } else { p?.say(pick(['Mine!', 'Ooh!', 'Is it a satsuma?']), { prio: 0 }); }
+    if (mine) { a.score++; G.ui?.toast(`You tear a layer! (${a.score})`, 1.5, { game: true }); } else { p?.say(pick(['Mine!', 'Ooh!', 'Is it a satsuma?']), { prio: 0 }); }
     if (a.layers <= 0) { const prize = this.spawn('satsuma', new THREE.Vector3().copy(a.parcel.body.translation()).add(new THREE.Vector3(0, 0.3, 0))); prize?.body.setLinvel({ x: 0, y: 1.5, z: 0 }, true);
       if (mine) a.score += 2; card({ kicker: 'THE PRIZE IS…', title: 'A SATSUMA', sub: mine ? 'All yours. +2' : `${p?.name || 'They'} got it.`, secs: 2.2 }).then(() => this.stop(a)); return; }
     setTimeout(() => this.parcelMusic(a), 1300);
@@ -292,7 +292,7 @@ export class MiniGames {
     const zone = new THREE.Mesh(new THREE.RingGeometry(0.0, 0.5, 4, 1), new THREE.MeshBasicMaterial({ color: '#ffd700', transparent: true, opacity: 0.45 })); zone.rotation.set(-Math.PI / 2, 0, Math.PI / 4); zone.position.set(a.zone.x, 0.02, a.zone.z); G.scene.add(zone); a.zoneMesh = zone;
     G.player.teleport(2.0, -7.0, -Math.PI / 2); G.player.pitch = -0.3;
     this.park(this.reps(2), [[3.1, -6.6], [2.4, -6.5]], [a.zone.x, a.zone.z]); }
-  tick_giftGrab(a) { if (G.frame % 10) return; let n = 0; for (const id of ['present_s', 'present_m', 'present_l']) for (const p of G.items.byType[id] || []) { const t = p.body.translation(); if (Math.abs(t.x - a.zone.x) < 0.5 && Math.abs(t.z - a.zone.z) < 0.5) n++; } if (n > a.score) { sfx('ding', null, 0.6); G.ui?.toast(`In the square! (${n})`, 1.2); } a.score = n; a.zoneMesh.material.opacity = 0.35 + Math.sin(G.time * 5) * 0.15; }
+  tick_giftGrab(a) { if (G.frame % 10) return; let n = 0; for (const id of ['present_s', 'present_m', 'present_l']) for (const p of G.items.byType[id] || []) { const t = p.body.translation(); if (Math.abs(t.x - a.zone.x) < 0.5 && Math.abs(t.z - a.zone.z) < 0.5) n++; } if (n > a.score) { sfx('ding', null, 0.6); G.ui?.toast(`In the square! (${n})`, 1.2, { game: true }); } a.score = n; a.zoneMesh.material.opacity = 0.35 + Math.sin(G.time * 5) * 0.15; }
   end_giftGrab(a) { G.scene.remove(a.zoneMesh); }
 
   // hooks from interact.js

@@ -39,7 +39,7 @@ export class Player {
   knockDown(from) {
     const d = new THREE.Vector3(this.pos.x - from.x, 0, this.pos.z - from.z); if (d.lengthSq() < 1e-4) d.set(0, 0, 1); d.normalize();
     this.releaseAll?.(); sfx('bigthud', this.pos, 1); sfx('oof', this.pos, 0.9);
-    if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8, this.yaw); G.ui?.toast('KNOCKED FLAT!', 2); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
+    if (G.xr) { this.teleport(this.pos.x + d.x * 0.8, this.pos.z + d.z * 0.8, this.yaw); G.ui?.toast('KNOCKED FLAT!', 2, { game: true }); try { for (const h of Object.values(this.xrIn.hands)) h?.source?.gamepad?.hapticActuators?.[0]?.pulse(1, 300); } catch (e) { /* no haptics */ } return; }
     this.downT = 2.8; this.downPush = d.multiplyScalar(0.9); G.fx?.shake && (G.fx.shake = 0.03);
   }
   forward(out = new THREE.Vector3()) { return G.camera.getWorldDirection(out); }
@@ -194,7 +194,7 @@ export class Player {
     else if (f.kind === 'char') {
       const p = f.ref; if (p.sumo && !p.sumoReady) { p.sumo(null, true); return false; } // sumo: they plant their feet until they're off balance if (p.state === 'recover') p.state = 'anim'; p.playerHitT = G.time;
       p.knock(null, f.part ?? 1, { muscle: 0.12 }); body = p.bodies[f.part ?? 1]; p.heldBy.add(holder);
-      holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; holder.part = f.part ?? 1; holder.person = p;
+      holder.totalMass = p.mass; holder.maxF = (key === 'D') ? (p.heavy ? 1300 : 1500) : 1000; if (G.modes?.id === 'fling') { holder.totalMass *= 0.4; holder.maxF *= 1.7; } // Fling the Relative: they feel light so you can really launch them holder.part = f.part ?? 1; holder.person = p;
       sfx('oof', f.point, 0.8); p.setMood('shock', 2);
       if (Math.random() < 0.6) setTimeout(() => p.bark('thrown', { prio: 1 }), 300);
       emit('grabPerson', p);

@@ -136,6 +136,8 @@
   *:not(input):not(textarea):not(select) { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
   canvas { touch-action:none; }
   body.mode-games #subs, body.mode-fling #subs { display:none; } /* no chat over the mini games and the fling */
+  #modeHud .hvbar { height:12px; border-radius:6px; background:rgba(0,0,0,.5); border:2px solid #fff; overflow:hidden; margin:4px 0; min-width:180px; } #modeHud .hvbar i { display:block; height:100%; background:linear-gradient(90deg,#ffd700,#ff8a00,#ff2a2a); transition:width .2s; }
+  #modeHud .hvcombo { font:900 20px Georgia,serif; color:#ffd700; text-shadow:0 2px 0 #7a1020; animation: pulseT .3s infinite alternate; }
 </style>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }

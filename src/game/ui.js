@@ -69,7 +69,8 @@ class UI {
     } catch (e) { this.toast('Could not start VR: ' + e.message, 5); }
   }
   // ---------------- toasts / subtitles / bubbles ----------------
-  toast(text, secs = 3) {
+  toast(text, secs = 3, opts = {}) {
+    if (G.modes?.quiet?.() && !opts.game) return; // no random notifications in the game modes (only the game's own messages)
     const el = document.createElement('div'); el.className = 'toast'; el.textContent = text; $('toasts').appendChild(el);
     while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
     setTimeout(() => el.remove(), secs * 1000);

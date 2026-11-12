@@ -486,7 +486,10 @@ export class Person {
       }
     }
   }
-  say(text, opts) { return say(this, text, opts); }
+  say(text, opts) {
+    if (this.isPlayer) return 0; // whoever you're playing as doesn't talk
+    if (G.modes?.speech) { text = G.modes.speech(this, text, opts || {}); if (!text) return 0; } // what people talk about follows the game mode
+    return say(this, text, opts); }
   bark(kind, opts) { const l = this.lines[kind]; if (l && l.length) return this.say(pick(l), opts); return 0; }
   attach(obj, boneName, pos, rot) {
     const bi = B[boneName]; let b = this.bones[bi];

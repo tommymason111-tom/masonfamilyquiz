@@ -176,7 +176,7 @@ export class XRInput {
   onRelease(rec) {
     const p = this.player; const h = p.holders[rec.key]; if (!h) return;
     const sp = rec.vel.length();
-    p.release(rec.key, sp > 1.0 ? rec.vel.clone().multiplyScalar(h.kind === 'char' ? (h.twoHand ? 1.2 : 1.0) : 1.35) : null);
+    p.release(rec.key, sp > 1.0 ? rec.vel.clone().multiplyScalar(h.kind === 'char' ? (h.twoHand ? 1.2 : 1.0) * (G.modes?.id === 'fling' ? 1.7 : 1) : 1.35) : null);
   }
   onPinch(rec, head) {
     const p = this.player;
