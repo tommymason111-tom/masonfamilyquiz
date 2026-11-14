@@ -9,6 +9,8 @@ import { loadStore } from './settings.js';
 const $ = (id) => document.getElementById(id);
 export function initHome() {
   snow(); garland(); baubles(); honour(); countdown(); teamCards(false);
+  // the ⚙️ info corner (facts, the Mason Cup, tonight, tips and the version)
+  const box = $('homeInfo'); const gear = $('homeGear'); if (box && gear) { gear.onclick = () => box.classList.add('open'); $('homeInfoClose').onclick = () => box.classList.remove('open'); box.onclick = (e) => { if (e.target === box) box.classList.remove('open'); }; }
 }
 export function homeProgress(f) { const el = $('caneFill'); if (el) el.style.width = Math.round(4 + f * 96) + '%'; }
 

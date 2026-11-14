@@ -184,26 +184,29 @@
   <div class="bunting" id="bunting"></div>
   <div class="hang" id="hang"></div>
   <div class="holly tl"></div><div class="holly tr"></div>
+  <!-- the ⚙️ info corner: everything that isn't the title, PLAY and the loading bar -->
+  <button class="homegear" id="homeGear" aria-label="Info">⚙️</button>
+  <div class="homeinfo" id="homeInfo"><div class="hiCard"><button class="hiClose" id="homeInfoClose" aria-label="Close">✕</button>
+    <h3>🎄 The 2026 Boxing Day Edition</h3>
+    <div class="facts" id="facts"></div>
+    <h3>🏆 The Mason Cup</h3><div id="honour"></div>
+    <h3>🎅 Tonight</h3><ul id="tonightList"><li>Gary's Outfit Wheel: <b>???</b></li><li>5 rounds + a picture round</li><li>Martin is marking. Harshly.</li><li>Paul <i>will</i> argue with the answers</li><li>Chip is on buffet patrol</li></ul>
+    <p id="countdown" class="hiTip"></p>
+    <p class="hiTip">Turn your sound on 🔊 · On iPhone, flip the silent switch off · Best in landscape</p>
+    <p id="build" class="hiTip">Version: loading…</p>
+  </div></div>
   <div class="homewrap">
-    <div class="edition">✦ The 2026 Boxing Day Edition ✦</div>
     <h1 class="title"><i class="xstar">⭐</i><span>The Mason Family</span><b><i class="xhat"><svg viewBox="0 0 60 54"><path d="M6 44 Q22 4 50 10 Q42 24 46 40 Z" fill="#d01a24"/><path d="M50 10 Q58 14 54 22" stroke="#d01a24" stroke-width="6" fill="none"/><circle cx="54" cy="24" r="6" fill="#fff"/><rect x="2" y="40" width="48" height="11" rx="5.5" fill="#fff"/></svg></i>Boxing Day Quiz</b><em>— THE GAME —</em></h1>
-    <div class="ribbon"><span>Boxing Day · 8pm · Back from the meal out · Uncle Martin's · Three families · One disputed answer sheet</span></div>
-    <div class="teams" id="teams" style="display:none"></div>
-    <div class="row3">
-      <div class="panel" id="cupPanel"><h3>🏆 The Mason Cup</h3><div id="honour"></div></div>
-      <div class="panel center">
-        <div id="startBtns" style="display:none">
-          <button class="tag" id="btnPlay"><i>🎁</i><span id="playLbl">PLAY</span><small>choose who you are &amp; the game</small></button>
-          <button class="tag vr" id="btnVR" style="display:none"><i>🥽</i>Enter VR<small>Meta Quest 3 · hand tracking</small></button>
-        </div>
-        <div class="cane"><i id="caneFill"></i></div>
-        <p id="loadStatus">Unwrapping the family…</p>
-        <p id="build" style="font-size:11px;opacity:.55;margin:2px 0 0">Version: loading…</p>
-        <div class="facts" id="facts"></div>
+    <div class="panel center homemain">
+      <div id="startBtns" style="display:none">
+        <button class="tag" id="btnPlay"><i>🎁</i><span id="playLbl">PLAY</span><small>choose who you are &amp; the game</small></button>
+        <button class="tag vr" id="btnVR" style="display:none"><i>🥽</i>Enter VR<small>Meta Quest 3 · hand tracking</small></button>
       </div>
-      <div class="panel" id="tonight"><h3>🎄 Tonight</h3><ul id="tonightList"><li>Gary's Outfit Wheel: <b>???</b></li><li>5 rounds + a picture round</li><li>Martin is marking. Harshly.</li><li>Paul <i>will</i> argue with the answers</li><li>Chip is on buffet patrol</li></ul><div id="countdown"></div></div>
+      <div class="cane"><i id="caneFill"></i></div>
+      <p id="loadStatus">Unwrapping the family…</p>
     </div>
-    <div class="foot">Turn your sound on 🔊 · On iPhone, flip the silent switch off · Best in landscape</div>
+    <p class="homedesc">Boxing Day · 8pm · Back from the meal out · Uncle Martin's · Three families · One disputed answer sheet</p>
+    <div class="teams" id="teams" style="display:none"></div>
   </div>
 </div>
 <div id="hud" style="display:none">
