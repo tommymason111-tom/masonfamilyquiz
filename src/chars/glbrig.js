@@ -5,6 +5,7 @@
 //    existing animation, physics, grabbing, throwing and getting-up work unchanged.
 import * as THREE from 'three';
 import { GLTFLoader } from '../../lib/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from '../../lib/addons/libs/meshopt_decoder.module.js';
 import { BONES, PARENT, PART_COUNT, computeDims } from './body.js';
 
 export const MODEL_FILES = { Paul: 'paul', Karen: 'karen', Charli: 'charli', Martin: 'martin', Julie: 'julie', Hollie: 'hollie', Sophie: 'sophie', James: 'james', Debbie: 'debbie', Gary: 'gary', Kirsty: 'kirsty', Jodie: 'jodie', Harry: 'harry', Bradley: 'bradley', Dan: 'dan', Tommy: 'tommy' };
@@ -25,11 +26,16 @@ export const ARM_MARKS = {
   Karen: { L: [[0.109, 0.814, 0], [0.122, 0.825, 0.142], [0.140, 0.857, 0.262]], R: [[-0.109, 0.814, 0], [-0.122, 0.825, 0.142], [-0.140, 0.857, 0.262]] },
 };
 
+// the scans are shipped compressed (meshopt, quantized ints): turn every attribute back into plain floats before the rigging works on it
+function toFloat(geo) { for (const k of Object.keys(geo.attributes)) { const a = geo.attributes[k]; if (a.array instanceof Float32Array && !a.normalized && !a.isInterleavedBufferAttribute) continue;
+    const n = a.count, sz = a.itemSize, out = new Float32Array(n * sz); for (let i = 0; i < n; i++) { out[i * sz] = a.getX(i); if (sz > 1) out[i * sz + 1] = a.getY(i); if (sz > 2) out[i * sz + 2] = a.getZ(i); if (sz > 3) out[i * sz + 3] = a.getW(i); }
+    geo.setAttribute(k, new THREE.BufferAttribute(out, sz)); }
+  return geo; }
 export async function loadModels(onProgress, base = '') {
-  const loader = new GLTFLoader(); const names = [...Object.keys(MODEL_FILES), 'Chip']; let done = 0;
+  const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder); const names = [...Object.keys(MODEL_FILES), 'Chip']; let done = 0;
   await Promise.all(names.map(n => new Promise((res) => {
     const file = n === 'Chip' ? 'chip' : MODEL_FILES[n];
-    loader.load(`${base}assets/models/${file}.glb`, (g) => { let mesh = null; g.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; }); if (mesh) { mesh.updateWorldMatrix(true, false); const geo = mesh.geometry.clone(); geo.applyMatrix4(mesh.matrixWorld); models[n] = { geo, mat: mesh.material }; } onProgress && onProgress(++done / names.length, n); res(); }, undefined, () => { onProgress && onProgress(++done / names.length, n); res(); });
+    loader.load(`${base}assets/models/${file}.glb`, (g) => { let mesh = null; g.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; }); if (mesh) { mesh.updateWorldMatrix(true, false); const geo = toFloat(mesh.geometry.clone()); geo.applyMatrix4(mesh.matrixWorld); models[n] = { geo, mat: mesh.material }; } onProgress && onProgress(++done / names.length, n); res(); }, undefined, () => { onProgress && onProgress(++done / names.length, n); res(); });
   })));
   return models;
 }

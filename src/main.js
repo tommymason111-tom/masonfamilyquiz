@@ -19,23 +19,28 @@ import { Dog } from './chars/dog.js';
 import { DogProc } from './chars/dogproc.js';
 import { models } from './chars/glbrig.js';
 import { MiniGames } from './game/minigames.js';
-import { loadSettings } from './game/settings.js';
+import { loadSettings, loadStore, saveStore } from './game/settings.js';
 import { loadModels } from './chars/glbrig.js';
 import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '13 Nov 2026 · centred v50';
+export const BUILD = '13 Nov 2026 · faster load v51';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
-const status = (t, f) => { const el = document.getElementById('loadStatus'); if (el) el.textContent = t; if (f !== undefined) homeProgress(f); };
+const T0 = performance.now(); G.bootLog = [];
+const status = (t, f) => { G.bootLog.push([Math.round(performance.now() - T0), t]); const el = document.getElementById('loadStatus'); if (el) el.textContent = t; if (f !== undefined) homeProgress(f); };
 
 async function boot() {
+  document.body.classList.add('booting');
   G.settings = loadSettings();
   initHome();
+  // start downloading the family straight away, while physics starts and the house is built (they used to wait until after)
+  let arrived = 0; const familyP = loadModels((f, n) => { arrived = f; status(`The family are arriving… ${n} is here`, 0.25 + f * 0.6); });
+  const breathe = () => new Promise(r => setTimeout(r, 0)); // let the loading screen draw a frame between the big steps
   status('Starting physics…', 0.05);
-  await initPhysics();
+  await initPhysics(); await breathe();
   const quest = /OculusBrowser|Quest/i.test(navigator.userAgent), phone = !quest && (matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent));
   // phones: no multisampling (costly on a high-DPI screen) and a capped resolution that adapts to keep it smooth; the Quest keeps AA for the headset
   const renderer = new THREE.WebGLRenderer({ antialias: !phone, powerPreference: 'high-performance' });
@@ -47,7 +52,7 @@ async function boot() {
   renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
   renderer.xr.setFoveation?.(1); renderer.xr.setFramebufferScaleFactor?.(quest ? 0.9 : 1); // the headset: full fixed foveation, a touch under native resolution
   document.getElementById('app').appendChild(renderer.domElement);
-  G.renderer = renderer;
+  G.renderer = renderer; renderer.debug.checkShaderErrors = false; // don't stall on every shader to read its log: lets the browser compile them in parallel (much faster start-up)
   const scene = new THREE.Scene(); G.scene = scene;
   scene.background = new THREE.Color('#0d1530');
   scene.fog = new THREE.Fog('#0b1022', 28, 110);
@@ -59,12 +64,13 @@ async function boot() {
   fitFov();
   G.clock = new THREE.Clock();
   status('Building Martin\'s house…', 0.12);
-  buildHouse();
+  buildHouse(); await breathe();
   status('Filling it with stuff…', 0.2);
   new Items().build();
-  buildTree(G.house.spots.tree.clone());
-  status('The family are arriving…');
-  await loadModels((f, n) => status(`The family are arriving… ${n} is here`, 0.25 + f * 0.65));
+  buildTree(G.house.spots.tree.clone()); await breathe();
+  if (arrived < 1) status('The family are arriving…');
+  await familyP; await breathe();
+  status('Everyone\'s taking their coats off…', 0.88); await breathe();
   createPeople();
   if (models.Chip) new Dog(); else new DogProc();
   new AI();
@@ -81,12 +87,16 @@ async function boot() {
   document.addEventListener('gesturestart', (e) => e.preventDefault()); // no pinch-zoom of the whole page on iOS
   const unlock = () => { initAudio(); resumeAudio(); };
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
-  status('Taking the family photo…', 0.95);
-  renderer.compile(scene, camera);
-  try { G.portraits = renderPortraits(); teamCards(true, G.portraits); } catch (e) { console.warn(e); }
+  // the family photos: saved on the device after the first time, so later loads don't redo them; the first time they're taken
+  // just after the game is up, so they don't hold up PLAY
+  const PKEY = 'portraits.v2.' + Object.keys(G.charByName).length; const cached = loadStore(PKEY, null);
+  if (cached && G.chars.every(p => cached[p.name])) { G.portraits = cached; try { teamCards(true, G.portraits); } catch (e) { /* cosmetic */ } }
+  else setTimeout(() => requestAnimationFrame(() => { try { G.portraits = renderPortraits(); teamCards(true, G.portraits); saveStore(PKEY, G.portraits); } catch (e) { console.warn(e); } }), 250);
+  renderer.compile(scene, camera); // warm up the shaders now (in parallel, see above) rather than on the first frames
   document.getElementById('loading').classList.add('live');
   const facts = document.getElementById('facts'); if (facts) facts.innerHTML = [`${G.chars.length - 1} relatives`, '1 dog', `${G.items.count()} things to throw`, `${G.quiz.bank.length + 12} questions`, '5 rounds', '25 things that go wrong'].map(t => `<span>${t}</span>`).join('');
   status('Ready! Everyone\'s here.', 1);
+  document.body.classList.remove('booting');
   emit('ready'); window.__G = G;
   renderer.setAnimationLoop(loop);
 }
