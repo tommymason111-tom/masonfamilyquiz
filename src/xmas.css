@@ -94,3 +94,18 @@ html #pop .timer { background: linear-gradient(#8a1424, #3a0810) !important; bor
 html #pop .tap { background: radial-gradient(circle at 40% 35%, #ff6b6b, #b3141c) !important; box-shadow: 0 0 0 6px rgba(255,255,255,.9), 0 0 0 10px #1f6a35, 0 12px 26px rgba(0,0,0,.5) !important; }
 .tbtn { border-color: rgba(255,215,106,.8) !important; }
 .mgact button { background: repeating-linear-gradient(-45deg, rgba(208,26,36,.95) 0 10px, rgba(179,20,28,.95) 10px 20px) !important; }
+
+/* ---------- centred on screen: the home menu and the setup screens sit in the middle when they fit, and scroll when they don't ---------- */
+.homewrap > .edition { margin-top: auto; }
+.homewrap > .foot { margin-top: auto; }
+.homewrap > .row3 { margin-bottom: 0; }
+#flow.on { display: flex !important; flex-direction: column; }
+#flow > :first-child { margin-top: auto !important; }
+#flow > :nth-last-child(2), #flow > :only-child { margin-bottom: auto !important; }
+#flow h2, #flow .lead { text-align: center; }
+/* inside each family: people in centred rows (a lone Chip or Charli sits in the middle, not off to the left) */
+#flow .fam h3 { text-align: center; }
+#flow .ppl { display: flex !important; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#flow .ppl .who { flex: 0 0 calc((100% - 16px) / 3); max-width: 120px; }
+#flow .fams { justify-content: center; }
+#flow > :not(.go):not(canvas) { width: 100%; box-sizing: border-box; } /* keep the full width in the centred column (else the grids squash into one long row) */
