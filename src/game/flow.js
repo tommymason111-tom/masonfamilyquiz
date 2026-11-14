@@ -163,11 +163,12 @@ function teamsStep(who, random) {
 
 // 4b. Mini Games: let the dice pick five, or choose exactly which ones
 function gamesStep() {
-  if (VR) { const saved = loadStore('gamesPick', { random: true, ids: GAMES.slice(0, 5).map(g => g.id) }); const short = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
+  const valid = (ids) => (ids || []).filter(id => GAMES.some(g => g.id === id)); // games that have since been removed don't count
+  if (VR) { const saved = loadStore('gamesPick', { random: true, ids: [] }); saved.ids = saved.random !== false ? [] : valid(saved.ids); const short = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
     return vrPick({ title: 'Which games?', lead: 'Let the dice pick five, or choose your own (they\'re played in the order you pick them).', toggles: [{ id: 'random', label: '🎲 Random five' }, { id: 'pick', label: '✋ I\'ll choose' }], toggleSel: saved.random !== false ? 'random' : 'pick', multi: true, multiToggle: 'pick', selected: saved.ids || [], items: GAMES.map(g => ({ id: g.id, label: g.title.replace(/\b(\w)(\w*)/g, (m, a, b) => a + b.toLowerCase()), icon: g.icon, sub: short(g) })), cols: 3 })
       .then(r => { const pick = { random: r.toggle !== 'pick', ids: r.sel }; saveStore('gamesPick', pick); G.minigames.playlist = gamePlaylist(pick); sfx('ding', null, 0.6); }); }
   return new Promise(res => {
-    const saved = loadStore('gamesPick', { random: true, ids: GAMES.slice(0, 5).map(g => g.id) }); let random = saved.random !== false; const sel = new Set(saved.ids?.length ? saved.ids : GAMES.slice(0, 5).map(g => g.id));
+    const saved = loadStore('gamesPick', { random: true, ids: [] }); let random = saved.random !== false; const sel = new Set(random ? [] : valid(saved.ids)); // choosing starts from nothing, so your first tap is #1
     const how = (g) => { const h = typeof g.how === 'function' ? g.how() : g.how; return h.split('. ')[0] + '.'; };
     el.innerHTML = `<h2>Which games?</h2><p class="lead">Let the dice pick five, or choose your own.</p>
       <div class="tog"><button data-r="1" class="${random ? 'sel' : ''}">🎲 Random five</button><button data-r="0" class="${random ? '' : 'sel'}">✋ I'll choose</button></div>
@@ -177,7 +178,7 @@ function gamesStep() {
     const st = document.createElement('style'); st.textContent = '#flow .gpick.rnd .m2 { opacity:.55; pointer-events:none; } #flow .gpick.rnd .tick { display:none; } #flow .gpick .tick { float:right; margin-top:-4px; font:900 18px Georgia,serif; color:#ffd700; } #flow .gpick .m2:not(.sel) .tick { font:700 12px system-ui; color:#fff; opacity:.7; }'; el.appendChild(st);
     const refresh = () => { el.querySelector('.gpick').classList.toggle('rnd', random); el.querySelectorAll('.gpick .m2').forEach(b => { const on = sel.has(b.dataset.g); b.classList.toggle('sel', on); b.querySelector('.tick').textContent = on ? `#${[...sel].indexOf(b.dataset.g) + 1}` : '+ Add'; });
       el.querySelector('#gCount').textContent = random ? 'Five games, picked at random, in a random order.' : `${sel.size} game${sel.size === 1 ? '' : 's'} chosen · they're played in the order you tap them`; el.querySelector('#gGo').disabled = !random && !sel.size; };
-    el.querySelectorAll('.tog button').forEach(b => b.onclick = () => { random = b.dataset.r === '1'; el.querySelectorAll('.tog button').forEach(x => x.classList.toggle('sel', x === b)); sfx('tap', null, 0.4); refresh(); });
+    el.querySelectorAll('.tog button').forEach(b => b.onclick = () => { const was = random; random = b.dataset.r === '1'; if (was && !random) sel.clear(); el.querySelectorAll('.tog button').forEach(x => x.classList.toggle('sel', x === b)); sfx('tap', null, 0.4); refresh(); });
     el.querySelectorAll('.gpick .m2').forEach(b => b.onclick = () => { const id = b.dataset.g; sel.has(id) ? sel.delete(id) : sel.add(id); sfx('tap', null, 0.4); refresh(); });
     refresh();
     el.querySelector('#gGo').onclick = () => { const pick = { random, ids: [...sel] }; saveStore('gamesPick', pick); G.minigames.playlist = gamePlaylist(pick); sfx('ding', null, 0.6); res(); };

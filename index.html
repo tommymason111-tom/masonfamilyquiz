@@ -36,6 +36,7 @@
   .modal.open { display:grid; }
   .card { background:#17151f; border:2px solid var(--gold); border-radius:16px; padding:18px; width:min(560px,96vw); max-height:88vh; overflow:auto; }
   .card { position:relative; } .card .mx { position:sticky; top:0; float:right; margin:-6px -6px 0 8px; width:40px; height:40px; border-radius:50%; border:2px solid var(--gold); background:#2a2636; color:#fff; font-size:20px; cursor:pointer; z-index:2; }
+  .modeRow { display:flex; flex-wrap:wrap; gap:6px; } .modeRow .btn.on { border-color:var(--gold); color:var(--gold); }
   .card h2 { margin:0 0 10px; font-family:Georgia,serif; color:var(--gold); }
   .row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0; font-size:15px; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:14px; }
@@ -154,7 +155,7 @@
   body.mg-snowball #charge { display:block !important; width:min(60vw,240px); height:16px; margin-left:calc(min(60vw,240px) / -2); top:auto; bottom:max(150px,22vh); border:2px solid #fff; border-radius:9px; background:rgba(0,0,0,.55); overflow:visible; }
   body.mg-snowball #charge::before { content:'POWER'; position:absolute; left:0; right:0; top:-20px; text-align:center; font:900 13px system-ui; letter-spacing:.2em; color:#ffd700; text-shadow:0 1px 2px #000; }
   body.mg-snowball #charge i { border-radius:7px; background:linear-gradient(90deg,#3bd16f,#ffd700,#ff4d4d) !important; }
-  .platecount { position:fixed; right:12px; top:max(128px, calc(env(safe-area-inset-top) + 118px)); z-index:24; min-width:96px; padding:8px 12px 6px; border-radius:18px; border:3px solid #ffd700; background:rgba(20,12,18,.85); color:#fff; font:900 44px Georgia,serif; text-align:center; line-height:1; box-shadow:0 6px 18px rgba(0,0,0,.45); pointer-events:none; }
+  .platecount { position:fixed; right:12px; top:max(178px, calc(env(safe-area-inset-top) + 168px)); z-index:24; min-width:96px; padding:8px 12px 6px; border-radius:18px; border:3px solid #ffd700; background:rgba(20,12,18,.85); color:#fff; font:900 44px Georgia,serif; text-align:center; line-height:1; box-shadow:0 6px 18px rgba(0,0,0,.45); pointer-events:none; }
   .platecount small { display:block; font:800 10px system-ui; letter-spacing:.12em; color:#ffd700; margin-bottom:3px; }
   .platecount.pop { animation:platepop .35s ease-out; } @keyframes platepop { 0% { transform:scale(1.35); } 100% { transform:scale(1); } }
   /* a row of action buttons for a mini game (Wake Gary Up, shoo Mason) */
@@ -172,18 +173,20 @@
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }
 </script>
+<link rel="stylesheet" href="src/xmas.css">
 </head>
 <body>
 <div id="app"></div>
 <div id="loading">
   <canvas id="snow"></canvas>
+  <div class="xstars"></div><div class="xsnow"></div><div class="xsnow b"></div><div class="xhills"></div><div class="xtree l"><svg viewBox="0 0 120 190"><rect x="52" y="160" width="16" height="26" fill="#5a3a20"/><path d="M60 8 L104 70 H84 L112 112 H88 L118 160 H2 L32 112 H8 L36 70 H16 Z" fill="#14502a" stroke="#0a3018" stroke-width="2"/><path d="M30 86 Q60 100 92 80 M22 128 Q60 146 100 122" stroke="#ffd76a" stroke-width="2.5" fill="none" opacity=".8"/><circle class="lt" cx="44" cy="62" r="4" fill="#ff3b3b"/><circle class="lt" cx="74" cy="66" r="4" fill="#ffd23f"/><circle class="lt" cx="36" cy="96" r="4" fill="#3bb8ff"/><circle class="lt" cx="60" cy="92" r="4" fill="#ff6bf0"/><circle class="lt" cx="86" cy="90" r="4" fill="#3bff7a"/><circle class="lt" cx="28" cy="136" r="4" fill="#ffd23f"/><circle class="lt" cx="52" cy="134" r="4" fill="#ff3b3b"/><circle class="lt" cx="76" cy="138" r="4" fill="#3bb8ff"/><circle class="lt" cx="98" cy="130" r="4" fill="#ffffff"/><circle class="lt" cx="60" cy="52" r="4" fill="#ffffff"/><text x="60" y="16" font-size="22" text-anchor="middle">⭐</text></svg></div><div class="xtree r"><svg viewBox="0 0 120 190"><rect x="52" y="160" width="16" height="26" fill="#5a3a20"/><path d="M60 8 L104 70 H84 L112 112 H88 L118 160 H2 L32 112 H8 L36 70 H16 Z" fill="#14502a" stroke="#0a3018" stroke-width="2"/><path d="M30 86 Q60 100 92 80 M22 128 Q60 146 100 122" stroke="#ffd76a" stroke-width="2.5" fill="none" opacity=".8"/><circle class="lt" cx="44" cy="62" r="4" fill="#ff3b3b"/><circle class="lt" cx="74" cy="66" r="4" fill="#ffd23f"/><circle class="lt" cx="36" cy="96" r="4" fill="#3bb8ff"/><circle class="lt" cx="60" cy="92" r="4" fill="#ff6bf0"/><circle class="lt" cx="86" cy="90" r="4" fill="#3bff7a"/><circle class="lt" cx="28" cy="136" r="4" fill="#ffd23f"/><circle class="lt" cx="52" cy="134" r="4" fill="#ff3b3b"/><circle class="lt" cx="76" cy="138" r="4" fill="#3bb8ff"/><circle class="lt" cx="98" cy="130" r="4" fill="#ffffff"/><circle class="lt" cx="60" cy="52" r="4" fill="#ffffff"/><text x="60" y="16" font-size="22" text-anchor="middle">⭐</text></svg></div>
   <div class="garland" id="garland"></div>
   <div class="bunting" id="bunting"></div>
   <div class="hang" id="hang"></div>
   <div class="holly tl"></div><div class="holly tr"></div>
   <div class="homewrap">
     <div class="edition">✦ The 2026 Boxing Day Edition ✦</div>
-    <h1 class="title"><span>The Mason Family</span><b>Boxing Day Quiz</b><em>— THE GAME —</em></h1>
+    <h1 class="title"><i class="xstar">⭐</i><span>The Mason Family</span><b><i class="xhat"><svg viewBox="0 0 60 54"><path d="M6 44 Q22 4 50 10 Q42 24 46 40 Z" fill="#d01a24"/><path d="M50 10 Q58 14 54 22" stroke="#d01a24" stroke-width="6" fill="none"/><circle cx="54" cy="24" r="6" fill="#fff"/><rect x="2" y="40" width="48" height="11" rx="5.5" fill="#fff"/></svg></i>Boxing Day Quiz</b><em>— THE GAME —</em></h1>
     <div class="ribbon"><span>Boxing Day · 8pm · Back from the meal out · Uncle Martin's · Three families · One disputed answer sheet</span></div>
     <div class="teams" id="teams" style="display:none"></div>
     <div class="row3">

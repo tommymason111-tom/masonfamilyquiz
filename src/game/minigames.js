@@ -37,6 +37,8 @@ export function gamePlaylist(pick) {
 export class MiniGames {
   constructor() { G.minigames = this; this.active = null; this.total = {}; G.updaters.push((dt) => this.update(dt)); on('next', () => { if (this.active && this.active.t > 1) this.active.skip = true; }); }
   // one game between quiz rounds (old API)
+  // skip the game you're in from the menu: you get a DNF for it and it moves on to the next one
+  skipGame() { const a = this.active; if (!a?.live) return false; a.dnf = true; a.skip = true; this.stop(a); return true; }
   finish() { const a = this.active; if (a && a.live) { a.skip = true; this.stop(a); } } // skip the current game
   start(roundIdx, done) { this.play(roundIdx % GAMES.length).then(() => done && done()); }
   me() { return G.myTeam || 'paul'; }
@@ -68,15 +70,18 @@ export class MiniGames {
     await card({ kicker: `GAME ${ORDINAL[pos]}`, title: def.title, sub: how, icon: def.icon, secs: 6.5 });
     sfx('whistle', null, 1); a.live = true; this.active = a; document.body.classList.add('mg', 'mg-' + def.id); this['begin_' + def.id]?.(a);
     await new Promise(res => { a.done = res; });
-    this.active = null; timer(null); meters(null); stopMusic(); document.body.classList.remove('mg', 'mg-' + def.id); this['end_' + def.id]?.(a); if (a.beams) await new Promise(r => setTimeout(r, 6400));
+    this.active = null; timer(null); meters(null); stopMusic(); document.body.classList.remove('mg', 'mg-' + def.id); this['end_' + def.id]?.(a);
+    if (a.aborted) { this.tidy(a); return null; } // you switched mode: no leaderboard
+    if (a.beams) await new Promise(r => setTimeout(r, 6400));
     // leaderboard: you vs the other teams (theirs are made up, obviously)
     const mine = this.me(); const skills = shuffle([rand(0.9, 1.2), rand(0.65, 1.0), rand(0.35, 0.8)]); let si = 0; // one team close to you (sometimes just ahead), the others behind; different every game
     let rows = TEAM_IDS.map(t => ({ team: t, name: TEAMS[t].name, color: TEAMS[t].color, me: t === mine, score: t === mine ? a.score : this.rival(def, a.score, skills[si++ % 3]) }));
     // times (lower is better, DNF last) are shown as text and ranked by a sort key
     if (def.lowerBetter) rows = rows.map(r => ({ ...r, raw: r.score, display: r.score == null ? 'DNF' : `${r.score}s`, score: r.score == null ? -9999 : -r.score }));
+    if (a.dnf) rows = rows.map(r => r.me ? { ...r, display: 'DNF', score: -99999 } : r); // skipped: last place
     const order = rows.slice().sort((x, y) => y.score - x.score); order.forEach((r, k) => { const pts = [3, 2, 1, 0][k]; this.total[r.team] = (this.total[r.team] || 0) + pts * 100; if (q) q.bonus[r.team] += pts; }); // standings in hundreds: 300 / 200 / 100
     sfx(order[0].me ? 'cheer' : 'drum', null, 0.9);
-    await board({ kicker: `GAME ${ORDINAL[pos]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: order[0].me ? 'You won this one! +300 points' : `${order[0].name} win this one.`, secs: 5.5 });
+    await board({ kicker: `GAME ${ORDINAL[pos]} FINISHED`, title: def.title, rows, unit: def.lowerBetter ? '' : def.unit, footer: a.dnf ? 'You skipped this one: DNF.' : order[0].me ? 'You won this one! +300 points' : `${order[0].name} win this one.`, secs: 5.5 });
     this.release(); this.tidy(a);
     return a.score;
   }

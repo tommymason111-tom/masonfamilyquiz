@@ -152,13 +152,13 @@ export function installMoreGames(MiniGames) {
     a.counter.position.copy(pp).add(V(0, G.xr ? 0.25 : 0.32, 0)); a.counter.visible = !!G.xr; // the phone has the corner badge instead
     // Julie throws: more often, and sometimes two at once, as the clock runs down
     a.nextT -= dt; const J = a.thrower;
-    if (a.nextT <= 0 && J.state === 'anim') { const busy = Math.min(1, a.t / 45); a.nextT = rand(1.8, 2.5) - busy * 0.6; const n = Math.random() < busy * 0.3 ? 2 : 1;
+    if (a.nextT <= 0 && J.state === 'anim') { const busy = Math.min(1, a.t / 45); const ph = G.xr ? 0 : 0.5; a.nextT = rand(1.8, 2.5) + ph - busy * 0.6; const n = !G.xr ? 1 : Math.random() < busy * 0.3 ? 2 : 1; /* phones: a bit more time between throws, one at a time */
       J.gesture = 'throwOver'; J.gestureT = 0; setTimeout(() => { if (J.gesture === 'throwOver') J.gesture = null; }, 600);
       for (let k = 0; k < n; k++) setTimeout(() => this.throwFood(a), 250 + k * 280); }
     // flying food
     for (const f of a.flying) { f.v.y -= 9.8 * dt; f.m.position.addScaledVector(f.v, dt); f.m.rotation.x += f.w.x * dt; f.m.rotation.z += f.w.z * dt;
       const d = Math.hypot(f.m.position.x - pp.x, f.m.position.z - pp.z), dy = f.m.position.y - pp.y;
-      if (f.v.y < 0 && d < (G.xr ? 0.3 : 0.38) && dy < 0.12 && dy > -0.14) { this.caughtFood(a, f); f.done = true; continue; }
+      if (f.v.y < 0 && d < (G.xr ? 0.3 : 0.55) && dy < (G.xr ? 0.12 : 0.2) && dy > (G.xr ? -0.14 : -0.22)) { this.caughtFood(a, f); f.done = true; continue; }
       if (f.m.position.y < 0.03) { f.done = true; this.droppedFood(a, f); } }
     a.flying = a.flying.filter(f => !f.done);
     const next = a.flying.slice().sort((x, y) => x.land.distanceTo(pp) - y.land.distanceTo(pp))[0]; a.shadow.visible = !!next; if (next) { a.shadow.position.set(next.land.x, 0.02, next.land.z); a.shadow.material.color.set(next.food.bad ? '#6aa83a' : next.food.gold ? '#ffd700' : '#ffffff'); }
@@ -169,9 +169,9 @@ export function installMoreGames(MiniGames) {
     if (!a.live) return; const r = Math.random(); const food = r < 0.12 ? FOODS[5] : r < 0.3 ? FOODS[6] : pick(FOODS.slice(0, 5));
     const from = a.thrower.handPos('R', new THREE.Vector3()); from.y = Math.max(from.y, 1.5);
     // aim near you, but you'll usually have to move: further out the longer the game goes
-    const me = G.player.pos; const spread = 0.5 + Math.min(1.0, a.t / 30); const land = V(clamp(me.x + rand(-spread, spread), -4.8, 1.8), 0.95, clamp(me.z + rand(-spread, spread), -12.6, -9.2));
+    const me = G.player.pos; const spread = G.xr ? 0.5 + Math.min(1.0, a.t / 30) : 0.35 + Math.min(0.65, a.t / 40); /* on a phone they land closer to you */ const land = V(clamp(me.x + rand(-spread, spread), -4.8, 1.8), 0.95, clamp(me.z + rand(-spread, spread), -12.6, -9.2));
     const m = new THREE.Mesh(a.foodGeo[food.id], food.gold ? a.goldMat : a.foodMat); m.position.copy(from); m.scale.setScalar(1.6); G.scene.add(m);
-    a.flying.push({ m, food, v: lob(from, land, rand(2.9, 3.7)), w: V(rand(-8, 8), 0, rand(-8, 8)), land }); a.thrown++; sfx('whoosh', from, 0.4);
+    a.flying.push({ m, food, v: lob(from, land, G.xr ? rand(2.9, 3.7) : rand(2.4, 3.0)), /* phones: higher, slower lobs give you time to get under them */ w: V(rand(-8, 8), 0, rand(-8, 8)), land }); a.thrown++; sfx('whoosh', from, 0.4);
     if (food.gold) a.thrower.say('Ooh, the turkey leg! Don\'t drop it!', { prio: 1 }); else if (food.bad && Math.random() < 0.6) a.thrower.say(pick(['Sprout!', 'Eat your sprouts!', 'Have a sprout!']), { prio: 1 });
   };
   P.caughtFood = function (a, f) {

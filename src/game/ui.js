@@ -7,6 +7,7 @@ import { saveSettings, loadStore, saveStore } from './settings.js';
 import { OUTFITS, TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { Ceremony } from './ceremony.js';
 import { startFlow } from './flow.js';
+import { MODES } from './modes.js';
 import { dressGaryFor } from '../chars/people.js';
 import { setAvatar } from './avatar.js';
 import './popup.js';
@@ -113,7 +114,7 @@ class UI {
       const ch = G.minigames?.active?.charge || G.player.charge; $('charge').style.display = ch > 0 ? 'block' : 'none'; $('charge').firstChild.style.width = (ch * 100) + '%';
       this.updateTouchReady(f, held);
     }
-    if (G.xr && G.frame % 12 === 0) this.drawWrist();
+    if (G.xr && this.wristVisible && G.frame % 12 === 0) this.drawWrist(); /* only while it's showing */
   }
   showTag(p, prot) {
     if (!p) { this.tag.visible = false; this.tagFor = null; this.tagPerson = null; return; }
@@ -150,7 +151,8 @@ class UI {
     const S = G.settings; const unlocked = loadStore('unlockedOutfits', OUTFITS.map(o => o.id));
     const chk = (k, l) => `<label class="row"><span>${l}</span><input type="checkbox" data-k="${k}" ${S[k] ? 'checked' : ''}></label>`;
     this.modal('menu', `<h2>Menu</h2>
-      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mScore">Scoreboard</button><button class="btn alt" id="mMode">Change game mode</button></div>
+      <div><button class="btn" data-close>Resume</button><button class="btn" id="mNext">${G.quiz.phase === 'arrival' ? 'Start the quiz' : 'Next / skip'}</button><button class="btn alt" id="mScore">Scoreboard</button>${G.minigames?.active?.live ? '<button class="btn" id="mSkip">⏭ Skip this game (DNF)</button>' : ''}</div>
+      <h2 style="margin-top:14px">Switch game mode</h2><div class="modeRow">${MODES.map(m => `<button class="btn alt small${m.id === G.modes?.id ? ' on' : ''}" data-mode="${m.id}">${m.icon} ${m.name}</button>`).join('')}<button class="btn alt small" id="mMode">↺ Back to the start screen</button></div>
       <h2 style="margin-top:14px">Settings</h2>
       ${chk('voices', 'Character voices (speech)')}${chk('subtitles', 'Subtitles')}${chk('softDrinks', 'Soft drinks mode (all alcohol → squash)')}${chk('drunkSway', 'Wobbly-after-drinks effect')}${chk('thirdPerson', 'Start in third person (V toggles)')}${chk('shadows', 'Shadows (reload)')}${chk('smoothTurn', 'VR smooth turn (instead of snap)')}${chk('leftHanded', 'Left-handed (swap VR pinch walk/turn, touch buttons)')}${chk('invertY', 'Invert look Y')}
       <label class="row"><span>Mouse / look sensitivity</span><input type="range" min="0.3" max="2.5" step="0.1" data-n="mouseSens" value="${S.mouseSens}"></label>
@@ -168,6 +170,8 @@ class UI {
       el.querySelector('#mNext').onclick = () => { this.closeModal('menu'); emit('next'); };
       el.querySelector('#mScore').onclick = () => { this.closeModal('menu'); this.scoreboard(true, true); };
       el.querySelector('#mMode').onclick = () => { location.href = '?'; };
+      el.querySelector('#mSkip')?.addEventListener('click', () => { this.closeModal('menu'); G.minigames.skipGame(); });
+      el.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { this.closeModal('menu'); G.modes.switchTo(b.dataset.mode); });
       if (G.modes?.running) { const b = el.querySelector('#mNext'); b.textContent = 'End this game now'; b.onclick = () => { this.closeModal('menu'); G.modes.end(); }; }
       el.querySelector('#mRestart').onclick = () => location.reload();
       el.querySelector('#mWipe').onclick = () => { try { Object.keys(localStorage).filter(k => k.startsWith('masonQuiz.')).forEach(k => localStorage.removeItem(k)); } catch (e) {} this.toast('Saved history cleared.'); };

@@ -24,6 +24,7 @@ function wrap(s, x, y, maxW, size, lh, max = 3, color = '#fff', font = 'system-u
 // or use the thumbstick and trigger. vrPick() shows a grid of choices; vrShow() shows a message (or a custom drawing).
 let flow = null; const imgs = {};
 const img = (src) => { if (!src) return null; if (!imgs[src]) { const im = new Image(); im.src = src; imgs[src] = im; } return imgs[src].complete ? imgs[src] : null; };
+window.__vrMenuSelect = (id) => { menuItems(); const i = MENU.findIndex(m => m.id === id); if (i >= 0) { menu.sel = i; S.v++; } return i; }; // test hook
 window.__vrFlowKind = () => flow ? flow.spec.title : 'none'; // test hook
 window.__vrRays = () => (lasers || []).map(L => `${L.px?.toFixed(0)},${L.py?.toFixed(0)} hover=${L.hover} laser=${L.l.visible}`).join(' | ');
 window.__vrHover = () => flow ? (flow.rects[flow.hover]?.id ?? flow.rects[flow.hover]?.kind ?? 'none') : 'noflow';
@@ -33,7 +34,7 @@ export function vrShow(spec) { return new Promise(res => { flow = { kind: 'show'
 function flowClick(i) {
   const f = flow; if (!f) return; const r = f.rects[i]; if (!r) return; const sp = f.spec;
   if (r.kind === 'item') { if (sp.multi) { if (!f.toggle || f.toggle === sp.multiToggle) { f.sel.has(r.id) ? f.sel.delete(r.id) : f.sel.add(r.id); } } else f.sel = r.id; }
-  if (r.kind === 'toggle') f.toggle = r.id;
+  if (r.kind === 'toggle') { if (sp.multi && r.id === sp.multiToggle && f.toggle !== r.id) f.sel.clear(); f.toggle = r.id; } // choosing your own starts from nothing: first tap = #1
   if (r.kind === 'done') { if (sp.multi && f.toggle === sp.multiToggle && !f.sel.size) return; flow = null; f.res({ sel: sp.multi ? [...f.sel] : f.sel, toggle: f.toggle }); }
   try { G.renderer.xr.getSession()?.inputSources.forEach(s => s.gamepad?.hapticActuators?.[0]?.pulse(0.4, 30)); } catch (e) { /* no haptics */ }
   S.v++;
@@ -138,15 +139,17 @@ function flowRays(dt) {
 }
 
 // ---- the headset menu (Y on the left controller): thumbstick up/down, trigger to choose ----
-const MENU = [{ id: 'resume', label: '▶  Resume' }, { id: 'quick', label: '⚡  Quick Quiz' }, { id: 'games', label: '🎲  Mini Games' }, { id: 'fling', label: '🚀  Fling the Relative' }, { id: 'beer', label: '🍺  Drinks Run' }, { id: 'sandbox', label: '🎄  Free Roam' }, { id: 'restart', label: '↺  Restart this game' }, { id: 'exit', label: '⏏  Leave VR' }];
+const MENU_ALL = [{ id: 'resume', label: '▶  Resume' }, { id: 'skip', label: '⏭  Skip this game (DNF)' }, { id: 'quick', label: '⚡  Quick Quiz' }, { id: 'games', label: '🎲  Mini Games' }, { id: 'fling', label: '🚀  Fling the Relative' }, { id: 'beer', label: '🍺  Drinks Run' }, { id: 'sandbox', label: '🎄  Free Roam' }, { id: 'restart', label: '↺  Restart this game' }, { id: 'exit', label: '⏏  Leave VR' }];
+let MENU = MENU_ALL; const menuItems = () => (MENU = MENU_ALL.filter(m => m.id !== 'skip' || G.minigames?.active?.live));
 const menu = { open: false, sel: 0, axT: 0, trig: false };
 function choose(id) {
   menu.open = false; S.v++;
   if (id === 'resume') return;
   if (id === 'exit') { G.renderer.xr.getSession()?.end(); return; }
-  const mode = id === 'restart' ? (G.modes?.id || 'quick') : id; const as = G.me?.name || 'Tommy';
-  if (mode !== 'roam') saveStore('mode', mode);
-  location.href = `?mode=${mode}&as=${encodeURIComponent(as)}&skip=1&vr=1`;
+  if (id === 'skip') { G.minigames?.skipGame(); return; }
+  // change mode (or restart it) right here in the headset: no page reload, so you stay in VR
+  const mode = id === 'restart' ? (G.modes?.id || 'quick') : id; if (mode !== 'roam') saveStore('mode', mode);
+  G.modes?.switchTo(mode);
 }
 function menuInput(dt) {
   const s = G.renderer.xr.getSession(); if (!s) return; let ay = 0, trig = false;
@@ -214,7 +217,7 @@ export function initVRHud() {
   tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   mesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false }));
   mesh.renderOrder = 999; mesh.frustumCulled = false; mesh.visible = false; G.scene.add(mesh);
-  G.vrHud = { mesh, draw: () => draw(performance.now()), toggleMenu: () => { menu.open = !menu.open; menu.sel = 0; menu.trig = true; S.v++; }, menuOpen: () => menu.open, drawMenu: () => drawMenu(), drawFlowNow: () => { if (flow) drawFlow(performance.now()); return canvas; } };
+  G.vrHud = { mesh, draw: () => draw(performance.now()), toggleMenu: () => { menu.open = !menu.open; menu.sel = 0; menuItems(); menu.trig = true; S.v++; }, menuOpen: () => menu.open, drawMenu: () => drawMenu(), drawFlowNow: () => { if (flow) drawFlow(performance.now()); return canvas; } };
   G.updaters.push((dt) => {
     if (lasers && !flow && !menu.open) lasers.forEach(L => L.l.visible = false);
     if (!G.xr || !active()) { mesh.visible = false; placed = false; mesh.scale.setScalar(1); return; }
@@ -224,7 +227,7 @@ export function initVRHud() {
       // head position, or you've walked off) snap it back in front of you
       _t.copy(_p).addScaledVector(_f, 1.5); _t.y = _p.y - 0.12; const off = mesh.position.distanceTo(_t), seen = _q.copy(mesh.position).sub(_p).normalize().dot(_f);
       if (!flow.placed || off > 1.2 || seen < 0.2 || (flow.settle = (flow.settle || 0) + 1) < 8) { flow.placed = true; mesh.position.copy(_t); mesh.lookAt(_p.x, _t.y, _p.z); mesh.scale.setScalar(1.55); }
-      mesh.visible = true; flowRays(dt); const now = performance.now(); if (S.v !== lastV || now - lastDraw > 60) { lastV = S.v; lastDraw = now; drawFlow(now); } return; }
+      mesh.visible = true; flowRays(dt); const now = performance.now(); if (S.v !== lastV && now - lastDraw > 40 || now - lastDraw > 110) { lastV = S.v; lastDraw = now; drawFlow(now); } return; }
     mesh.scale.setScalar(1);
     // follow the head lazily: stays put while you glance around, catches up when you turn away
     const cam = G.camera; cam.getWorldPosition(_p); /* the game camera sits in the player rig; three's XR camera has no parent, so its world position ignores the rig */  cam.getWorldDirection(_f); _f.y = Math.max(-0.35, Math.min(0.2, _f.y)); _f.normalize();

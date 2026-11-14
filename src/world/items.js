@@ -82,7 +82,8 @@ export class Items {
   update(dt) {
     for (const inst of this.instances) {
       if (inst.attached) { // e.g. baubles hanging on the tree
-        const p = inst.attached(_p, _q); inst.body.setNextKinematicTranslation(p); inst.body.setNextKinematicRotation(_q);
+        const p = inst.attached(_p, _q); const L = inst._lp || (inst._lp = [1e9, 0, 0, 0, 0, 0, 0]); if (Math.abs(L[0] - p.x) + Math.abs(L[1] - p.y) + Math.abs(L[2] - p.z) + Math.abs(L[3] - _q.x) + Math.abs(L[4] - _q.y) + Math.abs(L[5] - _q.z) + Math.abs(L[6] - _q.w) < 1e-5) continue; /* hasn't moved (the tree is still): nothing to do */ L[0] = p.x; L[1] = p.y; L[2] = p.z; L[3] = _q.x; L[4] = _q.y; L[5] = _q.z; L[6] = _q.w;
+        inst.body.setNextKinematicTranslation(p); inst.body.setNextKinematicRotation(_q);
         _m.compose(p, _q, _s.set(1, 1, 1)); inst.type.mesh.setMatrixAt(inst.index, _m); inst.type.mesh.instanceMatrix.needsUpdate = true; continue;
       }
       if (inst.body.isSleeping() && !inst.dirty) continue;

@@ -7,7 +7,7 @@ export async function initPhysics() {
   await RAPIER.init();
   G.R = RAPIER;
   G.world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
-  G.world.integrationParameters.numSolverIterations = 6;
+  G.world.integrationParameters.numSolverIterations = 4; // Rapier's default: nearly half the cost of 6 and still steady for the stacks and ragdolls
   G.eventQueue = new RAPIER.EventQueue(true);
   // a person's own body parts never collide with each other (scans have arms close to the hips and thighs
   // touching; self-collisions made bodies fight themselves forever = jelly). They still hit everyone else.

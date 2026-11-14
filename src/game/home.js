@@ -62,7 +62,7 @@ export function renderPortraits() {
   const r = G.renderer; const rt = new THREE.WebGLRenderTarget(160, 160, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
   const cam = new THREE.PerspectiveCamera(26, 1, 0.05, 20); const out = {};
   const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'); const buf = new Uint8Array(160 * 160 * 4); const img = g.createImageData(160, 160);
-  const xr = r.xr.enabled; r.xr.enabled = false;
+  const xr = r.xr.enabled; r.xr.enabled = false; for (const p of G.chars) for (const m of p.root?._skins || []) m.visible = true; // (not culled for their close-ups)
   for (const p of G.chars) {
     const wasVis = p.root.visible; p.root.visible = true; p._wasVis = wasVis;
     if (p.isPlayer) { p._pp = [p.pos.clone(), p.yaw]; p.pos.set(-2.2, p.pos.y, -1.3); p.yaw = 0.67; try { p.update(1 / 60); } catch (e) { /* posing is best-effort */ } p.root.updateMatrixWorld(true); } // the player's body isn't animated while the menu is up

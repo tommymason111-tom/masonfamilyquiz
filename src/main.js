@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '13 Nov 2026 · sprouts vr v48';
+export const BUILD = '13 Nov 2026 · christmas v49';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -36,14 +36,16 @@ async function boot() {
   initHome();
   status('Starting physics…', 0.05);
   await initPhysics();
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, G.settings.quality === 'low' ? 1 : 2));
+  const quest = /OculusBrowser|Quest/i.test(navigator.userAgent), phone = !quest && (matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent));
+  // phones: no multisampling (costly on a high-DPI screen) and a capped resolution that adapts to keep it smooth; the Quest keeps AA for the headset
+  const renderer = new THREE.WebGLRenderer({ antialias: !phone, powerPreference: 'high-performance' });
+  const maxPR = Math.min(devicePixelRatio, G.settings.quality === 'low' ? 1 : phone ? 1.6 : 2); renderer.setPixelRatio(maxPR); G.pr = { max: maxPR, cur: maxPR, slow: 0, fast: 0, ema: 16 };
   renderer.setSize(document.documentElement.clientWidth || innerWidth, document.documentElement.clientHeight || innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = !!G.settings.shadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
-  renderer.xr.setFoveation?.(0.5);
+  renderer.xr.setFoveation?.(1); renderer.xr.setFramebufferScaleFactor?.(quest ? 0.9 : 1); // the headset: full fixed foveation, a touch under native resolution
   document.getElementById('app').appendChild(renderer.domElement);
   G.renderer = renderer;
   const scene = new THREE.Scene(); G.scene = scene;
@@ -90,9 +92,28 @@ async function boot() {
 }
 
 let acc = 0; const seenErr = new Set();
-function safe(what, fn) { try { fn(); } catch (e) { const k = what + ':' + e.message; if (!seenErr.has(k)) { seenErr.add(k); console.error('[' + what + ']', e); } } }
+// people are skinned meshes that three can't cull by itself (their bounds move with the bones), so they were all drawn every
+// frame, even behind you or through walls. Skip anyone outside the view this frame (on a phone / Quest that's a lot of triangles).
+// keep it smooth on a phone: if frames are slow for a couple of seconds drop the resolution a notch, raise it again when there's room
+function adaptRes(now, dt) {
+  const P = G.pr; if (!P || G.renderer.xr.isPresenting || document.hidden) return; P.ema = P.ema * 0.95 + dt * 1000 * 0.05;
+  if (P.ema > 24) { P.slow += dt; P.fast = 0; } else if (P.ema < 15) { P.fast += dt; P.slow = 0; } else { P.slow = 0; P.fast = 0; }
+  if (P.slow > 2 && P.cur > 0.75) { P.cur = Math.max(0.75, +(P.cur - 0.15).toFixed(2)); G.renderer.setPixelRatio(P.cur); P.slow = 0; }
+  if (P.fast > 5 && P.cur < P.max) { P.cur = Math.min(P.max, +(P.cur + 0.1).toFixed(2)); G.renderer.setPixelRatio(P.cur); P.fast = 0; }
+}
+const _fr = new THREE.Frustum(), _m4 = new THREE.Matrix4(), _sph = new THREE.Sphere();
+function cullPeople() {
+  const xrCam = G.renderer.xr.isPresenting ? G.renderer.xr.getCamera() : null; const cam = xrCam || G.camera;
+  if (!xrCam) cam.updateMatrixWorld(); _m4.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); _fr.setFromProjectionMatrix(_m4);
+  const test = (obj, x, y, z, r) => { if (!obj._skins) { obj._skins = []; obj.traverse(o => { if (o.isSkinnedMesh) obj._skins.push(o); }); } _sph.center.set(x, y, z); _sph.radius = r; const vis = _fr.intersectsSphere(_sph); for (const m of obj._skins) m.visible = vis; };
+  for (const p of G.chars) { if (!p.root) continue; const w0 = p.state !== 'anim' && p.world?.[0]?.p; const H = p.H || 1.7; if (w0) test(p.root, w0.x, w0.y, w0.z, H); else test(p.root, p.pos.x, (p.pos.y || 0) + H * 0.5, p.pos.z, H * 0.75 + 0.3); }
+  const d = G.dog; if (d?.rig?.root) test(d.rig.root, d.pos.x, 0.35, d.pos.z, 0.9);
+}
+G.perf = {}; // ms spent per system (averaged), for tuning: __G.perf
+function safe(what, fn) { const t0 = performance.now(); try { fn(); } catch (e) { const k = what + ':' + e.message; if (!seenErr.has(k)) { seenErr.add(k); console.error('[' + what + ']', e); } } const pf = G.perf[what] || (G.perf[what] = { ms: 0, n: 0 }); pf.ms += performance.now() - t0; pf.n++; }
 function loop(t, xrFrame) {
   let dt = Math.min(G.clock.getDelta(), 0.05);
+  adaptRes(G.clock.elapsedTime, dt);
   if (G.fx && G.fx.hitStop > 0) { G.fx.hitStop -= dt; dt *= 0.15; }
   G.dt = dt; G.time += dt; G.frame++;
   G.xr = G.renderer.xr.isPresenting;
@@ -107,7 +128,8 @@ function loop(t, xrFrame) {
   safe('post', () => { if (G.ui?.started || G.xr) G.player.postUpdate(dt); else G.player.fp.setVisible(false); });
   safe('audio', () => updateListener(G.player.headObject()));
   safe('replay', () => G.replay?.render());
-  G.renderer.render(G.scene, G.camera);
+  safe('cull', cullPeople);
+  const tr = performance.now(); G.renderer.render(G.scene, G.camera); const pr = G.perf.render || (G.perf.render = { ms: 0, n: 0 }); pr.ms += performance.now() - tr; pr.n++;
 }
 
 boot().catch(e => { console.error(e); status('Error: ' + e.message); });

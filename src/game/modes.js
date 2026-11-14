@@ -7,7 +7,8 @@ import { tvFrame, wrapText } from './screens.js';
 import { loadStore, saveStore } from './settings.js';
 import { DRINK_ORDERS, TEAMS, TEAM_IDS } from '../chars/cast.js';
 import { GAMES, gamePlaylist } from './minigames.js';
-import { card, board, timer } from './popup.js';
+import { card, board, timer, clearAll, questionCard, meters } from './popup.js';
+import { stopMusic } from '../engine/audio.js';
 import { canvasTex } from '../engine/textures.js';
 
 export const MODES = [
@@ -75,6 +76,21 @@ export class Modes {
     return text;
   }
   add(pts, why) { if (!this.running) return; this.score += Math.round(pts); this.lines.unshift(`+${Math.round(pts)}  ${why}`); this.lines.length = Math.min(this.lines.length, 5); }
+  // switch to another mode WITHOUT reloading the page (a reload throws you out of VR): pack away whatever is running,
+  // reset the quiz, put everyone back, then start the new mode where you are
+  switchTo(id) {
+    this._gen = (this._gen || 0) + 1; const mg = G.minigames;
+    if (mg?.active) { const a = mg.active; a.aborted = true; a.skip = true; mg.stop(a); }
+    G.ui?.closeModal?.('scoreModal'); clearAll(); questionCard(null); meters(null); timer(null); stopMusic();
+    for (const o of this.orders || []) G.scene.remove(o.marker); this.orders = []; this.flying = null;
+    for (const o of this.flingObjs || []) G.scene.remove(o); this.flingObjs = []; for (const f of this.flags || []) G.scene.remove(f); this.flags = [];
+    this.running = false; this.hudOff?.(); this.hv = null; this.score = 0; this.lines = []; G.player.releaseAll();
+    const q = G.quiz; if (q) { q.phase = 'arrival'; q.round = -1; q.qi = -1; q.t = 0; q.questionLive = false; q.disabled = false; q.cur = null; }
+    mg?.releaseAll(); for (const c of G.chars) if (c.isDown?.()) c.state = 'anim';
+    document.body.classList.remove('mode-' + this.id); this.id = id; this.def = modeById(id); if (id !== 'roam') saveStore('mode', id);
+    if (id === 'games') mg.playlist = null; // the dice (or your saved choice) pick the games
+    this.start();
+  }
   start() {
     this.def = modeById(this.id); const q = G.quiz; document.body.classList.remove('mode-fling', 'mode-beer', 'mode-games', 'mode-quick', 'mode-roam');
     document.body.classList.add('mode-' + (this.id === 'quiz' ? 'quick' : this.id));
@@ -109,15 +125,16 @@ export class Modes {
   }
   // ---------------- Quick Quiz: in the living room, straight in ----------------
   quickSetup() {
+    const gen = this._gen;
     const q = G.quiz; q.lastRound = 1; q.qPer = 5; q.noMiniGames = true; q.skipWelcome = true; this.running = false; this.hudOff();
     if (G.me && !G.me.isDog) G.player.teleport(-2.2, -1.75, 0.67);
-    card({ kicker: 'QUICK QUIZ', title: 'ROUND ONE', sub: `Two rounds, five questions each. Tap your answer on the cards. ${q.martin()?.name || 'Martin'} is marking.`, icon: '⚡', secs: 3.6 }).then(() => { if (q.phase === 'arrival') { q.phase = 'go'; q.startRound(0); } });
+    card({ kicker: 'QUICK QUIZ', title: 'ROUND ONE', sub: `Two rounds, five questions each. Tap your answer on the cards. ${q.martin()?.name || 'Martin'} is marking.`, icon: '⚡', secs: 3.6 }).then(() => { if (gen !== this._gen) return; if (q.phase === 'arrival') { q.phase = 'go'; q.startRound(0); } });
   }
   // ---------------- Mini Games: dining room + conservatory ----------------
   async gamesSetup() {
     this.hudOff(); this.running = false; const mg = G.minigames; mg.total = {};
     const list = mg.playlist || gamePlaylist(loadStore('gamesPick', { random: true })); // chosen on the Mini Games screen
-    for (let k = 0; k < list.length; k++) await mg.play(list[k], k);
+    const gen = this._gen; for (let k = 0; k < list.length; k++) { await mg.play(list[k], k); if (gen !== this._gen) return; } // stop if you switched mode part-way
     mg.releaseAll();
     const rows = mg.overall(); const mine = rows.find(r => r.me); const top = rows.slice().sort((a, b) => b.score - a.score)[0];
     sfx(top.me ? 'cheer' : 'drum', null, 1);
@@ -129,7 +146,7 @@ export class Modes {
     this.throws = 0; this.maxThrows = 10; this.limit = 0; this.dists = []; this.lane = { x0: -5.6, z: -11.6 };
     // clear the lawn of clutter
     for (const it of G.items.instances.slice()) { if (it.type.fixed || it.held) continue; const t = it.body.translation(); if (t.z < -8.6 && t.z > -14.6 && t.x > -7.5 && t.x < 5.6) G.items.remove(it); }
-    this.buildRuler();
+    { const before = new Set(G.scene.children); this.buildRuler(); this.flingObjs = G.scene.children.filter(c => !before.has(c)); } // so it can be packed away again
     G.player.teleport(-6.3, this.lane.z, -Math.PI / 2); G.player.pitch = -0.12;
     // everyone lines up on the patio
     const q = shuffle(G.chars.filter(c => !c.isPlayer && !c.protected && c.brain && c.team !== 'host'));
@@ -175,7 +192,8 @@ export class Modes {
     if (G.me && !G.me.isDog) G.player.teleport(3.0, 2.6, -0.4);
     // the clock and the first order only start once the instructions have gone
     this.running = false;
-    card({ kicker: 'DRINKS RUN', title: 'EVERYONE\'S THIRSTY', sub: 'The drinks are already poured and the fridges are open. When someone wants a drink a bubble pops up over their head: grab the right one and take it to them before their bar goes red. It gets busier.', icon: '🍺', secs: 5.5 }).then(() => { this.running = true; this.t = 0; });
+    const gen = this._gen;
+    card({ kicker: 'DRINKS RUN', title: 'EVERYONE\'S THIRSTY', sub: 'The drinks are already poured and the fridges are open. When someone wants a drink a bubble pops up over their head: grab the right one and take it to them before their bar goes red. It gets busier.', icon: '🍺', secs: 5.5 }).then(() => { if (gen !== this._gen) return; this.running = true; this.t = 0; });
   }
   restock() {
     const add = (id, x, y, z, n = 2) => { const have = (G.items.byType[id] || []).filter(i => { const t = i.body.translation(); return Math.hypot(t.x - x, t.z - z) < 0.45 && Math.abs(t.y - y) < 0.3; }).length; for (let k = have; k < n; k++) G.items.spawn(id, new THREE.Vector3(x + rand(-0.12, 0.12), y, z + rand(-0.05, 0.05)), null, { surface: true }); };
