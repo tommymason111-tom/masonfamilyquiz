@@ -59,12 +59,20 @@ export function teamCards(withPortraits, portraits = {}) {
   el.innerHTML = Object.entries(TEAMS).map(([k, t]) => `<div class="team" style="--tc:${t.color}"><h4>${t.name}</h4><div class="faces">${CAST.filter(c => c.team === k).map(face).join('')}</div></div>`).join('')
     + `<div class="team" style="--tc:#c8a050"><h4>Quizmaster &amp; chaos</h4><div class="faces">${CAST.filter(c => c.team === 'host').map(face).join('')}<div class="face">${portraits.Chip ? `<img src="${portraits.Chip}" alt="Chip">` : '<div class="ph">🐶</div>'}<span>Chip</span></div></div></div>`;
 }
+// somewhere in the living room with a clear metre in front of the dog's face (a physics ray finds no wall or furniture)
+function clearSpot() {
+  const R = G.R; const tries = [[-2.6, -3.0], [-2.2, -2.2], [-3.0, -2.4], [-1.6, -2.4]];
+  for (const [x, z] of tries) for (let k = 0; k < 8; k++) { const yaw = k * Math.PI / 4; const dx = Math.sin(yaw), dz = Math.cos(yaw);
+    try { const hit = G.world.castRay(new R.Ray({ x, y: 0.45, z }, { x: dx, y: 0, z: dz }), 1.2, true, undefined, undefined, undefined, G.dog?.kbody); const back = G.world.castRay(new R.Ray({ x, y: 0.45, z }, { x: -dx, y: 0, z: -dz }), 0.4, true, undefined, undefined, undefined, G.dog?.kbody);
+      if (!hit && !back) return [x, z, yaw]; } catch (e) { return [-2.6, -3.0, 0]; } }
+  return [-2.6, -3.0, 0];
+}
 // render a little portrait of each person from the live scene
 export function renderPortraits() {
   const r = G.renderer; const rt = new THREE.WebGLRenderTarget(160, 160, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
   const cam = new THREE.PerspectiveCamera(26, 1, 0.05, 20); const out = {};
   const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'); const buf = new Uint8Array(160 * 160 * 4); const img = g.createImageData(160, 160);
-  const xr = r.xr.enabled; r.xr.enabled = false; for (const p of G.chars) for (const m of p.root?._skins || []) m.visible = true; // (not culled for their close-ups)
+  const xr = r.xr.enabled; r.xr.enabled = false; for (const p of G.chars) for (const m of p.root?._skins || []) m.visible = true; for (const m of G.dog?.rig?.root?._skins || []) m.visible = true; // (nobody culled for their close-ups, Chip included)
   for (const p of G.chars) {
     const wasVis = p.root.visible; p.root.visible = true; p._wasVis = wasVis;
     if (p.isPlayer) { p._pp = [p.pos.clone(), p.yaw]; p.pos.set(-2.2, p.pos.y, -1.3); p.yaw = 0.67; try { p.update(1 / 60); } catch (e) { /* posing is best-effort */ } p.root.updateMatrixWorld(true); } // the player's body isn't animated while the menu is up
@@ -80,12 +88,13 @@ export function renderPortraits() {
   }
   // Chip: camera in front of his face, looking back at him
   const d = G.dog; if (d?.rig) { try {
-    const wasVis = d.rig.root.visible, R = d.rig.root, p0 = R.position.clone(), q0 = R.quaternion.clone(); R.visible = true; R.position.set(p0.x - 2.2 - d.pos.x, p0.y, p0.z - 1.3 - d.pos.z); R.updateMatrixWorld(true); // somewhere open, away from the tree
-    const hp = d.rig.bones[3].getWorldPosition(new THREE.Vector3()); const fwd = hp.clone().sub(d.rig.bones[1].getWorldPosition(new THREE.Vector3())).setY(0).normalize();
+    const wasVis = d.rig.root.visible, R = d.rig.root, p0 = R.position.clone(), q0 = R.quaternion.clone(); R.visible = true; for (const m of R._skins || []) m.visible = true;
+    const dp = d.pos.clone(), dy = d.yaw, dpath = d.path; d.path = null; { const spot = clearSpot(); d.pos.set(spot[0], 0, spot[1]); d.yaw = spot[2]; } try { d.update(0.001); } catch (e) { /* pose best-effort */ } R.updateMatrixWorld(true); // pose him in the open middle of the living room (his bones live in world space, so move the dog, not the model)
+    const hp = d.headPos(new THREE.Vector3()); const fwd = new THREE.Vector3(Math.sin(d.yaw), 0, Math.cos(d.yaw)); // his own head and the way he's facing
     hp.addScaledVector(fwd, 0.06).y += 0.07; cam.position.copy(hp).addScaledVector(fwd, 0.85).add(new THREE.Vector3(0, 0.08, 0)); cam.lookAt(hp); // his eyes, from a little way off
     r.setRenderTarget(rt); r.render(G.scene, cam); r.setRenderTarget(null); r.readRenderTargetPixels(rt, 0, 0, 160, 160, buf);
     for (let y = 0; y < 160; y++) for (let x = 0; x < 160; x++) { const si = ((159 - y) * 160 + x) * 4, di = (y * 160 + x) * 4; img.data[di] = buf[si]; img.data[di + 1] = buf[si + 1]; img.data[di + 2] = buf[si + 2]; img.data[di + 3] = 255; }
-    g.putImageData(img, 0, 0); out.Chip = c.toDataURL('image/jpeg', 0.85); R.visible = wasVis; R.position.copy(p0); R.quaternion.copy(q0); R.updateMatrixWorld(true);
+    g.putImageData(img, 0, 0); out.Chip = c.toDataURL('image/jpeg', 0.85); R.visible = wasVis; R.position.copy(p0); R.quaternion.copy(q0); d.pos.copy(dp); d.yaw = dy; d.path = dpath; try { d.update(0.001); } catch (e) { /* best-effort */ } R.updateMatrixWorld(true);
   } catch (e) { console.warn('Chip portrait', e); } }
   r.xr.enabled = xr; rt.dispose();
   return out;

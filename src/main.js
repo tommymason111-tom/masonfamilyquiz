@@ -25,7 +25,7 @@ import { FX } from './game/fx.js';
 import { Modes, buildModePicker, modeById } from './game/modes.js';
 import { initHome, homeProgress, renderPortraits, teamCards, orbitCamera } from './game/home.js';
 // shown on the home screen so you can tell whether your browser has the latest version (bump on every change)
-export const BUILD = '13 Nov 2026 · simple home v52';
+export const BUILD = '13 Nov 2026 · chip photo v53';
 const _b = document.getElementById('build'); if (_b) _b.textContent = 'Version: ' + BUILD;
 import { CAST } from './chars/cast.js';
 
@@ -89,8 +89,8 @@ async function boot() {
   addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); addEventListener('touchstart', unlock);
   // the family photos: saved on the device after the first time, so later loads don't redo them; the first time they're taken
   // just after the game is up, so they don't hold up PLAY
-  const PKEY = 'portraits.v2.' + Object.keys(G.charByName).length; const cached = loadStore(PKEY, null);
-  if (cached && G.chars.every(p => cached[p.name])) { G.portraits = cached; try { teamCards(true, G.portraits); } catch (e) { /* cosmetic */ } }
+  const PKEY = 'portraits.v3.' + Object.keys(G.charByName).length; const cached = loadStore(PKEY, null); // (v3: older saved sets could have a blank Chip)
+  if (cached && cached.Chip && G.chars.every(p => cached[p.name])) { G.portraits = cached; try { teamCards(true, G.portraits); } catch (e) { /* cosmetic */ } }
   else setTimeout(() => requestAnimationFrame(() => { try { G.portraits = renderPortraits(); teamCards(true, G.portraits); saveStore(PKEY, G.portraits); } catch (e) { console.warn(e); } }), 250);
   renderer.compile(scene, camera); // warm up the shaders now (in parallel, see above) rather than on the first frames
   document.getElementById('loading').classList.add('live');
